@@ -1,0 +1,21 @@
+.env
+*.terragrunt-cache
+*.terraform
+*-debug.tfvars.json
+*.zip
+*.DS_store
+*.lock.hcl
+
+# ignore generated files
+infra/live/*.tf
+dist
+.astro/
+node_modules/
+package/
+build/
+venv
+__pycache__
+tmp/*
+!tmp/.gitkeep
+data
+*.json
