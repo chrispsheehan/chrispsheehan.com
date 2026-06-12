@@ -1,0 +1,314 @@
+# Read-only CI helpers only.
+# This file is for discovery, validation, artifact existence checks, and matrix shaping.
+# Do not put AWS-mutating rollout or deploy commands here.
+
+PROJECT_DIR := `cd ../.. && pwd`
+
+# Convert raw Terragrunt graph output from TG_GRAPH_OUTPUT into compact JSON.
+tg-graph-output-to-json environment provider='aws':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+
+    if [[ -z "${TG_GRAPH_OUTPUT:-}" ]]; then
+        echo "❌ TG_GRAPH_OUTPUT is required for tg-graph-output-to-json."
+        exit 1
+    fi
+
+    tmp_nodes="$(mktemp)"
+    tmp_edges="$(mktemp)"
+    trap 'rm -f "$tmp_nodes" "$tmp_edges"' EXIT
+
+    awk -F'"' '
+      /->/ && NF >= 4 {
+        from = $2
+        to = $4
+        sub(".*/", "", from)
+        sub(".*/", "", to)
+        print from "\t" to
+        next
+      }
+      /^[[:space:]]*"/ && /;[[:space:]]*$/ && NF >= 2 {
+        node = $2
+        sub(".*/", "", node)
+        print node
+      }
+    ' <(printf '%s\n' "$TG_GRAPH_OUTPUT") \
+      | while IFS= read -r line; do
+          if [[ "$line" == *$'\t'* ]]; then
+            printf '%s\n' "$line" >> "$tmp_edges"
+          elif [[ -n "$line" ]]; then
+            printf '%s\n' "$line" >> "$tmp_nodes"
+          fi
+        done
+
+    {
+      cat "$tmp_nodes"
+      awk -F'\t' 'NF >= 2 { print $1; print $2 }' "$tmp_edges"
+    } \
+      | sort -u \
+      | while IFS= read -r node; do
+          [[ -n "$node" ]] || continue
+          deps="$(
+            awk -F'\t' -v target="$node" '$1 == target { print $2 }' "$tmp_edges" \
+              | sort -u \
+              | jq -R . \
+              | jq -s -c .
+          )"
+          printf '%s\t%s\n' "$node" "$deps"
+        done \
+      | jq -R -s --arg environment "{{environment}}" --arg provider "{{provider}}" '
+          split("\n")
+          | map(select(length > 0))
+          | map(split("\t"))
+          | map(select(length == 2))
+          | {
+              environment: $environment,
+              provider: $provider,
+              dependencies: (
+                reduce .[] as $pair
+                  ({};
+                   .[$pair[0]] = ($pair[1] | fromjson)
+                  )
+              )
+            }
+        ' \
+      | jq -c '
+          .dependencies as $deps
+          | . + {
+              nodes: ($deps | keys | sort),
+              edges: (
+                $deps
+                | to_entries
+                | map(.key as $from | .value[]? | {from: $from, to: .})
+                | sort_by(.from, .to)
+              )
+            }
+        '
+
+
+# Convert compact Terragrunt graph JSON from TG_GRAPH_JSON into a dependency-safe
+# wave matrix JSON array for GitHub Actions.
+tg-graph-json-to-waves:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+
+    if [[ -z "${TG_GRAPH_JSON:-}" ]]; then
+        echo "❌ TG_GRAPH_JSON is required for tg-graph-json-to-waves."
+        exit 1
+    fi
+
+    jq -cn --argjson graph "$TG_GRAPH_JSON" '
+      def build_waves($remaining):
+        if ($remaining | length) == 0 then
+          []
+        else
+          ($remaining | to_entries | map(select((.value | length) == 0) | .key) | sort) as $ready
+          | if ($ready | length) == 0 then
+              error("Cycle detected in Terragrunt dependency graph.")
+            else
+              [{modules: $ready}] + build_waves(
+                reduce ($remaining | to_entries[]) as $entry
+                  ({};
+                   if ($ready | index($entry.key)) != null then
+                     .
+                   else
+                     .[$entry.key] = ($entry.value - $ready)
+                   end
+                  )
+              )
+            end
+        end;
+
+      ($graph.dependencies // {}) as $deps
+      | build_waves($deps)
+      | to_entries
+      | map({wave: .key, modules: .value.modules})
+    ' | jq -c .
+
+
+# Filter raw Terragrunt waves to the infra plan/apply wave shape.
+tg-waves-to-infra-waves:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+
+    if [[ -z "${RAW_WAVES_JSON:-}" ]]; then
+        echo "❌ RAW_WAVES_JSON is required for tg-waves-to-infra-waves."
+        exit 1
+    fi
+
+    jq -c '
+      map(.modules |= map(select(startswith("task_") | not)))
+      | map(select(.modules | length > 0))
+      | to_entries
+      | map({wave: .key, modules: .value.modules})
+    ' <<<"$RAW_WAVES_JSON"
+
+
+# Validate static GitHub workflow wave jobs match generated wave depth.
+tg-validate-static-wave-jobs:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+
+    if [[ -z "${RAW_WAVES_JSON:-}" ]]; then
+        echo "❌ RAW_WAVES_JSON is required for tg-validate-static-wave-jobs."
+        exit 1
+    fi
+
+    if [[ -z "${INFRA_WAVES_JSON:-}" ]]; then
+        echo "❌ INFRA_WAVES_JSON is required for tg-validate-static-wave-jobs."
+        exit 1
+    fi
+
+    if [[ -z "${DESTROY_WAVES_JSON:-}" ]]; then
+        echo "❌ DESTROY_WAVES_JSON is required for tg-validate-static-wave-jobs."
+        exit 1
+    fi
+
+    raw_waves_json="$(jq -c . <<<"$RAW_WAVES_JSON")"
+    infra_waves_json="$(jq -c . <<<"$INFRA_WAVES_JSON")"
+    destroy_waves_json="$(jq -c . <<<"$DESTROY_WAVES_JSON")"
+
+    indexes_for_waves() {
+        jq -c 'length as $n | [range(0; $n)]' <<<"$1"
+    }
+
+    indexes_for_workflow() {
+        grep -E '^  wave_[0-9]+:' "$1" \
+          | sed -E 's/^  wave_([0-9]+):.*/\1/' \
+          | sort -n \
+          | jq -Rsc 'split("\n") | map(select(length > 0) | tonumber)'
+    }
+
+    validate_workflow() {
+        local label="$1"
+        local workflow="$2"
+        local waves_json="$3"
+        local expected actual missing extra reason
+
+        expected="$(indexes_for_waves "$waves_json")"
+        actual="$(indexes_for_workflow "$workflow")"
+        missing="$(jq -cn --argjson expected "$expected" --argjson actual "$actual" '$expected - $actual')"
+        extra="$(jq -cn --argjson expected "$expected" --argjson actual "$actual" '$actual - $expected')"
+
+        echo "$label expected wave jobs: $expected"
+        echo "$label actual wave jobs:   $actual"
+
+        if [[ "$actual" != "$expected" ]]; then
+            reason="Wave jobs do not match generated graph."
+            if [[ "$extra" != "[]" && "$missing" == "[]" ]]; then
+                reason="Too many static wave jobs."
+            elif [[ "$missing" != "[]" && "$extra" == "[]" ]]; then
+                reason="Not enough static wave jobs."
+            elif [[ "$missing" != "[]" && "$extra" != "[]" ]]; then
+                reason="Static wave jobs are not contiguous."
+            fi
+
+            {
+                echo "::error file=$workflow,title=Terragrunt wave jobs out of date::$label: $reason"
+                echo "Expected contiguous jobs: $expected"
+                echo "Actual static jobs:       $actual"
+                echo "Not enough wave jobs:     $missing"
+                echo "Too many wave jobs:       $extra"
+                echo
+                echo "Fix $workflow so its top-level wave_N jobs exactly match $expected."
+                if [[ "$extra" != "[]" ]]; then
+                    echo "Remove stale wave job(s): $(jq -r 'map("wave_" + tostring) | join(", ")' <<<"$extra")"
+                fi
+                if [[ "$missing" != "[]" ]]; then
+                    echo "Add missing wave job(s): $(jq -r 'map("wave_" + tostring) | join(", ")' <<<"$missing")"
+                fi
+                echo "Local validation commands: infra/README.md#terragrunt-graph-helpers"
+            } >&2
+            exit 1
+        fi
+    }
+
+    echo "Raw dev waves: $raw_waves_json"
+    echo "Infra plan/apply waves: $infra_waves_json"
+    echo "Destroy waves: $destroy_waves_json"
+
+    validate_workflow "Shared infra plan" ".github/workflows/shared_infra_plan.yml" "$infra_waves_json"
+    validate_workflow "Shared infra apply" ".github/workflows/shared_infra_apply_no_plan.yml" "$infra_waves_json"
+    validate_workflow "Shared infra apply from plan" ".github/workflows/shared_infra_apply_from_plan.yml" "$infra_waves_json"
+    validate_workflow "Destroy" ".github/workflows/destroy.yml" "$destroy_waves_json"
+
+
+# Filter saved infra-plan waves down to modules whose terragrunt.plan.meta.json
+# reports has_changes=true.
+infra-plan-filter-waves-by-changes:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+
+    if [[ -z "${PLAN_METADATA_FILE:-}" ]]; then
+        echo "❌ PLAN_METADATA_FILE is required for infra-plan-filter-waves-by-changes."
+        exit 1
+    fi
+
+    if [[ -z "${PLAN_ARTIFACTS_DIR:-}" ]]; then
+        echo "❌ PLAN_ARTIFACTS_DIR is required for infra-plan-filter-waves-by-changes."
+        exit 1
+    fi
+
+    changed_modules_file="$(mktemp)"
+    trap 'rm -f "$changed_modules_file"' EXIT
+
+    while IFS= read -r meta; do
+        has_changes="$(jq -r '.has_changes // false' "$meta")"
+        module_name="$(jq -r '.tg_directory | split("/") | last' "$meta")"
+
+        if [[ "$has_changes" == "true" && -n "$module_name" && "$module_name" != "null" ]]; then
+            printf '%s\n' "$module_name" >> "$changed_modules_file"
+        fi
+    done < <(find "$PLAN_ARTIFACTS_DIR" -name terragrunt.plan.meta.json -print | sort)
+
+    if [[ -s "$changed_modules_file" ]]; then
+        changed_modules_json="$(
+            sort -u "$changed_modules_file" | jq -Rsc 'split("\n") | map(select(length > 0))'
+        )"
+    else
+        changed_modules_json='[]'
+    fi
+
+    jq -c \
+      --argjson changed "$changed_modules_json" \
+      '
+        (.waves // [])
+        | map(.modules |= map(select(. as $item | $changed | index($item) != null)))
+        | map(select(.modules | length > 0))
+      ' \
+      "$PLAN_METADATA_FILE"
+
+
+# Run `tflint` across Terraform module directories.
+tf-lint-check:
+    #!/bin/bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+    find infra/modules -type f -name '*.tf' -print0 \
+      | xargs -0 -n1 dirname \
+      | sort -u \
+      | while read -r dir; do
+          echo "🔍 Running tflint in $dir"
+          tflint --chdir="$dir" --force
+        done
+
+
+# Discover repo-local Docker-based GitHub action directories.
+action-get-directories:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    find "{{PROJECT_DIR}}/.github/actions" -mindepth 1 -maxdepth 1 -type d \
+      | while read -r dir; do
+          if [[ -f "$dir/Dockerfile" ]]; then
+            basename "$dir"
+          fi
+        done \
+      | sort \
+      | jq -R . \
+      | jq -s -c .

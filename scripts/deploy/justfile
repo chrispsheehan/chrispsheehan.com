@@ -1,0 +1,401 @@
+# AWS-mutating CI deploy helpers only.
+# This file is for build/publish/deploy/invalidate steps that change remote state.
+# Keep read-only CI helpers in `scripts/ci/justfile`.
+
+PROJECT_DIR := `cd ../.. && pwd`
+LAMBDA_DIR := `just --justfile ../../justfile --evaluate LAMBDA_DIR`
+APPSPEC_DIR := `just --justfile ../../justfile --evaluate APPSPEC_DIR`
+
+
+# Invoke a deployed Lambda and fail if it does not return HTTP 200.
+lambda-invoke:
+    #!/bin/bash
+    set -euo pipefail
+
+    if [[ -z "$LAMBDA_NAME" ]]; then
+        echo "Error: LAMBDA_NAME environment variable is not set."
+        exit 1
+    fi
+
+    OUTPUT_FILE=output.json
+    PAYLOAD="{}"
+    rm -f $OUTPUT_FILE
+    RESPONSE=$(aws lambda invoke --cli-read-timeout 300 --function-name $LAMBDA_NAME --region $AWS_REGION --payload "$PAYLOAD" $OUTPUT_FILE)
+    LAMBDA_RETURN_CODE=$(jq -r '.StatusCode' <<< "$RESPONSE")
+    if [ "$LAMBDA_RETURN_CODE" -eq 200 ]; then
+        echo "Lambda function invoked successfully."
+    else
+        echo "Lambda function failed with return code: $LAMBDA_RETURN_CODE"
+    fi
+    cat $OUTPUT_FILE
+    LAMBDA_STATUS_CODE=$(jq -r '.statusCode // empty' "$OUTPUT_FILE")
+
+    if [[ "$LAMBDA_STATUS_CODE" == "200" ]]; then
+        echo "✅ Lambda function completed successfully."
+        exit 0
+    else
+        echo "❌ Lambda function failed or returned non-200 status code: $LAMBDA_STATUS_CODE"
+        exit 1
+    fi
+
+
+# Build a Docker image for a specific container target.
+docker-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -z "$CONTAINER_NAME" ]]; then
+        echo "❌ CONTAINER_NAME environment variable is not set."
+        exit 1
+    fi
+
+    TAG="${IMAGE_URI:-$CONTAINER_NAME}"
+
+    if [[ "$CONTAINER_NAME" == "debug" ]]; then
+        docker build \
+          --file "{{PROJECT_DIR}}/Dockerfile" \
+          --target "$CONTAINER_NAME" \
+          -t "$TAG" \
+          "{{PROJECT_DIR}}"
+        exit 0
+    fi
+
+    docker build \
+      --file "{{PROJECT_DIR}}/Dockerfile" \
+      --build-arg "SERVICE=$CONTAINER_NAME" \
+      --target service \
+      -t "$TAG" \
+      "{{PROJECT_DIR}}"
+
+
+# Push a tagged Docker image to ECR.
+docker-push:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -z "${IMAGE_URI:-}" ]]; then
+        echo "❌ IMAGE_URI environment variable is not set."
+        exit 1
+    fi
+
+    registry="${IMAGE_URI%%/*}"
+    aws_region="$(echo "$registry" | cut -d. -f4)"
+
+    if [[ -z "$aws_region" ]]; then
+        echo "❌ Could not determine AWS region from IMAGE_URI: $IMAGE_URI"
+        exit 1
+    fi
+
+    aws ecr get-login-password --region "$aws_region" \
+        | docker login --username AWS --password-stdin "$registry"
+
+    docker push "$IMAGE_URI"
+
+
+# Package a Lambda into a deployable zip artifact.
+lambda-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -z "${LAMBDA_SOURCE_DIR:-}" && -z "${LAMBDA_NAME:-}" ]]; then
+        echo "❌ LAMBDA_SOURCE_DIR or LAMBDA_NAME environment variable is required."
+        exit 1
+    fi
+
+    lambda_source_dir="${LAMBDA_SOURCE_DIR:-{{LAMBDA_DIR}}/$LAMBDA_NAME}"
+    lambda_artifact_name="${LAMBDA_ARTIFACT_NAME:-$(basename "$lambda_source_dir")}"
+
+    if [[ "$lambda_source_dir" = /* ]]; then
+        lambda_source_path="$lambda_source_dir"
+    else
+        lambda_source_path="{{PROJECT_DIR}}/$lambda_source_dir"
+    fi
+
+    python3 -m venv .venv
+    source .venv/bin/activate
+
+    LAMBDA_BUILD_DIR="{{PROJECT_DIR}}/{{LAMBDA_DIR}}/build"
+
+    echo "🔄 Cleaning previous builds..."
+    rm -rf $LAMBDA_BUILD_DIR
+
+    echo "📦 Building $lambda_artifact_name Lambda from $lambda_source_dir..."
+    mkdir -p "$LAMBDA_BUILD_DIR/$lambda_artifact_name"
+    pip install --target "$LAMBDA_BUILD_DIR/$lambda_artifact_name" -r "$lambda_source_path/requirements.txt"
+    cp "$lambda_source_path"/*.py "$LAMBDA_BUILD_DIR/$lambda_artifact_name/"
+    find "$LAMBDA_BUILD_DIR/$lambda_artifact_name" -type f -name '*.md' -delete
+    (
+        cd "$LAMBDA_BUILD_DIR/$lambda_artifact_name"
+        zip -r "../../$lambda_artifact_name.zip" . > /dev/null
+    )
+    echo "✅ Done: lambdas/$lambda_artifact_name.zip"
+
+
+# Upload a packaged Lambda zip to the shared code bucket.
+lambda-upload:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -z "${LAMBDA_SOURCE_DIR:-}" && -z "${LAMBDA_NAME:-}" ]]; then
+        echo "❌ LAMBDA_SOURCE_DIR or LAMBDA_NAME environment variable is required."
+        exit 1
+    fi
+
+    if [[ -z "$BUCKET_NAME" ]]; then
+        echo "❌ BUCKET_NAME environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "$VERSION" ]]; then
+        echo "❌ VERSION environment variable is not set."
+        exit 1
+    fi
+
+    lambda_source_dir="${LAMBDA_SOURCE_DIR:-{{LAMBDA_DIR}}/$LAMBDA_NAME}"
+    lambda_artifact_name="${LAMBDA_ARTIFACT_NAME:-$(basename "$lambda_source_dir")}"
+
+    LAMBDA_ZIP="{{PROJECT_DIR}}/{{LAMBDA_DIR}}/$lambda_artifact_name.zip"
+    echo "📤 Uploading $LAMBDA_ZIP to s3://$BUCKET_NAME/lambdas/$VERSION/$lambda_artifact_name.zip"
+
+    aws s3 cp "$LAMBDA_ZIP" "s3://$BUCKET_NAME/lambdas/$VERSION/$lambda_artifact_name.zip" \
+        --storage-class STANDARD
+
+
+# Read the current Lambda alias version.
+lambda-get-version:
+    #!/usr/bin/env bash
+    aws lambda get-alias \
+        --function-name "$FUNCTION_NAME" --name "$ALIAS_NAME" \
+        --query 'FunctionVersion' --output text
+
+
+# Publish a new Lambda version from a bucket object.
+lambda-create-version:
+    #!/usr/bin/env bash
+    aws lambda update-function-code \
+        --function-name "$FUNCTION_NAME" \
+        --s3-bucket "$BUCKET_NAME" \
+        --s3-key "$LAMBDA_ZIP_KEY" \
+        --publish \
+        --query 'Version' --output text
+
+
+# Render the Lambda CodeDeploy AppSpec file with version values.
+lambda-prepare-appspec:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -z "${APP_SPEC_FILE:-}" ]]; then
+        echo "❌ APP_SPEC_FILE environment variable is not set."
+        exit 1
+    fi
+
+    mkdir -p "$(dirname "$APP_SPEC_FILE")"
+    cp "{{PROJECT_DIR}}/{{LAMBDA_DIR}}/appspec-lambda.yml" "$APP_SPEC_FILE"
+
+    yq eval -i '
+      .Resources[0].LambdaFunction.Properties.Name = env(FUNCTION_NAME) |
+      .Resources[0].LambdaFunction.Properties.Alias = env(ALIAS_NAME) |
+      .Resources[0].LambdaFunction.Properties.CurrentVersion = env(CURRENT_VERSION) |
+      .Resources[0].LambdaFunction.Properties.TargetVersion = env(NEW_VERSION)
+    ' "$APP_SPEC_FILE"
+    cat "$APP_SPEC_FILE"
+
+
+# Zip and upload the rendered Lambda AppSpec bundle.
+lambda-upload-bundle:
+    #!/usr/bin/env bash
+    just --justfile "{{PROJECT_DIR}}/scripts/deploy/justfile" lambda-prepare-appspec
+
+    LOCAL_APP_SPEC_ZIP="{{PROJECT_DIR}}/{{LAMBDA_DIR}}/appspec-lambda.zip"
+    TMPDIR="$(mktemp -d)"
+    rm -f $LOCAL_APP_SPEC_ZIP
+    cp "$APP_SPEC_FILE" "$TMPDIR/appspec.yml"
+    zip -q -j $LOCAL_APP_SPEC_ZIP "$TMPDIR/appspec.yml"
+    aws s3 cp $LOCAL_APP_SPEC_ZIP "s3://${BUCKET_NAME}/${APP_SPEC_KEY}"
+
+
+# Resolve a Lambda function ARN.
+lambda-get-function-arn:
+    #!/usr/bin/env bash
+    if [[ -z "$FUNCTION_NAME" ]]; then
+        echo "❌ FUNCTION_NAME environment variable is not set."
+        exit 1
+    fi
+
+    aws lambda get-function \
+        --function-name $FUNCTION_NAME \
+        --query 'Configuration.FunctionArn' \
+        --output text
+
+
+# Read the CodeDeploy application tag from a Lambda.
+lambda-get-code-deploy-app:
+    #!/usr/bin/env bash
+    FUNCTION_ARN=$(just --justfile "{{PROJECT_DIR}}/scripts/deploy/justfile" lambda-get-function-arn)
+    aws lambda list-tags \
+        --resource "$FUNCTION_ARN" \
+        --query 'Tags.CodeDeployApplication' \
+        --output text
+
+
+# Read the CodeDeploy deployment group tag from a Lambda.
+lambda-get-code-deploy-group:
+    #!/usr/bin/env bash
+    FUNCTION_ARN=$(just --justfile "{{PROJECT_DIR}}/scripts/deploy/justfile" lambda-get-function-arn)
+    aws lambda list-tags \
+        --resource "$FUNCTION_ARN" \
+        --query 'Tags.CodeDeployGroup' \
+        --output text
+
+
+# Start and monitor a Lambda CodeDeploy deployment.
+lambda-deploy:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -z "$FUNCTION_NAME" ]]; then
+        echo "❌ FUNCTION_NAME environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "$APP_SPEC_KEY" ]]; then
+        echo "❌ APP_SPEC_KEY environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "$BUCKET_NAME" ]]; then
+        echo "❌ BUCKET_NAME environment variable is not set."
+        exit 1
+    fi
+
+    CODE_DEPLOY_APP_NAME=$(just --justfile "{{PROJECT_DIR}}/scripts/deploy/justfile" lambda-get-code-deploy-app)
+    CODE_DEPLOY_GROUP_NAME=$(just --justfile "{{PROJECT_DIR}}/scripts/deploy/justfile" lambda-get-code-deploy-group)
+
+    DEPLOYMENT_ID=$(aws deploy create-deployment \
+        --application-name "$CODE_DEPLOY_APP_NAME" \
+        --deployment-group-name "$CODE_DEPLOY_GROUP_NAME" \
+        --s3-location bucket=$BUCKET_NAME,key=$APP_SPEC_KEY,bundleType=zip \
+        --query "deploymentId" --output text)
+
+    if [[ -z "$DEPLOYMENT_ID" || "$DEPLOYMENT_ID" == "None" ]]; then
+        echo "❌ Failed to create deployment — no deployment ID returned."
+        exit 1
+    fi
+
+    echo "🚀 Deployment started: $DEPLOYMENT_ID"
+    echo "🏷️ CodeDeploy App: $CODE_DEPLOY_APP_NAME | Group: $CODE_DEPLOY_GROUP_NAME"
+    echo "📦 AppSpec artifact: s3://$BUCKET_NAME/$APP_SPEC_KEY"
+    echo "⏳ Monitoring deployment status…"
+
+    MAX_ATTEMPTS=40       # ~10 minutes at 15s interval
+    SLEEP_INTERVAL=15     # seconds
+
+    for ((i=1; i<=MAX_ATTEMPTS; i++)); do
+        STATUS=$(aws deploy get-deployment \
+            --deployment-id "$DEPLOYMENT_ID" \
+            --query "deploymentInfo.status" \
+            --output text)
+
+        echo "Attempt $i: Deployment status is $STATUS"
+
+        if [[ "$STATUS" == "Succeeded" ]]; then
+            echo "✅ Deployment $DEPLOYMENT_ID completed successfully."
+            exit 0
+        elif [[ "$STATUS" == "Failed" || "$STATUS" == "Stopped" ]]; then
+            echo "❌ Deployment $DEPLOYMENT_ID failed or was stopped."
+            aws deploy get-deployment \
+                --deployment-id "$DEPLOYMENT_ID" \
+                --query 'deploymentInfo.{Status:status, ErrorCode:errorInformation.code, ErrorMessage:errorInformation.message}' \
+                --output table
+            exit 1
+    fi
+
+    sleep "$SLEEP_INTERVAL"
+    done
+
+    echo "❌ Deployment $DEPLOYMENT_ID did not complete within expected time."
+    exit 1
+
+
+# Delete old Lambda versions while keeping the live and newest versions.
+lambda-prune:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -z "$ALIAS_NAME" ]]; then
+        echo "❌ ALIAS_NAME environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "$FUNCTION_NAME" ]]; then
+        echo "❌ FUNCTION_NAME environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "$AWS_REGION" ]]; then
+        echo "❌ AWS_REGION environment variable is not set."
+        exit 1
+    fi
+
+    live_version=$(aws lambda get-alias \
+        --function-name "$FUNCTION_NAME" \
+        --name "$ALIAS_NAME" \
+        --region "$AWS_REGION" \
+        | jq -r '.FunctionVersion')
+
+    echo "Alias '$ALIAS_NAME' points to: ${live_version:-<none>}"
+    versions=$(aws lambda list-versions-by-function \
+        --function-name "$FUNCTION_NAME" \
+        --region "$AWS_REGION" \
+        | jq -r '.Versions[] | select(.Version != "$LATEST") | .Version' \
+        | sort -nr)
+
+    keep_newest=$(echo "$versions" | head -n "$KEEP")
+    keep_set=$(printf "%s\n%s\n" "$keep_newest" "$live_version" | sort -u)
+    to_delete=$(comm -23 <(echo "$versions" | sort -u) <(echo "$keep_set" | sort -u))
+
+    echo "Keeping version(s):  $(echo "$keep_set" | tr '\n' ' ')"
+    if [[ -z "${to_delete// }" ]]; then
+        echo "Nothing to delete."
+        exit 0
+    fi
+    for v in $to_delete; do
+        echo "Deleting $FUNCTION_NAME:$v"
+        aws lambda delete-function --function-name "$FUNCTION_NAME" --qualifier "$v" --region "$AWS_REGION"
+    done
+
+
+# Update an ECS service directly and wait for stability.
+ecs-rolling-deploy:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -z "${CLUSTER_NAME:-}" ]]; then
+        echo "❌ CLUSTER_NAME environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "${SERVICE_NAME:-}" ]]; then
+        echo "❌ SERVICE_NAME environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "${TASK_DEFINITION_ARN:-}" ]]; then
+        echo "❌ TASK_DEFINITION_ARN environment variable is not set."
+        exit 1
+    fi
+
+    echo "🚀 Starting ECS rolling deployment for $SERVICE_NAME on $CLUSTER_NAME"
+
+    aws ecs update-service \
+        --cluster "$CLUSTER_NAME" \
+        --service "$SERVICE_NAME" \
+        --task-definition "$TASK_DEFINITION_ARN" \
+        >/dev/null
+
+    aws ecs wait services-stable \
+        --cluster "$CLUSTER_NAME" \
+        --services "$SERVICE_NAME"
+
+    echo "✅ ECS rolling deployment completed for $SERVICE_NAME"
