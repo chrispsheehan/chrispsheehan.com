@@ -15,8 +15,7 @@ package/
 build/
 venv
 __pycache__
-tmp/*
-!tmp/.gitkeep
+tmp/
 data
 *.json
 !frontend/package.json
