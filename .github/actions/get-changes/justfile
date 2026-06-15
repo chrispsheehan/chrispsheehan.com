@@ -1,0 +1,49 @@
+ACTION_DIR := justfile_directory()
+
+local-test *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    python3 "{{ACTION_DIR}}/get_changes.py" "$@"
+
+
+unit-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    python3 "{{ACTION_DIR}}/test_get_changes.py"
+
+
+docker-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    docker build \
+      --file "{{ACTION_DIR}}/Dockerfile" \
+      -t aws-serverless-github-deploy/get-changes \
+      "{{ACTION_DIR}}"
+
+
+docker-run *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    repo_root="$(cd "{{ACTION_DIR}}/../../.." && pwd)"
+
+    docker run --rm \
+      -v "$repo_root:/repo" \
+      -w /repo \
+      aws-serverless-github-deploy/get-changes \
+      "$@"
+
+
+docker-unit-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    just --justfile "{{ACTION_DIR}}/justfile" docker-build
+
+    docker run --rm \
+      --entrypoint python3 \
+      aws-serverless-github-deploy/get-changes \
+      /app/test_get_changes.py

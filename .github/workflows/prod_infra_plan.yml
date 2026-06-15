@@ -1,0 +1,23 @@
+name: Prod Infra Plan
+
+on:
+  workflow_dispatch:
+    inputs:
+      infra_version:
+        description: "Infrastructure ref to plan"
+        required: true
+        default: "main"
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
+jobs:
+  infra:
+    name: Plan
+    uses: ./.github/workflows/shared_infra_plan.yml
+    with:
+      environment: prod
+      infra_version: ${{ inputs.infra_version }}

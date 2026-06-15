@@ -1,32 +1,92 @@
 # chrispsheehan.com
 
-Frontend hosting infrastructure for `chrispsheehan.com`.
+CloudFront-backed static frontend for `wip.chrispsheehan.com`, scaffolded from
+the local `aws-terragrunt-starter` golden path.
 
-This repository currently contains Terraform/Terragrunt infrastructure only. It
-does not contain a frontend application source tree, package manifest, or GitHub
-Actions workflows yet.
+The current runtime is intentionally small:
 
-## Layout
+- `frontend/` contains the static frontend source and build script.
+- `infra/live/dev/aws/frontend` creates the `wip.chrispsheehan.com` S3,
+  CloudFront, ACM, and Route53 resources.
+- `infra/live/*/aws/oidc` creates GitHub Actions deploy roles.
+- `infra/live/ci/aws/code_bucket` and `infra/live/dev/aws/code_bucket` store
+  deployable frontend artifacts and future Lambda artifacts.
+- `lambdas/` contains the contract for adding Lambda source later.
 
-- `infra/live/ci/aws/oidc` provisions the GitHub Actions OIDC role for CI.
-- `infra/live/prod/aws/oidc` provisions the GitHub Actions OIDC role for prod.
-- `infra/live/prod/aws/frontend` provisions the production frontend hosting
-  stack.
-- `infra/modules/aws/_shared/oidc` contains the shared OIDC Terraform module.
-- `infra/modules/aws/frontend` contains the static frontend hosting Terraform
-  module.
+## Useful Commands
 
-See [infra/README.md](infra/README.md) for the infrastructure contract and
-module-specific notes in:
+```sh
+just --list
+just --justfile scripts/deploy/justfile frontend-build
+just tg dev aws/frontend plan
+just tg-all dev plan
+```
 
-- [infra/modules/aws/_shared/oidc/README.md](infra/modules/aws/_shared/oidc/README.md)
-- [infra/modules/aws/frontend/README.md](infra/modules/aws/frontend/README.md)
+## Frontend
 
-## Current Requirements
+The frontend is plain static HTML/CSS for now.
 
-- an AWS account with the GitHub Actions OIDC provider already present
-- a Route53 public hosted zone for the frontend domain
-- Terraform and Terragrunt installed locally for direct infra work
-- `AWS_ACCOUNT_ID` exported before running Terragrunt directly
+```sh
+just --justfile scripts/deploy/justfile frontend-build
+```
 
-No Terragrunt commands were run as part of this documentation alignment.
+The build output is written to `frontend/dist`.
+
+## AWS Prerequisites
+
+The AWS account must already contain:
+
+- the GitHub OIDC provider for `https://token.actions.githubusercontent.com`
+- the public Route53 hosted zone `chrispsheehan.com`
+- an S3 backend bucket named from `infra/root.hcl`:
+  `<AWS_ACCOUNT_ID>-<AWS_REGION>-chrispsheehan.com-tfstate`
+
+## Initial OIDC Bootstrap
+
+Create the GitHub Actions roles once from a local shell with AWS credentials
+that can manage IAM:
+
+```sh
+export AWS_PROFILE=default
+export AWS_REGION=eu-west-2
+
+just tg ci aws/oidc apply
+just tg dev aws/oidc apply
+just tg prod aws/oidc apply
+```
+
+## GitHub Actions Variables
+
+Set these repository variables in GitHub under
+`Settings -> Secrets and variables -> Actions -> Variables`:
+
+```text
+AWS_ACCOUNT_ID=<your AWS account id>
+AWS_REGION=eu-west-2
+PROJECT_NAME=chrispsheehan.com
+```
+
+Workflows assume roles named:
+
+```text
+<PROJECT_NAME>-<ENVIRONMENT>-github-oidc-role
+```
+
+## Deploy Shape
+
+Development deploys build the current commit and roll it to
+`wip.chrispsheehan.com`:
+
+1. `Dev Infra Plan` / `Dev Infra Apply No Plan` creates or updates infra.
+2. `Dev Code Deploy` builds `frontend.zip`, uploads it to the dev code bucket,
+   syncs it to the frontend S3 origin bucket, and invalidates CloudFront.
+
+Production infra is scaffolded, but `prod` defaults to `chrispsheehan.com`.
+Change `infra/live/prod/environment_vars.hcl` before applying prod if that is
+not the desired production domain.
+
+## Docs
+
+- CI and workflow notes: [.github/docs/README.md](.github/docs/README.md)
+- Infrastructure notes: [infra/README.md](infra/README.md)
+- Lambda extension contract: [lambdas/README.md](lambdas/README.md)

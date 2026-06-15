@@ -1,0 +1,27 @@
+name: Dev Code Deploy
+# This deploys frontend code changes to dev without touching infra.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/shared_build.yml
+    with:
+      environment: dev
+      frontend_version: ${{ github.sha }}
+
+  deploy:
+    name: Deploy
+    uses: ./.github/workflows/shared_deploy.yml
+    needs:
+      - build
+    with:
+      environment: dev
+      frontend_version: ${{ needs.build.outputs.frontend_version }}
+      code_bucket: ${{ needs.build.outputs.code_bucket }}

@@ -8,6 +8,24 @@ _default:
 
 
 PROJECT_DIR := justfile_directory()
+LAMBDA_DIR := "lambdas"
+FRONTEND_DIR := "frontend"
+APPSPEC_DIR := "appspec"
+
+
+# Return the Lambda artifact directory name.
+code-bucket-get-lambda-artifact-dir:
+    @echo {{LAMBDA_DIR}}
+
+
+# Return the frontend artifact directory name.
+code-bucket-get-frontend-artifact-dir:
+    @echo {{FRONTEND_DIR}}
+
+
+# Return the AppSpec artifact directory name.
+code-bucket-get-appspec-artifact-dir:
+    @echo {{APPSPEC_DIR}}
 
 
 # Delete local git branches whose upstream refs have gone away.
@@ -74,8 +92,6 @@ tg-all env op:
         export AWS_ACCOUNT_ID
     fi
     export TF_VAR_lambda_version="this"
-    export TF_VAR_image_uri="plan-placeholder"
-    export TF_VAR_debug_uri="plan-placeholder"
     terragrunt run-all {{op}}
 
 

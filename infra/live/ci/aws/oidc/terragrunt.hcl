@@ -5,7 +5,10 @@ include "root" {
 locals {
   allowed_role_actions = [
     "s3:*",
-    "iam:*"
+    "iam:*",
+    "lambda:*",
+    "logs:*",
+    "codedeploy:*",
   ]
 }
 

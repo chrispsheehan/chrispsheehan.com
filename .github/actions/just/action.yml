@@ -1,0 +1,92 @@
+name: "Execute Just command"
+description: "Sets up Just and runs a just action using AWS credentials already configured in the job when needed"
+
+inputs:
+  just_version:
+    description: "Version of Just to install"
+    required: false
+    default: "1.49.0"
+  aws_region:
+    description: "AWS Region"
+    default: "eu-west-2"
+  just_action:
+    description: "Just command (recipe) to execute"
+    required: true
+  justfile_path:
+    description: "Optional path to a specific justfile"
+    required: false
+    default: ""
+  mask_result:
+    description: "Mask value in CI logs"
+    required: true
+    default: "false"
+
+outputs:
+  just_outputs:
+    description: "Output from the just script"
+    value: ${{ steps.capture_masked.outputs.result || steps.capture.outputs.result }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Just
+      uses: extractions/setup-crate@v2.0.1
+      with:
+        repo: casey/just@${{ inputs.just_version }}
+        github-token: ${{ github.token }}
+
+    - name: Verify Just installation
+      shell: bash
+      run: just --version
+
+    - name: Run just action (try/catch + capture)
+      id: capture
+      if: ${{ inputs.mask_result == 'false' }}
+      shell: bash
+      env:
+        AWS_REGION: ${{ inputs.aws_region }}
+        AWS_DEFAULT_REGION: ${{ inputs.aws_region }}
+      run: |
+        set +e
+        set -uo pipefail
+
+        LOG_FILE="$RUNNER_TEMP/just_${{ inputs.just_action }}_$(date +%s).log"
+        JUSTFILE_ARGS=()
+        if [[ -n "${{ inputs.justfile_path }}" ]]; then
+          JUSTFILE_ARGS=(--justfile "${{ inputs.justfile_path }}")
+        fi
+        echo "📦 Running: ${{ inputs.just_action }}"
+        just "${JUSTFILE_ARGS[@]}" ${{ inputs.just_action }} 2>&1 | tee "$LOG_FILE"
+        status=${PIPESTATUS[0]}
+
+        result="$(tail -n 1 "$LOG_FILE" | tr -d '\r')"
+        echo "result=$result" >> "$GITHUB_OUTPUT"
+
+        exit "$status"
+
+    - name: Run just action (masked output, no logs)
+      id: capture_masked
+      shell: bash
+      if: ${{ inputs.mask_result == 'true' }}
+      env:
+        AWS_REGION: ${{ inputs.aws_region }}
+        AWS_DEFAULT_REGION: ${{ inputs.aws_region }}
+      run: |
+        set +e
+        set -uo pipefail
+
+        JUSTFILE_ARGS=()
+        if [[ -n "${{ inputs.justfile_path }}" ]]; then
+          JUSTFILE_ARGS=(--justfile "${{ inputs.justfile_path }}")
+        fi
+
+        # Capture stdout (not printed)
+        out="$(just "${JUSTFILE_ARGS[@]}" ${{ inputs.just_action }} 2>/dev/null || true)"
+        status=$?
+
+        secret="$(printf '%s' "$out" | tr -d '\r' | tail -n 1)"
+
+        echo "::add-mask::$secret"
+        echo "result=$secret" >> "$GITHUB_OUTPUT"
+
+        exit "$status"

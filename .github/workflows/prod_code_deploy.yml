@@ -1,0 +1,32 @@
+name: Prod Code Deploy
+# This deploys a previously published frontend artifact to prod.
+
+on:
+  workflow_dispatch:
+    inputs:
+      frontend_version:
+        description: "Frontend artifact version to deploy, usually a commit SHA"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  get_build:
+    name: Resolve Build
+    uses: ./.github/workflows/shared_build_get.yml
+    with:
+      environment: ci
+      frontend_version: ${{ inputs.frontend_version }}
+
+  deploy:
+    name: Deploy
+    uses: ./.github/workflows/shared_deploy.yml
+    needs:
+      - get_build
+    with:
+      environment: prod
+      frontend_version: ${{ needs.get_build.outputs.frontend_version }}
+      code_bucket: ${{ needs.get_build.outputs.code_bucket }}

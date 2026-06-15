@@ -1,0 +1,35 @@
+name: "Get Changes"
+description: "Detect changed repo areas from git diff"
+
+inputs:
+  ref:
+    description: "Fallback git reference to compare from when base_ref is not provided"
+    required: false
+    default: "main"
+  base_ref:
+    description: "Optional explicit base git ref or commit SHA for PR-style comparison"
+    required: false
+    default: ""
+
+outputs:
+  actions:
+    description: "Whether repo-local GitHub action files changed"
+  terraform:
+    description: "Whether terraform files changed"
+  terragrunt:
+    description: "Whether terragrunt files changed"
+  github:
+    description: "Whether GitHub workflow files changed"
+  lambdas:
+    description: "Whether lambdas files changed"
+  frontend:
+    description: "Whether frontend files changed"
+
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - --ref
+    - ${{ inputs.ref }}
+    - --base-ref
+    - ${{ inputs.base_ref }}

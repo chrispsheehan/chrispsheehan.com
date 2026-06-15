@@ -1,49 +1,42 @@
-# Infra Notes
+# Infrastructure
 
-This directory owns the current Terraform/Terragrunt infrastructure for the
-frontend-only repo.
+Terragrunt live stacks are under `infra/live/<environment>/aws`.
 
-## Live Stacks
+## Current Stacks
 
-- `live/ci/aws/oidc`: GitHub Actions OIDC role for CI.
-- `live/prod/aws/oidc`: GitHub Actions OIDC role for production.
-- `live/prod/aws/frontend`: production static frontend hosting.
+| Environment | Stacks |
+| --- | --- |
+| `ci` | `oidc`, `code_bucket` |
+| `dev` | `oidc`, `code_bucket`, `frontend` |
+| `prod` | `oidc`, `frontend` |
 
-The live frontend stack depends on the prod OIDC stack because the frontend
-bucket policy grants deployment access to the prod OIDC role.
+`dev` owns `wip.chrispsheehan.com`. `prod` is scaffolded with
+`chrispsheehan.com` in `infra/live/prod/environment_vars.hcl`; change that
+before applying prod if needed.
 
-## Modules
+## Frontend Module
 
-- `modules/aws/_shared/oidc`: shared GitHub Actions OIDC role module.
-- `modules/aws/frontend`: static frontend hosting module.
+`infra/modules/aws/frontend` owns:
 
-## Terragrunt State
+- private S3 origin bucket
+- CloudFront distribution
+- ACM certificate in `us-east-1`
+- Route53 `A` and `AAAA` aliases in the existing `chrispsheehan.com` hosted zone
+- deploy-role write access to the origin bucket
 
-State is stored under:
+## Artifact Buckets
 
-```text
-s3://<account>-<region>-<repo>-tfstate/<environment>/<provider>/<module>/terraform.tfstate
-```
+`code_bucket` stores deployable `frontend/<version>/frontend.zip` artifacts now
+and `lambdas/<version>/*.zip` artifacts later.
 
-Terraform S3 backend lock files sit next to state objects with the `.tflock`
-suffix.
-
-## Local Terragrunt Context
-
-`infra/root.hcl` derives account-scoped names from `AWS_ACCOUNT_ID`. Export it
-before running Terragrunt directly:
+## Local Validation
 
 ```sh
-export AWS_ACCOUNT_ID=<your AWS account id>
+terraform fmt -recursive
+terragrunt hclfmt
+just tg dev aws/frontend plan
+just tg-all dev plan
 ```
 
-There is currently no repo-local `justfile` or workflow helper directory, so do
-not document or assume wrapper commands unless those files are added.
-
-## Required Backing Resources
-
-- the Terraform state bucket named by `infra/root.hcl`
-- the GitHub Actions OIDC provider in each target AWS account
-- a public Route53 hosted zone for the frontend domain
-
-See the module READMEs for stack-specific contracts.
+Plans require AWS credentials, access to the configured remote state bucket, and
+Route53/CloudFront permissions.

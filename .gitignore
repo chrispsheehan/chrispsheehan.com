@@ -19,3 +19,4 @@ tmp/*
 !tmp/.gitkeep
 data
 *.json
+!frontend/package.json

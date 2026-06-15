@@ -1,0 +1,100 @@
+name: Shared Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: environment reference i.e. 'prod' or 'dev'
+        required: true
+        type: string
+      frontend_version:
+        description: "Frontend artifact version"
+        required: true
+        type: string
+      code_bucket:
+        description: "Bucket containing frontend artifacts"
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  AWS_OIDC_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.PROJECT_NAME }}-${{ inputs.environment }}-github-oidc-role
+  AWS_REGION: ${{ vars.AWS_REGION }}
+
+jobs:
+  summary:
+    name: Summary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write deploy summary
+        shell: bash
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          FRONTEND_VERSION: ${{ inputs.frontend_version }}
+          CODE_BUCKET: ${{ inputs.code_bucket }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "## Code Deploy Summary"
+            echo
+            echo "- \`environment\`: \`$ENVIRONMENT\`"
+            echo "- \`frontend_version\`: \`$FRONTEND_VERSION\`"
+            echo "- \`code_bucket\`: \`$CODE_BUCKET\`"
+            echo "- \`frontend\`: \`frontend.zip -> infra/live/$ENVIRONMENT/aws/frontend\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    needs:
+      - summary
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get frontend infra
+        uses: ./.github/actions/terragrunt
+        id: get-infra
+        with:
+          tg_directory: infra/live/${{ inputs.environment }}/aws/frontend
+          tg_action: init
+
+      - name: Get frontend outputs
+        id: get_frontend_outputs
+        env:
+          TG_OUTPUTS: ${{ steps.get-infra.outputs.tg_outputs }}
+        run: |
+          echo "website_bucket=$(echo "$TG_OUTPUTS" | jq -r '.bucket_name.value')" >> "$GITHUB_OUTPUT"
+          echo "cloudfront_distribution_id=$(echo "$TG_OUTPUTS" | jq -r '.cloudfront_distribution_id.value')" >> "$GITHUB_OUTPUT"
+          echo "website_url=$(echo "$TG_OUTPUTS" | jq -r '.website_url.value')" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy frontend
+        uses: ./.github/actions/just
+        env:
+          BUCKET_NAME: ${{ inputs.code_bucket }}
+          VERSION: ${{ inputs.frontend_version }}
+          WEBSITE_BUCKET: ${{ steps.get_frontend_outputs.outputs.website_bucket }}
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ steps.get_frontend_outputs.outputs.cloudfront_distribution_id }}
+        with:
+          justfile_path: scripts/deploy/justfile
+          just_action: frontend-deploy
+
+      - name: Write URL summary
+        shell: bash
+        env:
+          WEBSITE_URL: ${{ steps.get_frontend_outputs.outputs.website_url }}
+        run: |
+          echo "- \`url\`: \`$WEBSITE_URL\`" >> "$GITHUB_STEP_SUMMARY"

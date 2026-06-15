@@ -1,0 +1,231 @@
+name: Shared Infra Plan
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: environment reference i.e. 'prod' or 'dev'
+        required: true
+        type: string
+      infra_version:
+        description: "Version of infrastructure (terraform) to be planned"
+        required: true
+        type: string
+    outputs:
+      plan_artifact_run_id:
+        description: "Workflow run ID for the saved plan artifacts and metadata"
+        value: ${{ jobs.plan_context.outputs.plan_artifact_run_id }}
+
+concurrency:
+  group: infra-plan-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
+env:
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  AWS_OIDC_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.PROJECT_NAME }}-${{ inputs.environment }}-github-oidc-role
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  TG_ACTION_LABEL: "Plan"
+
+jobs:
+  generate_waves:
+    name: Waves
+    uses: ./.github/workflows/shared_get_modules.yml
+    with:
+      environment: ${{ inputs.environment }}
+      infra_version: ${{ inputs.infra_version }}
+      show_wave_summary: false
+
+  metadata:
+    name: Save Plan Metadata
+    needs: generate_waves
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.infra_version }}
+
+      - name: Write plan metadata from workflow inputs
+        shell: bash
+        run: |
+          cat > plan-metadata.json <<EOF
+          {
+            "infra_version": "${{ inputs.infra_version }}",
+            "waves": ${{ needs.generate_waves.outputs.waves_json }}
+          }
+          EOF
+
+      - name: Upload plan metadata artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: infra-plan-metadata
+          path: plan-metadata.json
+          retention-days: 14
+
+  wave_0:
+    needs: generate_waves
+    name: 0 / ${{ matrix.module }}
+    if: ${{ needs.generate_waves.outputs.wave_0_modules != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.generate_waves.outputs.wave_0_modules) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.infra_version }}
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ${{ env.TG_ACTION_LABEL }} ${{ matrix.module }} infra
+        id: terragrunt_plan
+        uses: ./.github/actions/terragrunt
+        with:
+          tg_directory: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
+          tg_action: plan
+
+      - name: Upload plan artifacts
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: terragrunt-plan-${{ inputs.environment }}-${{ matrix.module }}
+          path: ${{ steps.terragrunt_plan.outputs.plan_artifact_directory }}
+          if-no-files-found: warn
+
+  wave_1:
+    needs:
+      - generate_waves
+      - wave_0
+    name: 1 / ${{ matrix.module }}
+    if: ${{ always() && needs.generate_waves.outputs.wave_1_modules != '[]' && (needs.wave_0.result == 'success' || needs.wave_0.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.generate_waves.outputs.wave_1_modules) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.infra_version }}
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ${{ env.TG_ACTION_LABEL }} ${{ matrix.module }} infra
+        id: terragrunt_plan
+        uses: ./.github/actions/terragrunt
+        with:
+          tg_directory: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
+          tg_action: plan
+      - name: Upload plan artifacts
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: terragrunt-plan-${{ inputs.environment }}-${{ matrix.module }}
+          path: ${{ steps.terragrunt_plan.outputs.plan_artifact_directory }}
+          if-no-files-found: warn
+
+  plan_context:
+    name: Plan Context
+    runs-on: ubuntu-latest
+    outputs:
+      plan_artifact_run_id: ${{ steps.emit.outputs.plan_artifact_run_id }}
+    steps:
+      - name: Print plan artifact run id
+        id: emit
+        env:
+          PLAN_ARTIFACT_RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          echo "plan_artifact_run_id=$PLAN_ARTIFACT_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "plan_artifact_run_id=$PLAN_ARTIFACT_RUN_ID"
+          {
+            echo "## Infra Plan Context"
+            echo
+            echo "- \`plan_artifact_run_id\`: \`$PLAN_ARTIFACT_RUN_ID\`"
+            echo "- Saved plan artifacts are time-limited. Apply from this plan before the metadata artifact expires after 14 days."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  plan_summary:
+    name: Plan Summary
+    needs:
+      - generate_waves
+      - metadata
+      - wave_0
+      - wave_1
+    if: ${{ always() && needs.generate_waves.result == 'success' && needs.metadata.result == 'success' && (needs.wave_0.result == 'success' || needs.wave_0.result == 'skipped') && (needs.wave_1.result == 'success' || needs.wave_1.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download saved plan metadata artifacts
+        if: ${{ needs.generate_waves.outputs.waves_json != '[]' }}
+        uses: actions/download-artifact@v7
+        with:
+          pattern: terragrunt-plan-${{ inputs.environment }}-*
+          path: plan-artifacts
+
+      - name: Write detected change summary
+        shell: bash
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          WAVES_JSON: ${{ needs.generate_waves.outputs.waves_json }}
+        run: |
+          set -euo pipefail
+
+          changed_modules_json='[]'
+          if [[ -d plan-artifacts ]]; then
+            changed_modules_json="$(
+              find plan-artifacts -name terragrunt.plan.meta.json -print \
+                | sort \
+                | while IFS= read -r meta; do
+                    has_changes="$(jq -r '.has_changes // false' "$meta")"
+                    if [[ "$has_changes" == "true" ]]; then
+                      jq -r '.tg_directory | split("/") | last' "$meta"
+                    fi
+                  done \
+                | jq -Rsc 'split("\n") | map(select(length > 0)) | sort'
+            )"
+          fi
+
+          {
+            echo "## Infra Plan Summary"
+            echo
+            echo "- \`environment\`: \`$ENVIRONMENT\`"
+            echo "- \`waves\`: \`$(jq -r 'length' <<<"$WAVES_JSON")\`"
+            echo "- \`planned_modules\`: \`$(jq -r 'map(.modules | length) | add // 0' <<<"$WAVES_JSON")\`"
+            echo "- \`modules_to_apply\`: \`$(jq -r 'length' <<<"$changed_modules_json")\`"
+            echo "- Saved plan artifacts are time-limited. Apply from this plan before the metadata artifact expires after 14 days."
+            echo
+            echo "| Wave | Planned Modules |"
+            echo "| --- | --- |"
+            jq -r '
+              if length == 0 then
+                ["| none | No modules selected |"]
+              else
+                map(
+                  .wave as $wave
+                  | (.modules | map("`" + . + "`") | join(", ")) as $modules
+                  | "| \($wave) | \($modules) |"
+                )
+              end
+              | .[]
+            ' <<<"$WAVES_JSON"
+            echo
+
+            if [[ "$(jq -r 'length' <<<"$changed_modules_json")" -eq 0 ]]; then
+              echo "No modules have detected plan changes."
+            else
+              echo "Modules that will be applied by apply-from-plan:"
+              echo
+              jq -r '.[] | "- `" + . + "`"' <<<"$changed_modules_json"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

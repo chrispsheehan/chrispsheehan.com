@@ -4,6 +4,7 @@
 
 PROJECT_DIR := `cd ../.. && pwd`
 LAMBDA_DIR := `just --justfile ../../justfile --evaluate LAMBDA_DIR`
+FRONTEND_DIR := `just --justfile ../../justfile --evaluate FRONTEND_DIR`
 APPSPEC_DIR := `just --justfile ../../justfile --evaluate APPSPEC_DIR`
 
 
@@ -37,59 +38,6 @@ lambda-invoke:
         echo "❌ Lambda function failed or returned non-200 status code: $LAMBDA_STATUS_CODE"
         exit 1
     fi
-
-
-# Build a Docker image for a specific container target.
-docker-build:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    if [[ -z "$CONTAINER_NAME" ]]; then
-        echo "❌ CONTAINER_NAME environment variable is not set."
-        exit 1
-    fi
-
-    TAG="${IMAGE_URI:-$CONTAINER_NAME}"
-
-    if [[ "$CONTAINER_NAME" == "debug" ]]; then
-        docker build \
-          --file "{{PROJECT_DIR}}/Dockerfile" \
-          --target "$CONTAINER_NAME" \
-          -t "$TAG" \
-          "{{PROJECT_DIR}}"
-        exit 0
-    fi
-
-    docker build \
-      --file "{{PROJECT_DIR}}/Dockerfile" \
-      --build-arg "SERVICE=$CONTAINER_NAME" \
-      --target service \
-      -t "$TAG" \
-      "{{PROJECT_DIR}}"
-
-
-# Push a tagged Docker image to ECR.
-docker-push:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    if [[ -z "${IMAGE_URI:-}" ]]; then
-        echo "❌ IMAGE_URI environment variable is not set."
-        exit 1
-    fi
-
-    registry="${IMAGE_URI%%/*}"
-    aws_region="$(echo "$registry" | cut -d. -f4)"
-
-    if [[ -z "$aws_region" ]]; then
-        echo "❌ Could not determine AWS region from IMAGE_URI: $IMAGE_URI"
-        exit 1
-    fi
-
-    aws ecr get-login-password --region "$aws_region" \
-        | docker login --username AWS --password-stdin "$registry"
-
-    docker push "$IMAGE_URI"
 
 
 # Package a Lambda into a deployable zip artifact.
@@ -159,6 +107,73 @@ lambda-upload:
 
     aws s3 cp "$LAMBDA_ZIP" "s3://$BUCKET_NAME/lambdas/$VERSION/$lambda_artifact_name.zip" \
         --storage-class STANDARD
+
+
+# Build the frontend static assets.
+frontend-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🔄 Cleaning previous builds..."
+    rm -rf "{{PROJECT_DIR}}/{{FRONTEND_DIR}}/dist"
+    echo "📦 Building frontend..."
+    npm install --package-lock=false --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}"
+    npm run build --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}"
+
+
+# Upload the frontend build artifact zip to the shared code bucket.
+frontend-upload:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -z "$BUCKET_NAME" ]]; then
+        echo "❌ BUCKET_NAME environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "$VERSION" ]]; then
+        echo "❌ VERSION environment variable is not set."
+        exit 1
+    fi
+
+    cd "{{PROJECT_DIR}}/{{FRONTEND_DIR}}/dist"
+    zip -r "{{PROJECT_DIR}}/frontend.zip" .
+    aws s3 cp "{{PROJECT_DIR}}/frontend.zip" "s3://$BUCKET_NAME/frontend/$VERSION/frontend.zip"
+    echo "✅ Frontend uploaded to s3://$BUCKET_NAME/frontend/$VERSION/frontend.zip"
+
+
+# Sync a published frontend artifact into the live frontend origin bucket.
+frontend-deploy:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -z "$BUCKET_NAME" ]]; then
+        echo "❌ BUCKET_NAME environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "$VERSION" ]]; then
+        echo "❌ VERSION environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "$WEBSITE_BUCKET" ]]; then
+        echo "❌ WEBSITE_BUCKET environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "${CLOUDFRONT_DISTRIBUTION_ID:-}" ]]; then
+        echo "❌ CLOUDFRONT_DISTRIBUTION_ID environment variable is not set."
+        exit 1
+    fi
+
+    TMPDIR="$(mktemp -d)"
+    aws s3 cp "s3://$BUCKET_NAME/frontend/$VERSION/frontend.zip" "$TMPDIR/frontend.zip"
+    unzip -q "$TMPDIR/frontend.zip" -d "$TMPDIR/dist"
+    aws s3 sync "$TMPDIR/dist/" "s3://$WEBSITE_BUCKET/" --delete
+    aws cloudfront create-invalidation \
+        --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+        --paths "/*" >/dev/null
+    echo "✅ Frontend deployed to s3://$WEBSITE_BUCKET and CloudFront invalidation requested."
 
 
 # Read the current Lambda alias version.
@@ -364,38 +379,3 @@ lambda-prune:
         echo "Deleting $FUNCTION_NAME:$v"
         aws lambda delete-function --function-name "$FUNCTION_NAME" --qualifier "$v" --region "$AWS_REGION"
     done
-
-
-# Update an ECS service directly and wait for stability.
-ecs-rolling-deploy:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    if [[ -z "${CLUSTER_NAME:-}" ]]; then
-        echo "❌ CLUSTER_NAME environment variable is not set."
-        exit 1
-    fi
-
-    if [[ -z "${SERVICE_NAME:-}" ]]; then
-        echo "❌ SERVICE_NAME environment variable is not set."
-        exit 1
-    fi
-
-    if [[ -z "${TASK_DEFINITION_ARN:-}" ]]; then
-        echo "❌ TASK_DEFINITION_ARN environment variable is not set."
-        exit 1
-    fi
-
-    echo "🚀 Starting ECS rolling deployment for $SERVICE_NAME on $CLUSTER_NAME"
-
-    aws ecs update-service \
-        --cluster "$CLUSTER_NAME" \
-        --service "$SERVICE_NAME" \
-        --task-definition "$TASK_DEFINITION_ARN" \
-        >/dev/null
-
-    aws ecs wait services-stable \
-        --cluster "$CLUSTER_NAME" \
-        --services "$SERVICE_NAME"
-
-    echo "✅ ECS rolling deployment completed for $SERVICE_NAME"

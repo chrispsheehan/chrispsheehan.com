@@ -1,0 +1,8 @@
+{
+  "name": "chrispsheehan-com-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "rm -rf dist && mkdir -p dist && cp -R src/. dist/"
+  }
+}

@@ -1,0 +1,17 @@
+name: Prod Infra Apply (no plan)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+  actions: read
+
+jobs:
+  infra:
+    name: Apply
+    uses: ./.github/workflows/shared_infra_apply_no_plan.yml
+    with:
+      environment: prod
+      infra_version: 2.0.0

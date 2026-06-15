@@ -8,6 +8,7 @@ variable "environment" {
   type        = string
   description = "Environment reference used in naming resources i.e. 'dev'"
 }
+
 variable "aws_region" {
   type        = string
   description = "AWS region"
@@ -24,24 +25,12 @@ variable "deploy_role_arn" {
 }
 ### end of static vars set in root.hcl ###
 
+variable "hosted_zone_name" {
+  type        = string
+  description = "Existing public Route53 hosted zone name"
+}
+
 variable "domain_name" {
   type        = string
-  description = "Base hosted zone domain used to derive the deployed frontend URL"
-
-  validation {
-    condition     = length(trimspace(var.domain_name)) > 0
-    error_message = "domain_name must be specified."
-  }
-}
-
-variable "frontend_hosted_zone_name" {
-  type        = string
-  description = "Optional Route53 hosted zone name for the frontend custom domain"
-  default     = ""
-}
-
-variable "frontend_domain_name" {
-  type        = string
-  description = "Optional exact frontend domain name. Defaults to <project_name>.<environment>.<domain_name>."
-  default     = ""
+  description = "Fully qualified frontend domain name"
 }

@@ -3,6 +3,10 @@
 # Do not put AWS-mutating rollout or deploy commands here.
 
 PROJECT_DIR := `cd ../.. && pwd`
+LAMBDA_DIR := `just --justfile ../../justfile --evaluate LAMBDA_DIR`
+APPSPEC_DIR := `just --justfile ../../justfile --evaluate APPSPEC_DIR`
+FRONTEND_DIR := `just --justfile ../../justfile --evaluate FRONTEND_DIR`
+
 
 # Convert raw Terragrunt graph output from TG_GRAPH_OUTPUT into compact JSON.
 tg-graph-output-to-json environment provider='aws':
@@ -128,7 +132,7 @@ tg-graph-json-to-waves:
     ' | jq -c .
 
 
-# Filter raw Terragrunt waves to the infra plan/apply wave shape.
+# Normalize raw Terragrunt waves to the infra plan/apply wave shape.
 tg-waves-to-infra-waves:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -140,7 +144,25 @@ tg-waves-to-infra-waves:
     fi
 
     jq -c '
-      map(.modules |= map(select(startswith("task_") | not)))
+      map(select(.modules | length > 0))
+      | to_entries
+      | map({wave: .key, modules: .value.modules})
+    ' <<<"$RAW_WAVES_JSON"
+
+
+# Filter raw Terragrunt waves to the destroy wave shape.
+tg-waves-to-destroy-waves:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+
+    if [[ -z "${RAW_WAVES_JSON:-}" ]]; then
+        echo "❌ RAW_WAVES_JSON is required for tg-waves-to-destroy-waves."
+        exit 1
+    fi
+
+    jq -c '
+      map(.modules |= map(select(. != "oidc" and . != "code_bucket")))
       | map(select(.modules | length > 0))
       | to_entries
       | map({wave: .key, modules: .value.modules})
@@ -296,6 +318,96 @@ tf-lint-check:
           echo "🔍 Running tflint in $dir"
           tflint --chdir="$dir" --force
         done
+
+
+# Check that the requested Lambda artifact version exists in the code bucket.
+lambda-check-version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    FULL_BUCKET_NAME="$BUCKET_NAME/lambdas/$VERSION/"
+
+    if ! aws s3api head-bucket --bucket "$BUCKET_NAME" >/dev/null 2>&1; then
+        echo "❌ The bucket '$BUCKET_NAME' does not exist or is inaccessible."
+        exit 1
+    fi
+
+    if ! aws s3 ls "$FULL_BUCKET_NAME" >/dev/null 2>&1; then
+        echo "❌ The subpath '$VERSION' does not exist in bucket '$BUCKET_NAME'."
+        exit 1
+    fi
+
+    FILES=$(aws s3 ls $FULL_BUCKET_NAME --recursive | wc -l | xargs)
+    if [ "$FILES" -gt 0 ]; then
+        echo "✅ $FILES file(s) found in $FULL_BUCKET_NAME"
+    else
+        echo "❌ No files found under $FULL_BUCKET_NAME"
+        exit 1
+    fi
+
+
+# Check a Lambda artifact exists for the requested version.
+lambda-check-deploy-artifacts:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -z "$BUCKET_NAME" ]]; then
+        echo "❌ BUCKET_NAME environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "$VERSION" ]]; then
+        echo "❌ VERSION environment variable is not set."
+        exit 1
+    fi
+
+    artifact_name="${LAMBDA_ARTIFACT_NAME:-${LAMBDA_NAME:-}}"
+
+    if [[ -z "$artifact_name" ]]; then
+        echo "❌ LAMBDA_ARTIFACT_NAME or LAMBDA_NAME environment variable is required."
+        exit 1
+    fi
+
+    key="lambdas/$VERSION/$artifact_name.zip"
+    aws s3 ls "s3://$BUCKET_NAME/$key" >/dev/null \
+      && echo "✅ $key found" \
+      || (echo "❌ $key not found in s3://$BUCKET_NAME" && exit 1)
+
+
+# Check that the requested frontend artifact version exists in the code bucket.
+frontend-check-version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -z "$BUCKET_NAME" ]]; then
+        echo "❌ BUCKET_NAME environment variable is not set."
+        exit 1
+    fi
+
+    if [[ -z "$VERSION" ]]; then
+        echo "❌ VERSION environment variable is not set."
+        exit 1
+    fi
+
+    aws s3 ls "s3://$BUCKET_NAME/frontend/$VERSION/frontend.zip" \
+      && echo "✅ frontend.zip found at s3://$BUCKET_NAME/frontend/$VERSION/frontend.zip" \
+      || (echo "❌ frontend.zip not found at s3://$BUCKET_NAME/frontend/$VERSION/frontend.zip" && exit 1)
+
+
+# Return the Lambda artifact directory name from the repo-root justfile.
+code-bucket-get-lambda-artifact-dir:
+    @just --justfile "{{PROJECT_DIR}}/justfile" code-bucket-get-lambda-artifact-dir
+
+
+# Return the AppSpec artifact directory name from the repo-root justfile.
+code-bucket-get-appspec-artifact-dir:
+    @just --justfile "{{PROJECT_DIR}}/justfile" code-bucket-get-appspec-artifact-dir
+
+
+# Return the frontend artifact directory name from the repo-root justfile.
+code-bucket-get-frontend-artifact-dir:
+    @just --justfile "{{PROJECT_DIR}}/justfile" code-bucket-get-frontend-artifact-dir
+
 
 
 # Discover repo-local Docker-based GitHub action directories.

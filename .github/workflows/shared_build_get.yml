@@ -1,0 +1,66 @@
+name: Shared Build Get
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      frontend_version:
+        required: true
+        type: string
+    outputs:
+      code_bucket:
+        description: "Bucket containing build artifacts"
+        value: ${{ jobs.bucket.outputs.code_bucket_name }}
+      frontend_version:
+        description: "Resolved frontend version"
+        value: ${{ inputs.frontend_version }}
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  AWS_OIDC_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.PROJECT_NAME }}-${{ inputs.environment }}-github-oidc-role
+  AWS_REGION: ${{ vars.AWS_REGION }}
+
+jobs:
+  bucket:
+    name: Code Bucket
+    runs-on: ubuntu-latest
+    outputs:
+      code_bucket_name: ${{ steps.get_bucket_name.outputs.bucket }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.frontend_version }}
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get build artifact bucket
+        id: deploy_bucket
+        uses: ./.github/actions/terragrunt
+        with:
+          tg_directory: infra/live/${{ inputs.environment }}/aws/code_bucket
+          tg_action: init
+
+      - name: Get bucket name
+        id: get_bucket_name
+        env:
+          TG_OUTPUTS: ${{ steps.deploy_bucket.outputs.tg_outputs }}
+        run: |
+          echo "bucket=$(echo "$TG_OUTPUTS" | jq -r '.bucket.value')" >> "$GITHUB_OUTPUT"
+
+      - name: Check frontend artifact exists
+        uses: ./.github/actions/just
+        env:
+          BUCKET_NAME: ${{ steps.get_bucket_name.outputs.bucket }}
+          VERSION: ${{ inputs.frontend_version }}
+        with:
+          justfile_path: scripts/ci/justfile
+          just_action: frontend-check-version

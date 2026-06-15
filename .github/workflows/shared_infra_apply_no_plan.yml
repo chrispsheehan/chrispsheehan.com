@@ -1,0 +1,88 @@
+name: Shared Infra Apply No Plan
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: environment reference i.e. 'prod' or 'dev'
+        required: true
+        type: string
+      infra_version:
+        description: "Version of infrastructure (terraform) to be applied"
+        required: true
+        type: string
+
+concurrency:
+  group: infra-mutate-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
+env:
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  AWS_OIDC_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.PROJECT_NAME }}-${{ inputs.environment }}-github-oidc-role
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  TG_ACTION_LABEL: "Apply"
+
+jobs:
+  generate_waves:
+    name: Waves
+    uses: ./.github/workflows/shared_get_modules.yml
+    with:
+      environment: ${{ inputs.environment }}
+      infra_version: ${{ inputs.infra_version }}
+
+  wave_0:
+    needs: generate_waves
+    name: 0 / ${{ matrix.module }}
+    if: ${{ needs.generate_waves.outputs.wave_0_modules != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.generate_waves.outputs.wave_0_modules) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.infra_version }}
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ${{ env.TG_ACTION_LABEL }} ${{ matrix.module }} infra
+        uses: ./.github/actions/terragrunt
+        with:
+          tg_directory: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
+          tg_action: apply
+
+  wave_1:
+    needs:
+      - generate_waves
+      - wave_0
+    name: 1 / ${{ matrix.module }}
+    if: ${{ always() && needs.generate_waves.outputs.wave_1_modules != '[]' && (needs.wave_0.result == 'success' || needs.wave_0.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.generate_waves.outputs.wave_1_modules) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.infra_version }}
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ${{ env.TG_ACTION_LABEL }} ${{ matrix.module }} infra
+        uses: ./.github/actions/terragrunt
+        with:
+          tg_directory: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
+          tg_action: apply
