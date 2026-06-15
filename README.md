@@ -5,7 +5,7 @@ the local `aws-terragrunt-starter` golden path.
 
 The current runtime is intentionally small:
 
-- `frontend/` contains the static frontend source and build script.
+- `frontend/` contains the Astro frontend source and build script.
 - `infra/live/dev/aws/frontend` creates the `wip.chrispsheehan.com` S3,
   CloudFront, ACM, and Route53 resources.
 - `infra/live/*/aws/oidc` creates GitHub Actions deploy roles.
@@ -17,6 +17,7 @@ The current runtime is intentionally small:
 
 ```sh
 just --list
+just start
 just --justfile scripts/deploy/justfile frontend-build
 just tg dev aws/frontend plan
 just tg-all dev plan
@@ -24,7 +25,7 @@ just tg-all dev plan
 
 ## Frontend
 
-The frontend is plain static HTML/CSS for now.
+The frontend is an Astro static site with React components.
 
 ```sh
 just --justfile scripts/deploy/justfile frontend-build

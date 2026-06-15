@@ -17,3 +17,7 @@
 - AWS region: `eu-west-2`
 - CloudFront certificate region: `us-east-1`
 - Production placeholder domain: `chrispsheehan.com`
+- Frontend source replacement: copied from
+  `/Users/chrissheehan/git/chrispsheehan/webstack/frontend` on 2026-06-15
+  and kept as an Astro static build deployed through the existing CloudFront
+  pipeline

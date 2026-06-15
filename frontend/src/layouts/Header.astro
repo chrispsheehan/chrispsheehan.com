@@ -1,0 +1,393 @@
+---
+const { baseDomain, githubRepo } = Astro.props;
+const githubOwner = githubRepo.split("/")[0];
+---
+
+<header>
+  <nav>
+    <div class="nav-left">
+      <span class="logo">{baseDomain}</span>
+    </div>
+
+    <!-- Top-right nav buttons (desktop) -->
+    <div class="nav-links" id="nav-links">
+      <a href="#about-me" class="button hide-on-desktop">About Me</a>
+      <a href="#certifications" class="button hide-on-desktop">Certifications</a
+      >
+      <a href="#this-site" class="button hide-on-desktop">This Site</a>
+      <a
+        href={`https://github.com/${githubOwner}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="button github-text-icon-button"
+      >
+        <span>GitHub</span>
+        <img src="/assets/social/github.png" alt="GitHub" />
+      </a>
+      <a
+        href="https://www.linkedin.com/in/chrispsheehan"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="button"
+      >
+        <span>LinkedIn</span>
+        <img
+          src="/assets/social/linkedin.png"
+          alt="LinkedIn"
+          class="nav-social-icon"
+        />
+      </a>
+      <a
+        href="https://registry.terraform.io/namespaces/chrispsheehan"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="button"
+      >
+        <span>Terraform</span>
+        <img
+          src="/assets/social/terraform.png"
+          alt="Terraform"
+          class="nav-social-icon"
+        />
+      </a>
+    </div>
+
+    <!-- Mobile menu -->
+    <div class="mobile-overlay" id="mobile-overlay" aria-hidden="true">
+      <div class="mobile-menu-panel">
+        <div class="mobile-menu-header">
+          <span class="mobile-menu-title">Menu</span>
+          <button
+            class="mobile-close"
+            type="button"
+            aria-label="Close menu"
+            onclick="hideMenu()"></button>
+        </div>
+
+        <div class="mobile-menu-links">
+          <a href="#about-me" class="overlay-button" onclick="hideMenu()"
+            >About Me</a
+          >
+          <a href="#certifications" class="overlay-button" onclick="hideMenu()"
+            >Certifications</a
+          >
+          <a href="#this-site" class="overlay-button" onclick="hideMenu()"
+            >This Site</a
+          >
+        </div>
+
+        <div class="mobile-menu-social">
+          <a
+            href={`https://github.com/${githubRepo}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="overlay-icon-button"
+            onclick="hideMenu()"
+          >
+            <img src="/assets/social/github.png" alt="" aria-hidden="true" />
+            <span>GitHub</span>
+          </a>
+          <a
+            href="https://www.linkedin.com/in/chrispsheehan"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="overlay-icon-button"
+            onclick="hideMenu()"
+          >
+            <img src="/assets/social/linkedin.png" alt="" aria-hidden="true" />
+            <span>LinkedIn</span>
+          </a>
+          <a
+            href="https://registry.terraform.io/namespaces/chrispsheehan"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="overlay-icon-button"
+            onclick="hideMenu()"
+          >
+            <img src="/assets/social/terraform.png" alt="" aria-hidden="true" />
+            <span>Terraform</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Burger icon -->
+    <button
+      class="burger"
+      id="burger"
+      type="button"
+      aria-label="Toggle menu"
+      aria-controls="mobile-overlay"
+      aria-expanded="false"
+      onclick="toggleMenu()"></button>
+  </nav>
+
+  <script type="module">
+    import "/scripts/mobileMenu.js";
+  </script>
+
+  <style>
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 20px 32px;
+      background: var(--color-background-dark);
+      position: relative;
+      z-index: 100;
+    }
+
+    .nav-left .logo {
+      color: var(--color-heading);
+      font-weight: bold;
+      font-size: 1.25rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      color: var(--color-text);
+      background: var(--color-surface);
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      border: 1px solid var(--color-border-strong);
+      cursor: pointer;
+      min-height: 44px;
+      transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .button:hover {
+      background: var(--color-surface-2);
+      color: var(--color-heading);
+      transform: translateY(-1px);
+    }
+
+    .github-text-icon-button img {
+      width: 24px;
+      height: 24px;
+    }
+
+    .nav-social-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    .burger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      position: absolute;
+      right: 32px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1100;
+      font-size: 35px;
+      color: var(--color-heading);
+    }
+
+    .burger::before {
+      content: "☰";
+    }
+
+    .burger.show {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1000;
+      background: rgba(11, 25, 20, 0.8);
+      backdrop-filter: blur(4px);
+      padding: 16px;
+      box-sizing: border-box;
+      justify-content: flex-end;
+      align-items: stretch;
+    }
+
+    body.no-scroll,
+    html.no-scroll {
+      overflow: hidden !important;
+      height: 100%;
+      touch-action: none;
+      overscroll-behavior: none;
+    }
+
+    .mobile-overlay.show {
+      display: flex;
+    }
+
+    .mobile-menu-panel {
+      width: min(520px, 100%);
+      margin: 0 auto;
+      max-height: calc(100dvh - 32px);
+      overflow: auto;
+      border-radius: 1rem;
+      background: var(--color-background-dark);
+      border: 1px solid var(--color-border-strong);
+      padding: 16px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .mobile-menu-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mobile-menu-title {
+      color: var(--color-heading);
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 0.03em;
+    }
+
+    .mobile-close {
+      border: 1px solid var(--color-border-strong);
+      background: var(--color-surface);
+      color: var(--color-heading);
+      border-radius: 8px;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      font-size: 22px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mobile-close::before {
+      content: "✕";
+    }
+
+    .mobile-menu-links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .overlay-button {
+      padding: 12px 16px;
+      font-size: 1.1rem;
+      background: var(--color-surface);
+      color: var(--color-text);
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+      border: 1px solid var(--color-border-strong);
+    }
+
+    .overlay-button:hover {
+      background: var(--color-surface-2);
+      color: var(--color-heading);
+    }
+
+    .mobile-menu-social {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .overlay-icon-button {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 56px;
+      width: 100%;
+      border-radius: 8px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-strong);
+      transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+      text-decoration: none;
+      color: var(--color-text);
+      gap: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 0 12px;
+      box-sizing: border-box;
+    }
+
+    .overlay-icon-button:hover {
+      background: var(--color-surface-2);
+      transform: translateY(-1px);
+    }
+
+    .overlay-icon-button img {
+      width: 24px;
+      height: 24px;
+      display: block;
+      object-fit: contain;
+    }
+
+    @media (max-width: 1250px) and (min-width: 1001px) {
+      .nav-links {
+        gap: 8px;
+      }
+
+      .button {
+        padding: 10px 14px;
+        font-size: 0.92rem;
+      }
+    }
+
+    @media (max-width: 1000px) {
+      .burger {
+        display: block;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      nav {
+        padding: 16px;
+      }
+
+      .mobile-menu-panel {
+        padding: 14px;
+      }
+    }
+
+    @media (min-width: 1000px) {
+      .hide-on-desktop {
+        display: none !important;
+      }
+    }
+
+    .button:focus-visible,
+    .overlay-button:focus-visible,
+    .overlay-icon-button:focus-visible,
+    .burger:focus-visible,
+    .mobile-close:focus-visible {
+      outline: 2px solid var(--color-hover);
+      outline-offset: 2px;
+    }
+  </style>
+</header>

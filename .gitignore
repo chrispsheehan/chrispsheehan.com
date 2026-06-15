@@ -16,6 +16,10 @@ build/
 venv
 __pycache__
 tmp/
-data
+/data/
 *.json
 !frontend/package.json
+!frontend/package-lock.json
+!frontend/tsconfig.json
+!frontend/public/static/*.json
+!frontend/public/data/**/*.json
