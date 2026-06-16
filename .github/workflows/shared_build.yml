@@ -49,7 +49,6 @@ jobs:
         uses: ./.github/actions/terragrunt
         with:
           tg_directory: infra/live/${{ inputs.environment }}/aws/code_bucket
-          tg_action: init
 
       - name: Get bucket name
         id: get_bucket_name

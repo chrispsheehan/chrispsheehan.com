@@ -23,6 +23,8 @@ workflows, or workflow-owned `just` behavior.
 
 `shared_build.yml` builds and publishes `frontend.zip` under
 `frontend/<version>/` in the selected environment code bucket.
+The selected environment's `aws/code_bucket` stack must already have a real
+Terraform output named `bucket`; otherwise the build fails before upload.
 
 On the first release, `release.yml` has no prior tag to diff against, so release
 notes are generated from the full history up to the new tag.
