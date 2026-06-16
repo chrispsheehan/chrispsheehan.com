@@ -54,10 +54,11 @@ The Lambda artifact version is passed separately to `shared_deploy.yml`.
 `shared_get_modules.yml` renders the Terragrunt graph and exposes static wave
 outputs consumed by shared plan/apply/destroy wrappers.
 
-The current graph is sized for two static wave jobs:
+The current graph is sized for three static wave jobs:
 
 - wave 0: roots such as `oidc`
 - wave 1: dependents such as `frontend` and `code_bucket`
+- wave 2: deeper dependents such as `log_processor`
 
 If the live graph grows deeper, update these workflows together:
 

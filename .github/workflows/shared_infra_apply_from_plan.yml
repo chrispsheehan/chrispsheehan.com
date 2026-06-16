@@ -35,6 +35,7 @@ jobs:
       waves_json: ${{ steps.read_metadata.outputs.waves_json }}
       wave_0_modules: ${{ steps.read_metadata.outputs.wave_0_modules }}
       wave_1_modules: ${{ steps.read_metadata.outputs.wave_1_modules }}
+      wave_2_modules: ${{ steps.read_metadata.outputs.wave_2_modules }}
     steps:
       - uses: actions/checkout@v6
 
@@ -94,6 +95,7 @@ jobs:
           echo "waves_json=$filtered_waves_json" >> "$GITHUB_OUTPUT"
           echo "wave_0_modules=$(jq -c '.[0].modules // []' <<<"$filtered_waves_json")" >> "$GITHUB_OUTPUT"
           echo "wave_1_modules=$(jq -c '.[1].modules // []' <<<"$filtered_waves_json")" >> "$GITHUB_OUTPUT"
+          echo "wave_2_modules=$(jq -c '.[2].modules // []' <<<"$filtered_waves_json")" >> "$GITHUB_OUTPUT"
 
       - name: Print filtered apply waves and write summary
         shell: bash
@@ -104,6 +106,7 @@ jobs:
           WAVES_JSON: ${{ steps.read_metadata.outputs.waves_json }}
           WAVE_0_MODULES: ${{ steps.read_metadata.outputs.wave_0_modules }}
           WAVE_1_MODULES: ${{ steps.read_metadata.outputs.wave_1_modules }}
+          WAVE_2_MODULES: ${{ steps.read_metadata.outputs.wave_2_modules }}
         run: |
           set -euo pipefail
 
@@ -111,6 +114,7 @@ jobs:
           printf '%s\n' "$WAVES_JSON" | jq .
           echo "wave_0_modules=$WAVE_0_MODULES"
           echo "wave_1_modules=$WAVE_1_MODULES"
+          echo "wave_2_modules=$WAVE_2_MODULES"
 
           {
             echo "## Apply From Plan Summary"
@@ -192,6 +196,50 @@ jobs:
       fail-fast: false
       matrix:
         module: ${{ fromJson(needs.metadata.outputs.wave_1_modules) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.metadata.outputs.infra_version }}
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download saved plan artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: terragrunt-plan-${{ inputs.environment }}-${{ matrix.module }}
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.plan_artifact_run_id }}
+          path: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
+
+      - name: Print saved plan files
+        shell: bash
+        run: |
+          module_dir="infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}"
+          echo "=== downloaded saved plan files ==="
+          ls -la "$module_dir"
+          echo "=== saved plan metadata ==="
+          cat "$module_dir/terragrunt.plan.meta.json"
+
+      - name: Apply ${{ matrix.module }} infra from saved plan
+        uses: ./.github/actions/terragrunt
+        with:
+          tg_directory: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
+          tg_action: apply_plan
+
+  wave_2:
+    needs:
+      - metadata
+      - wave_1
+    name: 2 / ${{ matrix.module }}
+    if: ${{ always() && needs.metadata.outputs.wave_2_modules != '[]' && (needs.wave_1.result == 'success' || needs.wave_1.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.metadata.outputs.wave_2_modules) }}
     steps:
       - uses: actions/checkout@v6
         with:
