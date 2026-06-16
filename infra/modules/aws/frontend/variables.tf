@@ -30,7 +30,7 @@ variable "hosted_zone_name" {
   description = "Existing public Route53 hosted zone name"
 }
 
-variable "domain_name" {
+variable "domain_prefix" {
   type        = string
-  description = "Fully qualified frontend domain name"
+  description = "Frontend DNS label prefix inside hosted_zone_name"
 }

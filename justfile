@@ -18,8 +18,7 @@ start host='127.0.0.1' port='4321':
     #!/usr/bin/env bash
     set -euo pipefail
     npm ci --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}"
-    PUBLIC_BASE_DOMAIN="${PUBLIC_BASE_DOMAIN:-wip.chrispsheehan.com}" \
-      npm run astro --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}" -- dev --host "{{host}}" --port "{{port}}"
+    npm run astro --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}" -- dev --host "{{host}}" --port "{{port}}"
 
 
 # Return the Lambda artifact directory name.

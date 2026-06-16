@@ -5,9 +5,11 @@ import ThisSite from "../layouts/ThisSite.astro";
 import AboutMe from "../layouts/AboutMe.astro";
 import Certifications from "../layouts/Certifications.astro";
 
-const baseDomain = import.meta.env.PUBLIC_BASE_DOMAIN ?? "chrispsheehan.com";
+const baseDomain = import.meta.env.DEV
+  ? "local.chrispsheehan.com"
+  : "chrispsheehan.com";
 const githubRepo =
-  import.meta.env.GITHUB_REPOSITORY ?? "chrispsheehan/webstack";
+  import.meta.env.GITHUB_REPOSITORY ?? "chrispsheehan/chrispsheehan.com";
 ---
 
 <!doctype html>

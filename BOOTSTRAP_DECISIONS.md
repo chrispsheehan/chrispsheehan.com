@@ -12,11 +12,11 @@
   CodeDeploy AppSpec template retained for later Lambda stacks
 - Removed starter capabilities: ECS cluster/service/task modules, container
   sample app, ECR, sample migrations Lambda stack
-- Primary dev domain: `wip.chrispsheehan.com`
+- Primary dev domain: `wip.dev.chrispsheehan.com`
 - Hosted zone: existing public `chrispsheehan.com` Route53 zone
 - AWS region: `eu-west-2`
 - CloudFront certificate region: `us-east-1`
-- Production placeholder domain: `chrispsheehan.com`
+- Production domain: `wip.chrispsheehan.com`
 - Frontend source replacement: copied from
   `/Users/chrissheehan/git/chrispsheehan/webstack/frontend` on 2026-06-15
   and kept as an Astro static build deployed through the existing CloudFront

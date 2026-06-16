@@ -77,7 +77,6 @@ jobs:
         env:
           BUCKET_NAME: ${{ needs.bucket.outputs.code_bucket_name }}
           VERSION: ${{ inputs.frontend_version }}
-          PUBLIC_BASE_DOMAIN: ${{ inputs.environment == 'dev' && 'wip.chrispsheehan.com' || 'chrispsheehan.com' }}
         with:
           justfile_path: scripts/deploy/justfile
           just_action: frontend-build frontend-upload

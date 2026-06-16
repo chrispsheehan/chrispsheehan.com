@@ -10,9 +10,8 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 | `dev` | `oidc`, `code_bucket`, `frontend` |
 | `prod` | `oidc`, `frontend` |
 
-`dev` owns `wip.chrispsheehan.com`. `prod` is scaffolded with
-`chrispsheehan.com` in `infra/live/prod/environment_vars.hcl`; change that
-before applying prod if needed.
+`dev` owns `wip.dev.chrispsheehan.com`. `prod` owns
+`wip.chrispsheehan.com`.
 
 ## Frontend Module
 
