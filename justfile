@@ -13,6 +13,14 @@ FRONTEND_DIR := "frontend"
 APPSPEC_DIR := "appspec"
 
 
+# Start the frontend dev server.
+start host='127.0.0.1' port='4321':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    npm ci --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}"
+    npm run astro --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}" -- dev --host "{{host}}" --port "{{port}}"
+
+
 # Return the Lambda artifact directory name.
 code-bucket-get-lambda-artifact-dir:
     @echo {{LAMBDA_DIR}}

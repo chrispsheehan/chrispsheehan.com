@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from get_changes import classify_paths, diff_range, resolve_compare_ref, resolve_workspace
 
@@ -65,7 +66,8 @@ class GetChangesTests(unittest.TestCase):
             old_cwd = Path.cwd()
             try:
                 os.chdir(repo)
-                compare_ref, warning = resolve_compare_ref("", "main")
+                with patch.dict(os.environ, {"GITHUB_WORKSPACE": str(repo)}):
+                    compare_ref, warning = resolve_compare_ref("", "main")
             finally:
                 os.chdir(old_cwd)
             self.assertEqual(compare_ref, "main")
@@ -100,6 +102,8 @@ class GetChangesTests(unittest.TestCase):
             (target / "example.yml").write_text("name: Example\n", encoding="utf-8")
             git(repo, "add", ".")
 
+            env = os.environ.copy()
+            env["GITHUB_WORKSPACE"] = str(repo)
             result = subprocess.run(
                 [
                     "python3",
@@ -113,6 +117,7 @@ class GetChangesTests(unittest.TestCase):
                 check=True,
                 text=True,
                 capture_output=True,
+                env=env,
             )
             payload = json.loads(result.stdout)
             self.assertEqual(payload["baseRef"], base_sha)

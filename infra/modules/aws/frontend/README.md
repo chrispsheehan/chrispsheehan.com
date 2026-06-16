@@ -15,7 +15,8 @@ CloudFront frontend module for a static site.
 ## Requirements
 
 - `hosted_zone_name` must reference an existing public Route53 hosted zone.
-- `domain_name` must be inside that hosted zone.
+- `domain_prefix` is appended to `hosted_zone_name` to produce the full
+  frontend domain.
 - The caller must pass a `domain_aws_region` AWS provider alias in `us-east-1`
   for the CloudFront ACM certificate.
 

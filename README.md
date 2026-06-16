@@ -1,12 +1,15 @@
 # chrispsheehan.com
 
-CloudFront-backed static frontend for `wip.chrispsheehan.com`, scaffolded from
-the local `aws-terragrunt-starter` golden path.
+CloudFront-backed static frontend for `wip.dev.chrispsheehan.com` and
+`wip.chrispsheehan.com`, scaffolded from the local `aws-terragrunt-starter`
+golden path.
 
 The current runtime is intentionally small:
 
-- `frontend/` contains the static frontend source and build script.
-- `infra/live/dev/aws/frontend` creates the `wip.chrispsheehan.com` S3,
+- `frontend/` contains the Astro frontend source and build script.
+- `infra/live/dev/aws/frontend` creates the `wip.dev.chrispsheehan.com` S3,
+  CloudFront, ACM, and Route53 resources.
+- `infra/live/prod/aws/frontend` creates the `wip.chrispsheehan.com` S3,
   CloudFront, ACM, and Route53 resources.
 - `infra/live/*/aws/oidc` creates GitHub Actions deploy roles.
 - `infra/live/ci/aws/code_bucket` and `infra/live/dev/aws/code_bucket` store
@@ -17,6 +20,7 @@ The current runtime is intentionally small:
 
 ```sh
 just --list
+just start
 just --justfile scripts/deploy/justfile frontend-build
 just tg dev aws/frontend plan
 just tg-all dev plan
@@ -24,7 +28,7 @@ just tg-all dev plan
 
 ## Frontend
 
-The frontend is plain static HTML/CSS for now.
+The frontend is an Astro static site with React components.
 
 ```sh
 just --justfile scripts/deploy/justfile frontend-build
@@ -39,7 +43,7 @@ The AWS account must already contain:
 - the GitHub OIDC provider for `https://token.actions.githubusercontent.com`
 - the public Route53 hosted zone `chrispsheehan.com`
 - an S3 backend bucket named from `infra/root.hcl`:
-  `<AWS_ACCOUNT_ID>-<AWS_REGION>-chrispsheehan.com-tfstate`
+  `<AWS_ACCOUNT_ID>-<AWS_REGION>-chrispsheehan-com-tfstate`
 
 ## Initial OIDC Bootstrap
 
@@ -75,15 +79,14 @@ Workflows assume roles named:
 ## Deploy Shape
 
 Development deploys build the current commit and roll it to
-`wip.chrispsheehan.com`:
+`wip.dev.chrispsheehan.com`:
 
 1. `Dev Infra Plan` / `Dev Infra Apply No Plan` creates or updates infra.
 2. `Dev Code Deploy` builds `frontend.zip`, uploads it to the dev code bucket,
    syncs it to the frontend S3 origin bucket, and invalidates CloudFront.
 
-Production infra is scaffolded, but `prod` defaults to `chrispsheehan.com`.
-Change `infra/live/prod/environment_vars.hcl` before applying prod if that is
-not the desired production domain.
+Production deploys roll a selected frontend artifact to
+`wip.chrispsheehan.com`.
 
 ## Docs
 

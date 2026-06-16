@@ -2,59 +2,302 @@ name: Pull Request
 
 on:
   pull_request:
+    types:
+      [
+        opened,
+        reopened,
+        synchronize,
+        review_requested,
+        ready_for_review,
+        edited,
+      ]
   workflow_dispatch:
-
-permissions:
-  contents: read
+    inputs:
+      pr_title:
+        description: "PR title to validate and use for version preview when running manually"
+        required: false
+        type: string
+        default: "fix: manual workflow dispatch"
 
 jobs:
-  check:
-    name: Check
+  check-pr-title:
+    name: PR Title
+    runs-on: ubuntu-latest
+    env:
+      PR_TITLE: ${{ github.event.pull_request.title || inputs.pr_title }}
+      ALLOWED_PREFIXES: "feat: feat!: fix: fix!: chore: docs:"
+    steps:
+      - name: Fail if PR title does not start with an allowed prefix
+        run: |
+          echo "PR title: $PR_TITLE"
+          for prefix in $ALLOWED_PREFIXES; do
+            if [[ "$PR_TITLE" == "$prefix"* ]]; then
+              echo "✅ PR title is valid."
+              exit 0
+            fi
+          done
+          echo "::error::❌ PR title must start with one of: $ALLOWED_PREFIXES"
+          exit 1
+
+  check-agent-guidance-sync:
+    name: Agent Docs Sync
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install just
-        uses: ./.github/actions/just
-        with:
-          just_action: --list
+      - name: Fail if AGENTS.md and CLAUDE.md differ
+        run: |
+          if ! cmp -s AGENTS.md CLAUDE.md; then
+            echo "::error::❌ AGENTS.md and CLAUDE.md must be identical."
+            diff -u AGENTS.md CLAUDE.md || true
+            exit 1
+          fi
+          echo "✅ AGENTS.md and CLAUDE.md are identical."
 
-      - name: Check agent wrappers match
+  check:
+    name: Changes
+    needs:
+      - check-pr-title
+      - check-agent-guidance-sync
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
+    outputs:
+      actions: ${{ steps.force_all.outputs.actions || steps.filter.outputs.actions }}
+      terraform: ${{ steps.force_all.outputs.terraform || steps.filter.outputs.terraform }}
+      terragrunt: ${{ steps.force_all.outputs.terragrunt || steps.filter.outputs.terragrunt }}
+      github: ${{ steps.force_all.outputs.github || steps.filter.outputs.github }}
+      lambdas: ${{ steps.force_all.outputs.lambdas || steps.filter.outputs.lambdas }}
+      frontend: ${{ steps.force_all.outputs.frontend || steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Force all change flags for manual dispatch
+        id: force_all
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         shell: bash
         run: |
-          cmp AGENTS.md CLAUDE.md
+          echo "actions=true" >> "$GITHUB_OUTPUT"
+          echo "terraform=true" >> "$GITHUB_OUTPUT"
+          echo "terragrunt=true" >> "$GITHUB_OUTPUT"
+          echo "github=true" >> "$GITHUB_OUTPUT"
+          echo "lambdas=true" >> "$GITHUB_OUTPUT"
+          echo "frontend=true" >> "$GITHUB_OUTPUT"
+
+      - name: Detect changed files
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        id: filter
+        uses: ./.github/actions/get-changes
+        with:
+          ref: ${{ github.sha }}
+          base_ref: ${{ github.event.pull_request.base.sha || github.sha }}
+
+      - shell: bash
+        run: echo "actions changes - ${{ steps.force_all.outputs.actions || steps.filter.outputs.actions }}"
+
+      - shell: bash
+        run: echo "terraform changes - ${{ steps.force_all.outputs.terraform || steps.filter.outputs.terraform }}"
+
+      - shell: bash
+        run: echo "terragrunt changes - ${{ steps.force_all.outputs.terragrunt || steps.filter.outputs.terragrunt }}"
+
+      - shell: bash
+        run: echo "github changes - ${{ steps.force_all.outputs.github || steps.filter.outputs.github }}"
+
+      - shell: bash
+        run: echo "lambdas changes - ${{ steps.force_all.outputs.lambdas || steps.filter.outputs.lambdas }}"
+
+      - shell: bash
+        run: echo "frontend changes - ${{ steps.force_all.outputs.frontend || steps.filter.outputs.frontend }}"
+
+  test-next-version-action:
+    name: Next Version Action
+    needs:
+      - check-pr-title
+      - check-agent-guidance-sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Execute get-release-version action
+        id: get_next_version
+        uses: chrispsheehan/get-release-version@v1
+        with:
+          subjects: ${{ github.event.pull_request.title || inputs.pr_title }}
+
+      - name: Show action outputs
+        run: |
+          echo "currentVersion=${{ steps.get_next_version.outputs.currentVersion }}"
+          echo "version=${{ steps.get_next_version.outputs.version }}"
+          echo "createNewTag=${{ steps.get_next_version.outputs.createNewTag }}"
+          echo "createNewRelease=${{ steps.get_next_version.outputs.createNewRelease }}"
+          echo "bump=${{ steps.get_next_version.outputs.bump }}"
+
+  format-github:
+    needs: check
+    runs-on: ubuntu-latest
+    if: ${{ needs.check.outputs.github == 'true' }}
+    name: GH Fmt
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v6
+      - uses: raven-actions/actionlint@v2
+        with:
+          shellcheck: false
+          pyflakes: false
+
+  setup:
+    name: Discover
+    needs:
+      - check
+      - format-github
+    if: ${{ always() && needs.check.result == 'success' && needs.check.outputs.actions == 'true' && (needs.format-github.result == 'success' || needs.format-github.result == 'skipped') }}
+    uses: ./.github/workflows/shared_directories_get.yml
+
+  action-docker-unit-tests:
+    name: GH Action Docker Unit Tests
+    needs:
+      - check
+      - format-github
+      - setup
+    if: ${{ always() && needs.check.result == 'success' && needs.check.outputs.actions == 'true' && (needs.format-github.result == 'success' || needs.format-github.result == 'skipped') && needs.setup.result == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        value: ${{ fromJson(needs.setup.outputs.action_dirs) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run Docker unit test
+        uses: ./.github/actions/just
+        with:
+          justfile_path: .github/actions/${{ matrix.value }}/justfile
+          just_action: docker-unit-test
+
+  format-terragrunt:
+    needs: check
+    runs-on: ubuntu-latest
+    if: ${{ needs.check.outputs.terraform == 'true' || needs.check.outputs.terragrunt == 'true' }}
+    name: TG Fmt
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hashicorp/setup-terraform@v4
+      - uses: jdx/mise-action@v4
+        with:
+          tool_versions: |
+            terragrunt 0.72.6
+          github_token: ${{ github.token }}
+
+      - name: Verify Terragrunt installation
+        run: terragrunt --version
+
+      - name: Terraform fmt check
+        run: terraform fmt -check -recursive
+        working-directory: infra
+
+      - name: Terragrunt hclfmt check
+        run: terragrunt hclfmt --check
+        working-directory: infra
+
+  validate-tg-waves:
+    needs:
+      - check
+      - format-github
+      - format-terragrunt
+    runs-on: ubuntu-latest
+    if: ${{ always() && needs.check.result == 'success' && (needs.check.outputs.github == 'true' || needs.check.outputs.terraform == 'true' || needs.check.outputs.terragrunt == 'true') && (needs.format-github.result == 'success' || needs.format-github.result == 'skipped') && (needs.format-terragrunt.result == 'success' || needs.format-terragrunt.result == 'skipped') }}
+    name: TG Waves
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    env:
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: hashicorp/setup-terraform@v4
+
+      - uses: jdx/mise-action@v4
+        with:
+          tool_versions: |
+            terragrunt 0.72.6
+          github_token: ${{ github.token }}
+
+      - name: Build dev Terragrunt waves
+        id: waves
+        uses: ./.github/actions/just
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          just_action: tg-graph-waves dev
+
+      - name: Build infra wave JSON
+        id: infra_waves
+        uses: ./.github/actions/just
+        env:
+          RAW_WAVES_JSON: ${{ steps.waves.outputs.just_outputs }}
+        with:
+          justfile_path: scripts/ci/justfile
+          just_action: tg-waves-to-infra-waves
+
+      - name: Build destroy wave JSON
+        id: destroy_waves
+        uses: ./.github/actions/just
+        env:
+          RAW_WAVES_JSON: ${{ steps.waves.outputs.just_outputs }}
+        with:
+          justfile_path: scripts/ci/justfile
+          just_action: tg-waves-to-destroy-waves
+
+      - name: Validate static wave jobs
+        uses: ./.github/actions/just
+        env:
+          RAW_WAVES_JSON: ${{ steps.waves.outputs.just_outputs }}
+          INFRA_WAVES_JSON: ${{ steps.infra_waves.outputs.just_outputs }}
+          DESTROY_WAVES_JSON: ${{ steps.destroy_waves.outputs.just_outputs }}
+        with:
+          justfile_path: scripts/ci/justfile
+          just_action: tg-validate-static-wave-jobs
+
+  lint-terraform:
+    needs: check
+    runs-on: ubuntu-latest
+    if: ${{ needs.check.outputs.terraform == 'true' }}
+    name: TF Lint
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v6
+      - uses: terraform-linters/setup-tflint@v6
+
+      - name: Init TFLint
+        run: tflint --init
+
+      - name: "Run terraform lint checks"
+        uses: ./.github/actions/just
+        with:
+          justfile_path: scripts/ci/justfile
+          just_action: tf-lint-check
+
+  build-frontend:
+    name: Frontend
+    if: ${{ needs.check.outputs.frontend == 'true' }}
+    needs:
+      - check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
 
       - name: Build frontend
         uses: ./.github/actions/just
         with:
           justfile_path: scripts/deploy/justfile
           just_action: frontend-build
-
-      - name: Test get-changes action
-        shell: bash
-        working-directory: .github/actions/get-changes
-        run: |
-          python -m unittest test_get_changes.py
-
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: 1.13.3
-          terraform_wrapper: false
-
-      - name: Install Terragrunt
-        uses: jdx/mise-action@v4
-        with:
-          tool_versions: |
-            terragrunt 0.72.6
-          github_token: ${{ github.token }}
-
-      - name: Check Terraform formatting
-        shell: bash
-        run: |
-          terraform fmt -check -recursive
-
-      - name: Check Terragrunt formatting
-        shell: bash
-        run: |
-          terragrunt hclfmt --check

@@ -116,7 +116,7 @@ frontend-build:
     echo "🔄 Cleaning previous builds..."
     rm -rf "{{PROJECT_DIR}}/{{FRONTEND_DIR}}/dist"
     echo "📦 Building frontend..."
-    npm install --package-lock=false --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}"
+    npm ci --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}"
     npm run build --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}"
 
 
