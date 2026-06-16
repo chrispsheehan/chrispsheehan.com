@@ -14,7 +14,8 @@ The current runtime is intentionally small:
 - `infra/live/*/aws/oidc` creates GitHub Actions deploy roles.
 - `infra/live/ci/aws/code_bucket` and `infra/live/dev/aws/code_bucket` store
   deployable frontend artifacts and future Lambda artifacts.
-- `lambdas/` contains the contract for adding Lambda source later.
+- `lambdas/` contains Lambda source and the packaging contract for future
+  functions. `lambdas/log_processor` is the first packaged example.
 
 ## Useful Commands
 

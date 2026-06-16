@@ -301,3 +301,21 @@ jobs:
         with:
           justfile_path: scripts/deploy/justfile
           just_action: frontend-build
+
+  build-log-processor:
+    name: Log Processor
+    if: ${{ needs.check.outputs.lambdas == 'true' }}
+    needs:
+      - check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build log processor
+        uses: ./.github/actions/just
+        env:
+          LAMBDA_SOURCE_DIR: lambdas/log_processor
+          LAMBDA_ARTIFACT_NAME: log_processor
+        with:
+          justfile_path: scripts/deploy/justfile
+          just_action: lambda-build

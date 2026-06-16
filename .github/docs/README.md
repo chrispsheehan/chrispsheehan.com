@@ -7,7 +7,7 @@ workflows, or workflow-owned `just` behavior.
 
 | Workflow | Purpose |
 | --- | --- |
-| `pull_request.yml` | Runs change-filtered PR validation for title/version preview, wrapper sync, workflow linting, repo-local action tests, Terraform/Terragrunt formatting, Terragrunt wave shape, TFLint, and frontend builds. |
+| `pull_request.yml` | Runs change-filtered PR validation for title/version preview, wrapper sync, workflow linting, repo-local action tests, Terraform/Terragrunt formatting, Terragrunt wave shape, TFLint, frontend builds, and lambda builds. |
 | `release.yml` | Tags versioned releases from `main`, publishes the frontend artifact to the CI code bucket, and creates GitHub releases. |
 | `dev_infra_plan.yml` | Plans the ordered dev infra graph. |
 | `dev_infra_apply_no_plan.yml` | Applies dev infrastructure using the current commit as the infra ref. |
@@ -22,7 +22,8 @@ workflows, or workflow-owned `just` behavior.
 ## Build And Deploy
 
 `shared_build.yml` builds and publishes `frontend.zip` under
-`frontend/<version>/` in the selected environment code bucket.
+`frontend/<version>/` and `log_processor.zip` under `lambdas/<version>/` in
+the selected environment code bucket.
 The selected environment's `aws/code_bucket` stack must already have a real
 Terraform output named `bucket`; otherwise the build fails before upload.
 

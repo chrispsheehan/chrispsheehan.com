@@ -85,3 +85,26 @@ jobs:
         with:
           justfile_path: scripts/deploy/justfile
           just_action: frontend-build frontend-upload
+
+  log-processor:
+    name: Log Processor
+    needs: bucket
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build and upload log processor
+        uses: ./.github/actions/just
+        env:
+          BUCKET_NAME: ${{ needs.bucket.outputs.code_bucket_name }}
+          VERSION: ${{ inputs.frontend_version }}
+          LAMBDA_SOURCE_DIR: lambdas/log_processor
+          LAMBDA_ARTIFACT_NAME: log_processor
+        with:
+          justfile_path: scripts/deploy/justfile
+          just_action: lambda-build lambda-upload

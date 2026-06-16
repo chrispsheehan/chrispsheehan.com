@@ -1,6 +1,7 @@
 # Lambdas
 
-No Lambda runtime is deployed yet.
+No Lambda runtime is deployed yet, but `log_processor` is the first packaged
+example.
 
 This directory is kept as the future Lambda source root so Lambda code can be
 added without reworking artifact conventions.
@@ -15,6 +16,9 @@ lambdas/
     lambda_handler.py
     requirements.txt
 ```
+
+The current example lives at `lambdas/log_processor` and is built into
+`lambdas/log_processor.zip` by the shared CI workflow.
 
 The deploy helper can package and upload a Lambda artifact:
 
