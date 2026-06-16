@@ -1,5 +1,5 @@
 name: Dev Code Deploy
-# This deploys frontend code changes to dev without touching infra.
+# This deploys frontend and lambda code changes to dev without touching infra.
 
 on:
   workflow_dispatch:
@@ -15,6 +15,7 @@ jobs:
     with:
       environment: dev
       frontend_version: ${{ github.sha }}
+      lambda_version: ${{ github.sha }}
 
   deploy:
     name: Deploy
@@ -24,4 +25,5 @@ jobs:
     with:
       environment: dev
       frontend_version: ${{ needs.build.outputs.frontend_version }}
+      lambda_version: ${{ needs.build.outputs.lambda_version }}
       code_bucket: ${{ needs.build.outputs.code_bucket }}

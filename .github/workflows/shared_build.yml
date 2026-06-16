@@ -9,6 +9,9 @@ on:
       frontend_version:
         required: true
         type: string
+      lambda_version:
+        required: true
+        type: string
     outputs:
       code_bucket:
         description: "Bucket containing build artifacts"
@@ -16,6 +19,9 @@ on:
       frontend_version:
         description: "Resolved frontend version"
         value: ${{ inputs.frontend_version }}
+      lambda_version:
+        description: "Resolved lambda version"
+        value: ${{ inputs.lambda_version }}
 
 concurrency:
   group: build-${{ inputs.environment }}
@@ -102,7 +108,7 @@ jobs:
         uses: ./.github/actions/just
         env:
           BUCKET_NAME: ${{ needs.bucket.outputs.code_bucket_name }}
-          VERSION: ${{ inputs.frontend_version }}
+          VERSION: ${{ inputs.lambda_version }}
           LAMBDA_SOURCE_DIR: lambdas/log_processor
           LAMBDA_ARTIFACT_NAME: log_processor
         with:

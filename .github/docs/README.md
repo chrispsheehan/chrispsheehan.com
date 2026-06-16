@@ -8,15 +8,15 @@ workflows, or workflow-owned `just` behavior.
 | Workflow | Purpose |
 | --- | --- |
 | `pull_request.yml` | Runs change-filtered PR validation for title/version preview, wrapper sync, workflow linting, repo-local action tests, Terraform/Terragrunt formatting, Terragrunt wave shape, TFLint, frontend builds, and lambda builds. |
-| `release.yml` | Tags versioned releases from `main`, publishes the frontend artifact to the CI code bucket, and creates GitHub releases. |
+| `release.yml` | Tags versioned releases from `main`, publishes frontend and lambda artifacts to the CI code bucket, and creates GitHub releases. |
 | `dev_infra_plan.yml` | Plans the ordered dev infra graph. |
 | `dev_infra_apply_no_plan.yml` | Applies dev infrastructure using the current commit as the infra ref. |
 | `dev_infra_apply_from_plan.yml` | Applies dev infra from a prior saved-plan run using `plan_artifact_run_id`. |
-| `dev_code_deploy.yml` | Builds fresh frontend artifacts and deploys to dev. |
+| `dev_code_deploy.yml` | Builds fresh frontend and lambda artifacts and deploys to dev. |
 | `prod_infra_plan.yml` | Plans the ordered prod infra graph for the requested infra ref. |
 | `prod_infra_apply_no_plan.yml` | Applies prod infrastructure using the pinned infra ref. |
 | `prod_infra_apply_from_plan.yml` | Applies prod infra from a prior saved-plan run. |
-| `prod_code_deploy.yml` | Deploys an existing frontend artifact to prod. |
+| `prod_code_deploy.yml` | Deploys existing frontend and lambda artifacts to prod. |
 | `destroy.yml` | Tears down non-shared infrastructure through the Terragrunt graph in reverse wave order. |
 
 ## Build And Deploy
@@ -32,15 +32,22 @@ notes are generated from the full history up to the new tag.
 
 `shared_build_get.yml` resolves an existing frontend artifact from the selected
 environment code bucket. Prod deploys use `environment: ci` so production
-promotes artifacts already present in the shared CI artifact bucket.
+promotes frontend artifacts already present in the shared CI artifact bucket.
+The Lambda artifact version is passed separately to `shared_deploy.yml`.
 
-`shared_deploy.yml` rolls out frontend code:
+`shared_deploy.yml` rolls out frontend code and the `log_processor` Lambda:
 
 - reads `bucket_name`, `cloudfront_distribution_id`, and `website_url` from
   `infra/live/<environment>/aws/frontend`
 - downloads the requested `frontend.zip`
 - syncs the build to the private S3 origin bucket
 - creates a CloudFront invalidation
+- reads `lambda_function_name` and `lambda_alias_name` from
+  `infra/live/<environment>/aws/log_processor`
+- publishes `lambdas/<version>/log_processor.zip`
+- renders and uploads the AppSpec bundle
+- starts the CodeDeploy deployment and prunes old versions
+- invokes the deployed Lambda once after the rollout completes
 
 ## Infra Waves
 

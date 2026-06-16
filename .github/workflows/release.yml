@@ -117,6 +117,7 @@ jobs:
     with:
       environment: ci
       frontend_version: ${{ needs.get-next-tag.outputs.tag }}
+      lambda_version: ${{ needs.get-next-tag.outputs.tag }}
 
   release:
     name: Publish

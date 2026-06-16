@@ -83,11 +83,13 @@ Development deploys build the current commit and roll it to
 `wip.dev.chrispsheehan.com`:
 
 1. `Dev Infra Plan` / `Dev Infra Apply No Plan` creates or updates infra.
-2. `Dev Code Deploy` builds `frontend.zip`, uploads it to the dev code bucket,
-   syncs it to the frontend S3 origin bucket, and invalidates CloudFront.
+2. `Dev Code Deploy` builds `frontend.zip` and `log_processor.zip`, uploads
+   them to the dev code bucket, syncs the frontend artifact to the S3 origin
+   bucket, rolls the Lambda through CodeDeploy, and invokes it once.
 
 Production deploys roll a selected frontend artifact to
-`wip.chrispsheehan.com`.
+`wip.chrispsheehan.com` and deploy the selected `log_processor` Lambda
+artifact.
 
 ## Docs
 
