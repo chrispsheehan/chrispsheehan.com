@@ -43,7 +43,7 @@ The AWS account must already contain:
 - the GitHub OIDC provider for `https://token.actions.githubusercontent.com`
 - the public Route53 hosted zone `chrispsheehan.com`
 - an S3 backend bucket named from `infra/root.hcl`:
-  `<AWS_ACCOUNT_ID>-<AWS_REGION>-chrispsheehan.com-tfstate`
+  `<AWS_ACCOUNT_ID>-<AWS_REGION>-chrispsheehan-com-tfstate`
 
 ## Initial OIDC Bootstrap
 

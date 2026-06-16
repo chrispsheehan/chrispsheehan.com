@@ -1,6 +1,6 @@
 locals {
   git_remote                   = run_cmd("--terragrunt-quiet", "git", "remote", "get-url", "origin")
-  github_repo                  = regex("[/:]([-0-9_A-Za-z]*/[-0-9_A-Za-z]*)[^/]*$", local.git_remote)[0]
+  github_repo                  = trimsuffix(regex("[:/]([^/:]+/[^/]+)$", local.git_remote)[0], ".git")
   repo_owner                   = split("/", local.github_repo)[0]
   aws_account_id               = get_env("AWS_ACCOUNT_ID")
   allowed_read_aws_account_ids = [local.aws_account_id]
@@ -14,9 +14,10 @@ locals {
   environment_vars = read_terragrunt_config(find_in_parent_folders("environment_vars.hcl"))
 
   project_name = element(split("/", local.github_repo), 1)
+  project_slug = replace(local.project_name, ".", "-")
 
   aws_region       = local.global_vars.inputs.aws_region
-  base_reference   = "${local.aws_account_id}-${local.aws_region}-${local.project_name}"
+  base_reference   = "${local.aws_account_id}-${local.aws_region}-${local.project_slug}"
   deploy_role_name = "${local.project_name}-${local.environment}-github-oidc-role"
   deploy_role_arn  = "arn:aws:iam::${local.aws_account_id}:role/${local.deploy_role_name}"
   state_bucket     = "${local.base_reference}-tfstate"
