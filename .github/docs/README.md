@@ -24,6 +24,9 @@ workflows, or workflow-owned `just` behavior.
 `shared_build.yml` builds and publishes `frontend.zip` under
 `frontend/<version>/` in the selected environment code bucket.
 
+On the first release, `release.yml` has no prior tag to diff against, so release
+notes are generated from the full history up to the new tag.
+
 `shared_build_get.yml` resolves an existing frontend artifact from the selected
 environment code bucket. Prod deploys use `environment: ci` so production
 promotes artifacts already present in the shared CI artifact bucket.
