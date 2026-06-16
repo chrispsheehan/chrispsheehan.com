@@ -7,7 +7,7 @@ workflows, or workflow-owned `just` behavior.
 
 | Workflow | Purpose |
 | --- | --- |
-| `pull_request.yml` | Runs local validation for wrappers, frontend build, repo-local action tests, Terraform formatting, and Terragrunt formatting. |
+| `pull_request.yml` | Runs change-filtered PR validation for title/version preview, wrapper sync, workflow linting, repo-local action tests, Terraform/Terragrunt formatting, Terragrunt wave shape, TFLint, and frontend builds. |
 | `dev_infra_plan.yml` | Plans the ordered dev infra graph. |
 | `dev_infra_apply_no_plan.yml` | Applies dev infrastructure using the current commit as the infra ref. |
 | `dev_infra_apply_from_plan.yml` | Applies dev infra from a prior saved-plan run using `plan_artifact_run_id`. |
