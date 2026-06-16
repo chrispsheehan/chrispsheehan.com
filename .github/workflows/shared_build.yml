@@ -56,7 +56,13 @@ jobs:
         env:
           TG_OUTPUTS: ${{ steps.deploy_bucket.outputs.tg_outputs }}
         run: |
-          echo "bucket=$(echo "$TG_OUTPUTS" | jq -r '.bucket.value')" >> "$GITHUB_OUTPUT"
+          bucket=$(echo "$TG_OUTPUTS" | jq -er '.bucket.value // empty' || true)
+          if [[ -z "$bucket" ]]; then
+            echo "::error title=Missing code bucket output::infra/live/${{ inputs.environment }}/aws/code_bucket did not expose Terraform output 'bucket'. Apply that stack before publishing build artifacts."
+            echo "$TG_OUTPUTS" | jq .
+            exit 1
+          fi
+          echo "bucket=$bucket" >> "$GITHUB_OUTPUT"
 
   frontend:
     name: Frontend
