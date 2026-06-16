@@ -23,6 +23,16 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
   policy_arn = aws_iam_policy.lambda_vpc_access.arn
 }
 
+resource "aws_iam_policy" "lambda_report_bucket" {
+  name   = "${local.lambda_name}-report-bucket"
+  policy = data.aws_iam_policy_document.lambda_report_bucket.json
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_report_bucket" {
+  role       = aws_iam_role.iam_for_lambda.name
+  policy_arn = aws_iam_policy.lambda_report_bucket.arn
+}
+
 resource "aws_s3_object" "bootstrap_lambda_zip" {
   bucket = var.code_bucket
   key    = local.lambda_bootstrap_zip_key
@@ -45,6 +55,12 @@ resource "aws_lambda_function" "log_processor" {
   s3_key    = aws_s3_object.bootstrap_lambda_zip.key
 
   publish = true
+
+  environment {
+    variables = {
+      REPORT_BUCKET = var.report_bucket_name
+    }
+  }
 
   vpc_config {
     subnet_ids = data.aws_subnets.private.ids

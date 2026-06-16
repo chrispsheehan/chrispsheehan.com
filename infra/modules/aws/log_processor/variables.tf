@@ -18,6 +18,14 @@ variable "code_bucket" {
   type = string
 }
 
+variable "report_bucket_name" {
+  type = string
+}
+
+variable "report_bucket_arn" {
+  type = string
+}
+
 variable "log_retention_days" {
   type    = number
   default = 1

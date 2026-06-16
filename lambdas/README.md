@@ -18,7 +18,8 @@ lambdas/
 ```
 
 The current example lives at `lambdas/log_processor` and is built into
-`lambdas/log_processor.zip` by the shared CI workflow.
+`lambdas/log_processor.zip` by the shared CI workflow. It writes reports to an
+S3-backed temporary datastore provisioned by `infra/modules/aws/s3_database`.
 
 The deploy helper can package and upload a Lambda artifact:
 

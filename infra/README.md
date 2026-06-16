@@ -7,8 +7,8 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 | Environment | Stacks |
 | --- | --- |
 | `ci` | `oidc`, `code_bucket` |
-| `dev` | `oidc`, `code_bucket`, `frontend` |
-| `prod` | `oidc`, `frontend` |
+| `dev` | `oidc`, `code_bucket`, `frontend`, `s3_database`, `log_processor` |
+| `prod` | `oidc`, `frontend`, `s3_database`, `log_processor` |
 
 `dev` owns `wip.dev.chrispsheehan.com`. `prod` owns
 `wip.chrispsheehan.com`.
@@ -22,6 +22,14 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 - ACM certificate in `us-east-1`
 - Route53 `A` and `AAAA` aliases in the existing `chrispsheehan.com` hosted zone
 - deploy-role write access to the origin bucket
+
+## S3 Database Module
+
+`infra/modules/aws/s3_database` owns:
+
+- private S3 bucket for lightweight application state
+- bucket encryption, ownership controls, public access blocking, and versioning
+- bucket name and ARN outputs for consumers such as Lambda functions
 
 ## Artifact Buckets
 

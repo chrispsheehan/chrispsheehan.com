@@ -9,6 +9,7 @@ Concrete Lambda module for the repo's minimal deployable Lambda surface.
 - bootstrap Lambda zip object in the code bucket
 - all-at-once Lambda CodeDeploy application, deployment group, and deployment config
 - daily EventBridge schedule that invokes the live alias
+- access to the S3 report bucket used as the temporary database
 - IAM roles and policies needed by the Lambda and CodeDeploy
 
 ## Key Outputs
@@ -22,7 +23,7 @@ The module keeps the stable Lambda deployment surface so the code deploy
 workflow can publish a new version, roll it out through CodeDeploy, and invoke
 it on a daily schedule through EventBridge.
 
-The live Terragrunt stack passes the runtime security group id as an explicit
-input. For bootstrap-friendly plan and validate flows, keep Terragrunt
-dependency mocks in the live stack rather than reading sibling state inside
-this module.
+The live Terragrunt stack passes the runtime security group id and report
+bucket as explicit inputs. For bootstrap-friendly plan and validate flows, keep
+Terragrunt dependency mocks in the live stack rather than reading sibling state
+inside this module.

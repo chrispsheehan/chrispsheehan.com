@@ -11,6 +11,8 @@ The current runtime is intentionally small:
   CloudFront, ACM, and Route53 resources.
 - `infra/live/prod/aws/frontend` creates the `wip.chrispsheehan.com` S3,
   CloudFront, ACM, and Route53 resources.
+- `infra/live/*/aws/s3_database` creates the temporary S3 datastore used by
+  the log processor Lambda.
 - `infra/live/*/aws/oidc` creates GitHub Actions deploy roles.
 - `infra/live/ci/aws/code_bucket` and `infra/live/dev/aws/code_bucket` store
   deployable frontend artifacts and future Lambda artifacts.

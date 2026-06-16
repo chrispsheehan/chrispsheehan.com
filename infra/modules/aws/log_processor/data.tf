@@ -100,6 +100,29 @@ data "aws_iam_policy_document" "lambda_cloudwatch_logs" {
   }
 }
 
+data "aws_iam_policy_document" "lambda_report_bucket" {
+  statement {
+    sid    = "WriteReportObject"
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+    ]
+    resources = [
+      "${var.report_bucket_arn}/*",
+    ]
+  }
+
+  statement {
+    sid     = "ReadReportBucketLocation"
+    effect  = "Allow"
+    actions = ["s3:GetBucketLocation"]
+    resources = [
+      var.report_bucket_arn,
+    ]
+  }
+}
+
 data "aws_iam_policy_document" "lambda_vpc_access" {
   statement {
     effect = "Allow"
