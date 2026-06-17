@@ -311,6 +311,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Test log processor
+        uses: ./.github/actions/just
+        with:
+          just_action: unit-test
+
       - name: Build log processor
         uses: ./.github/actions/just
         env:
