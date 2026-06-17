@@ -25,10 +25,9 @@ The module keeps the stable Lambda deployment surface so the code deploy
 workflow can publish a new version, roll it out through CodeDeploy, and invoke
 it on a daily schedule through EventBridge.
 
-The live Terragrunt stack passes the report bucket and processed-file ledger
-from `s3_database` as explicit inputs. If no separate log bucket is supplied,
-the Lambda reads CloudFront log objects from the report bucket under
-`cloudfront-logs/`.
+The live Terragrunt stack passes the CloudFront log bucket, report bucket, and
+processed-file ledger as explicit inputs. The Lambda reads CloudFront log
+objects from the configured log bucket under `cloudfront-logs/` by default.
 
 For bootstrap-friendly plan and validate flows, keep Terragrunt dependency
 mocks in the live stack rather than reading sibling state inside this module.

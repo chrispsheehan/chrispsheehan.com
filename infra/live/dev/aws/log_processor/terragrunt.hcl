@@ -42,6 +42,8 @@ terraform {
 }
 
 inputs = {
+  logs_bucket_name               = dependency.s3_database.outputs.bucket_name
+  logs_bucket_arn                = dependency.s3_database.outputs.bucket_arn
   report_bucket_name             = dependency.s3_database.outputs.bucket_name
   report_bucket_arn              = dependency.s3_database.outputs.bucket_arn
   processed_log_files_table_name = dependency.s3_database.outputs.processed_log_files_table_name

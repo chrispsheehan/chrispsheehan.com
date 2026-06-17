@@ -27,13 +27,11 @@ variable "report_bucket_arn" {
 }
 
 variable "logs_bucket_name" {
-  type    = string
-  default = null
+  type = string
 }
 
 variable "logs_bucket_arn" {
-  type    = string
-  default = null
+  type = string
 }
 
 variable "logs_bucket_prefix" {

@@ -89,7 +89,7 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
       "s3:GetObject",
     ]
     resources = [
-      "${local.logs_bucket_arn}/${var.logs_bucket_prefix}*",
+      "${var.logs_bucket_arn}/${var.logs_bucket_prefix}*",
     ]
   }
 
@@ -100,7 +100,7 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
       "s3:ListBucket",
     ]
     resources = [
-      local.logs_bucket_arn,
+      var.logs_bucket_arn,
     ]
 
     condition {
@@ -131,7 +131,7 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
     actions = ["s3:GetBucketLocation"]
     resources = [
       var.report_bucket_arn,
-      local.logs_bucket_arn,
+      var.logs_bucket_arn,
     ]
   }
 }
