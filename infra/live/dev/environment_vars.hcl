@@ -3,6 +3,7 @@ locals {
   force_delete     = true
   force_destroy_db = true
   domain_prefix    = "wip.dev"
+  vpc_name         = "vpc"
 }
 
 inputs = {
@@ -10,4 +11,5 @@ inputs = {
   force_delete     = local.force_delete
   force_destroy_db = local.force_destroy_db
   domain_prefix    = local.domain_prefix
+  vpc_name         = local.vpc_name
 }

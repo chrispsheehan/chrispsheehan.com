@@ -10,6 +10,7 @@ locals {
     "route53:*",
     "s3:*",
     "codedeploy:*",
+    "ec2:*",
   ]
   code_artifact_expiration_days = 0
 }

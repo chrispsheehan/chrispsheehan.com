@@ -1,22 +1,3 @@
-data "aws_vpc" "this" {
-  filter {
-    name   = "tag:Name"
-    values = [var.vpc_name]
-  }
-}
-
-data "aws_subnets" "private" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.this.id]
-  }
-
-  filter {
-    name   = "tag:Name"
-    values = ["*private*"]
-  }
-}
-
 data "archive_file" "bootstrap_lambda" {
   type                    = "zip"
   source_content          = <<-PY
@@ -102,6 +83,37 @@ data "aws_iam_policy_document" "lambda_cloudwatch_logs" {
 
 data "aws_iam_policy_document" "lambda_report_bucket" {
   statement {
+    sid    = "ReadLogObjects"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = [
+      "${local.logs_bucket_arn}/${var.logs_bucket_prefix}*",
+    ]
+  }
+
+  statement {
+    sid    = "ListLogBucket"
+    effect = "Allow"
+    actions = [
+      "s3:ListBucket",
+    ]
+    resources = [
+      local.logs_bucket_arn,
+    ]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values = [
+        var.logs_bucket_prefix,
+        "${var.logs_bucket_prefix}*",
+      ]
+    }
+  }
+
+  statement {
     sid    = "WriteReportObject"
     effect = "Allow"
     actions = [
@@ -119,20 +131,21 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
     actions = ["s3:GetBucketLocation"]
     resources = [
       var.report_bucket_arn,
+      local.logs_bucket_arn,
     ]
   }
 }
 
-data "aws_iam_policy_document" "lambda_vpc_access" {
+data "aws_iam_policy_document" "lambda_processed_log_files" {
   statement {
+    sid    = "WriteProcessedLogFilesLedger"
     effect = "Allow"
     actions = [
-      "ec2:CreateNetworkInterface",
-      "ec2:DescribeNetworkInterfaces",
-      "ec2:DeleteNetworkInterface",
-      "ec2:AssignPrivateIpAddresses",
-      "ec2:UnassignPrivateIpAddresses",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
     ]
-    resources = ["*"]
+    resources = [
+      var.processed_log_files_table_arn,
+    ]
   }
 }

@@ -12,9 +12,9 @@ def handler(event, context):
     try:
         bucket_name = os.environ["REPORT_BUCKET"]
 
-        combined = logs_report()
+        combined = logs_report(bucket_name)
 
-        key_name = f"data/log-processor/data.json"
+        key_name = "data/log-processor/data.json"
 
         s3.put_object(
             Bucket=bucket_name,
@@ -23,19 +23,17 @@ def handler(event, context):
             ContentType="application/json",
         )
 
-        print(f"✅ Log processed and saved to s3://{bucket_name}/{key_name}")
+        print(f"Log processed and saved to s3://{bucket_name}/{key_name}")
         return {"statusCode": 200, "body": json.dumps({"s3_path": f"s3://{bucket_name}/{key_name}"})}
 
-    # ─── ERROR HANDLING ────────────────────────────────────────────────────────
     except Exception as exc:
-        error_msg = f"❌ Logs processor Lambda failed: {exc}"
+        error_msg = f"Logs processor Lambda failed: {exc}"
         print(error_msg, file=sys.stderr)
 
         # Return 500 JSON for API Gateway / test invocations
         return {"statusCode": 500, "body": json.dumps({"error": str(exc)})}
 
 
-# ─── Allow `python lambda_handler.py` to fail CI with a non-zero exit code ─────
 if __name__ == "__main__":
     result = handler({}, None)
     if result.get("statusCode") != 200:

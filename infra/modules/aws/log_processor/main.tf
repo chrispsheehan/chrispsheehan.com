@@ -13,16 +13,6 @@ resource "aws_iam_role_policy_attachment" "lambda_cloudwatch_logs" {
   policy_arn = aws_iam_policy.lambda_cloudwatch_logs.arn
 }
 
-resource "aws_iam_policy" "lambda_vpc_access" {
-  name   = "${local.lambda_name}-vpc-access"
-  policy = data.aws_iam_policy_document.lambda_vpc_access.json
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
-  role       = aws_iam_role.iam_for_lambda.name
-  policy_arn = aws_iam_policy.lambda_vpc_access.arn
-}
-
 resource "aws_iam_policy" "lambda_report_bucket" {
   name   = "${local.lambda_name}-report-bucket"
   policy = data.aws_iam_policy_document.lambda_report_bucket.json
@@ -31,6 +21,16 @@ resource "aws_iam_policy" "lambda_report_bucket" {
 resource "aws_iam_role_policy_attachment" "lambda_report_bucket" {
   role       = aws_iam_role.iam_for_lambda.name
   policy_arn = aws_iam_policy.lambda_report_bucket.arn
+}
+
+resource "aws_iam_policy" "lambda_processed_log_files" {
+  name   = "${local.lambda_name}-processed-log-files"
+  policy = data.aws_iam_policy_document.lambda_processed_log_files.json
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_processed_log_files" {
+  role       = aws_iam_role.iam_for_lambda.name
+  policy_arn = aws_iam_policy.lambda_processed_log_files.arn
 }
 
 resource "aws_s3_object" "bootstrap_lambda_zip" {
@@ -58,15 +58,11 @@ resource "aws_lambda_function" "log_processor" {
 
   environment {
     variables = {
-      REPORT_BUCKET = var.report_bucket_name
+      PROCESSED_LOG_FILES_TABLE = var.processed_log_files_table_name
+      REPORT_BUCKET             = var.report_bucket_name
+      S3_LOGS_BUCKET            = local.logs_bucket_name
+      S3_LOGS_PREFIX            = var.logs_bucket_prefix
     }
-  }
-
-  vpc_config {
-    subnet_ids = data.aws_subnets.private.ids
-    security_group_ids = [
-      var.runtime_security_group_id,
-    ]
   }
 
   tags = {
