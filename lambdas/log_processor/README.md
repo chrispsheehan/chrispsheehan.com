@@ -20,6 +20,21 @@ Direct mode is safe to run repeatedly. Completed source objects are skipped by
 the DynamoDB ledger, and failed or interrupted objects can be claimed again on a
 later run.
 
+## Local Test Fixtures
+
+Download a small set of CloudFront log files into `tmp/log-processor/logs`:
+
+```sh
+just lambda-log-fixtures-download
+```
+
+The fixture downloader defaults to `chrispsheehan.com.logs`, scans up to 200
+objects, and downloads 10 `.gz` files. Override the limits when needed:
+
+```sh
+just lambda-log-fixtures-download 5 cloudfront-logs/ tmp/log-processor/logs
+```
+
 ## Runtime Configuration
 
 - `REPORT_BUCKET`: S3 database bucket for parsed outputs and run summary

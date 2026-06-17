@@ -36,6 +36,63 @@ code-bucket-get-appspec-artifact-dir:
     @echo {{APPSPEC_DIR}}
 
 
+# Download a small CloudFront log fixture set for local Lambda testing.
+lambda-log-fixtures-download limit='10' scan_limit='200':
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    bucket="chrispsheehan.com.logs"
+    prefix=""
+    dest="{{PROJECT_DIR}}/tmp/log-processor/logs"
+    limit="{{limit}}"
+    scan_limit="{{scan_limit}}"
+
+    case "$dest" in
+        /*) ;;
+        *) dest="{{PROJECT_DIR}}/$dest" ;;
+    esac
+
+    if ! [[ "$limit" =~ ^[0-9]+$ ]] || [[ "$limit" -lt 1 ]]; then
+        echo "limit must be a positive integer" >&2
+        exit 1
+    fi
+
+    if ! [[ "$scan_limit" =~ ^[0-9]+$ ]] || [[ "$scan_limit" -lt "$limit" ]]; then
+        echo "scan_limit must be a positive integer greater than or equal to limit" >&2
+        exit 1
+    fi
+
+    mkdir -p "$dest"
+    key_file="$(mktemp)"
+    trap 'rm -f "$key_file"' EXIT
+
+    aws s3api list-objects-v2 \
+      --bucket "$bucket" \
+      --prefix "$prefix" \
+      --max-items "$scan_limit" \
+      --query 'Contents[].Key' \
+      --output text \
+      | tr '\t' '\n' \
+      | awk -v limit="$limit" '/\.gz$/ && count < limit { print; count += 1 }' \
+      > "$key_file"
+
+    if [[ ! -s "$key_file" ]]; then
+        echo "No .gz log files found in s3://$bucket/$prefix within scan_limit=$scan_limit" >&2
+        exit 1
+    fi
+
+    downloaded=0
+    while IFS= read -r key; do
+        [[ -n "$key" ]] || continue
+        local_path="$dest/$key"
+        mkdir -p "$(dirname "$local_path")"
+        aws s3 cp "s3://$bucket/$key" "$local_path"
+        downloaded=$((downloaded + 1))
+    done < "$key_file"
+
+    echo "Downloaded $downloaded log file(s) to $dest"
+
+
 # Delete local git branches whose upstream refs have gone away.
 git-tidy:
     #!/usr/bin/env bash
