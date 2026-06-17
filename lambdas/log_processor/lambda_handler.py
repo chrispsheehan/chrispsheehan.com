@@ -8,7 +8,7 @@ from logs_processor import logs_report
 s3 = boto3.client("s3")
 
 
-def handler(event, context):
+def lambda_handler(event, context):
     try:
         bucket_name = os.environ["REPORT_BUCKET"]
 
@@ -35,6 +35,6 @@ def handler(event, context):
 
 
 if __name__ == "__main__":
-    result = handler({}, None)
+    result = lambda_handler({}, None)
     if result.get("statusCode") != 200:
         sys.exit(1)
