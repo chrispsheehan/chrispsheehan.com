@@ -10,7 +10,9 @@ locals {
     "route53:*",
     "s3:*",
     "codedeploy:*",
+    "dynamodb:*",
     "ec2:*",
+    "events:*",
   ]
   code_artifact_expiration_days = 0
 }
