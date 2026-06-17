@@ -1,0 +1,43 @@
+from __future__ import annotations
+
+import json
+from typing import Any
+
+
+OUTPUT_PREFIX = "data/log-processor"
+SUMMARY_KEY = f"{OUTPUT_PREFIX}/data.json"
+
+
+def write_records(
+    s3_client: Any,
+    bucket_name: str,
+    object_id: str,
+    records_by_date: dict[str, list[dict[str, Any]]],
+) -> list[str]:
+    output_keys = []
+    source_hash = object_id[:24]
+
+    for date, records in sorted(records_by_date.items()):
+        if not records:
+            continue
+
+        key = f"{OUTPUT_PREFIX}/requests/date={date}/{source_hash}.jsonl"
+        body = "\n".join(json.dumps(record, separators=(",", ":")) for record in records)
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=key,
+            Body=f"{body}\n",
+            ContentType="application/x-ndjson",
+        )
+        output_keys.append(key)
+
+    return output_keys
+
+
+def write_summary(s3_client: Any, bucket_name: str, summary: dict[str, Any]) -> None:
+    s3_client.put_object(
+        Bucket=bucket_name,
+        Key=SUMMARY_KEY,
+        Body=json.dumps(summary, indent=2),
+        ContentType="application/json",
+    )

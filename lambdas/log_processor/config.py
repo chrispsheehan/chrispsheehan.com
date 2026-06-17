@@ -1,0 +1,61 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+import os
+from typing import Mapping
+
+
+@dataclass(frozen=True)
+class LogProcessorConfig:
+    report_bucket_name: str
+    logs_bucket_name: str
+    logs_prefix: str
+    max_files: int | None
+    processed_log_files_table: str
+    dynamodb_region: str
+    dynamodb_endpoint: str
+    dynamodb_access_key_id: str
+    dynamodb_secret_access_key: str
+
+
+def load_config(
+    *,
+    report_bucket_name: str | None = None,
+    env: Mapping[str, str] | None = None,
+) -> LogProcessorConfig:
+    env = env or os.environ
+
+    return LogProcessorConfig(
+        report_bucket_name=report_bucket_name or required_env(env, "REPORT_BUCKET"),
+        logs_bucket_name=required_env(env, "S3_LOGS_BUCKET"),
+        logs_prefix=env.get("S3_LOGS_PREFIX", ""),
+        max_files=optional_positive_int_env(env, "S3_LOGS_MAX_FILES"),
+        processed_log_files_table=required_env(env, "PROCESSED_LOG_FILES_TABLE"),
+        dynamodb_region=required_env(env, "DYNAMODB_AWS_REGION"),
+        dynamodb_endpoint=required_env(env, "DYNAMODB_ENDPOINT"),
+        dynamodb_access_key_id=env.get("DYNAMODB_AWS_ACCESS_KEY_ID", "DUMMYIDEXAMPLE"),
+        dynamodb_secret_access_key=env.get("DYNAMODB_AWS_SECRET_ACCESS_KEY", "DUMMYEXAMPLEKEY"),
+    )
+
+
+def required_env(env: Mapping[str, str], name: str) -> str:
+    value = env.get(name)
+    if not value:
+        raise ValueError(f"{name} must be set")
+    return value
+
+
+def optional_positive_int_env(env: Mapping[str, str], name: str) -> int | None:
+    value = env.get(name)
+    if value is None or value == "":
+        return None
+
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a positive integer") from exc
+
+    if parsed <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+
+    return parsed
