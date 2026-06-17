@@ -15,17 +15,55 @@ Processes CloudFront standard logs from S3 into a queryable S3 datastore.
 
 - Scheduled mode: invoked daily by EventBridge through the live Lambda alias
 - Direct mode: invoke with `{}` to process any currently unprocessed log files
+- Local debug mode: use the VS Code `Debug logs_report(bucket_name)` launch
+  target to call `logs_report(bucket_name)` directly, bypassing
+  `lambda_handler.py` and its final `data/log-processor/data.json` write
 
 Direct mode is safe to run repeatedly. Completed source objects are skipped by
 the DynamoDB ledger, and failed or interrupted objects can be claimed again on a
 later run.
+
+The VS Code launch target prompts for the report bucket name and loads the
+remaining runtime configuration from the repository `.env` file. S3 uses the
+normal boto3 credential chain and reads real CloudFront logs from
+`S3_LOGS_BUCKET`; DynamoDB requires `DYNAMODB_ENDPOINT` and
+`DYNAMODB_AWS_REGION`, so local debugging can use DynamoDB Local for the
+processed-file ledger while deployed Lambda receives the AWS DynamoDB endpoint
+from infrastructure.
+
+The debug target runs the VS Code `Start DynamoDB Local` pre-launch task, which
+starts `dynamodb-local` through Docker Compose and creates the processed-file
+ledger table if it does not already exist.
+
+The pre-launch task creates `.venv` and installs
+`lambdas/log_processor/requirements.txt` if needed. Keep global dummy AWS
+credentials out of `.env` for this launch target, because the S3 client is
+intentionally real.
+
+## Local Test Fixtures
+
+Download a small set of CloudFront log files into `tmp/log-processor/logs`:
+
+```sh
+just lambda-log-fixtures-download
+```
+
+The fixture downloader defaults to `chrispsheehan.com.logs`, scans up to 200
+objects, and downloads 10 `.gz` files. Override the limits when needed:
+
+```sh
+just lambda-log-fixtures-download 5 cloudfront-logs/ tmp/log-processor/logs
+```
 
 ## Runtime Configuration
 
 - `REPORT_BUCKET`: S3 database bucket for parsed outputs and run summary
 - `S3_LOGS_BUCKET`: S3 bucket containing CloudFront `.gz` log objects
 - `S3_LOGS_PREFIX`: prefix to scan for CloudFront log objects
+- `S3_LOGS_MAX_FILES`: optional cap on claimed source log files per run
 - `PROCESSED_LOG_FILES_TABLE`: DynamoDB table used as the processed-file ledger
+- `DYNAMODB_ENDPOINT`: DynamoDB endpoint URL
+- `DYNAMODB_AWS_REGION`: DynamoDB region used with `DYNAMODB_ENDPOINT`
 
 ## Output Shape
 
@@ -45,5 +83,7 @@ source S3 key.
   delayed CloudFront log delivery
 - the Lambda streams gzip objects from S3 and does not download the full log set
   to `/tmp`
+- `S3_LOGS_MAX_FILES` limits how many unskipped source objects are streamed in
+  one run; use `S3_LOGS_PREFIX` to reduce the S3 listing scope itself
 - documentation files in this directory are pruned from the packaged Lambda zip
   during build

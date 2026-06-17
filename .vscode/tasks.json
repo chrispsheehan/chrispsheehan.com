@@ -1,0 +1,32 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Prepare logs_report Debug",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Install log_processor debug dependencies",
+        "Start DynamoDB Local"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Install log_processor debug dependencies",
+      "type": "shell",
+      "command": ".venv/bin/python -c \"import boto3, sys; assert sys.version_info[:2] == (3, 12)\" 2>/dev/null || (python3.12 -m venv --clear .venv && .venv/bin/python -m ensurepip --upgrade && .venv/bin/python -m pip install -r lambdas/log_processor/requirements.txt)",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Start DynamoDB Local",
+      "type": "shell",
+      "command": "docker compose up -d --wait dynamodb-local && docker compose run --rm dynamodb-setup",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
