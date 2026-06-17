@@ -39,6 +39,24 @@ variable "logs_bucket_prefix" {
   default = "cloudfront-logs/"
 }
 
+variable "vpc_name" {
+  type        = string
+  description = "Name tag of the VPC associated with runtime security resources."
+  default     = null
+}
+
+variable "runtime_security_group_id" {
+  type        = string
+  description = "Runtime security group ID from the security stack."
+  default     = null
+}
+
+variable "private_subnet_ids" {
+  type        = list(string)
+  description = "Private subnet IDs from the security stack."
+  default     = []
+}
+
 variable "processed_log_files_table_name" {
   type = string
 }

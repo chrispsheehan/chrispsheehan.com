@@ -44,6 +44,8 @@ terraform {
 inputs = {
   logs_bucket_name               = dependency.s3_database.outputs.bucket_name
   logs_bucket_arn                = dependency.s3_database.outputs.bucket_arn
+  runtime_security_group_id      = dependency.security.outputs.runtime_security_group_id
+  private_subnet_ids             = dependency.security.outputs.private_subnet_ids
   report_bucket_name             = dependency.s3_database.outputs.bucket_name
   report_bucket_arn              = dependency.s3_database.outputs.bucket_arn
   processed_log_files_table_name = dependency.s3_database.outputs.processed_log_files_table_name
