@@ -19,9 +19,11 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 
 - private S3 origin bucket
 - CloudFront distribution
+- cached CloudFront `/data/*` behavior backed by the S3 database bucket
 - ACM certificate in `us-east-1`
 - Route53 `A` and `AAAA` aliases in the existing `chrispsheehan.com` hosted zone
 - deploy-role write access to the origin bucket
+- CloudFront read access to database `data/*` objects
 
 ## S3 Database Module
 
@@ -30,7 +32,8 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 - private S3 bucket for lightweight application state
 - DynamoDB processed-file ledger for CloudFront log ingestion
 - bucket encryption, ownership controls, public access blocking, and versioning
-- bucket name and ARN outputs for consumers such as Lambda functions
+- bucket name, ARN, and regional domain outputs for consumers such as Lambda
+  functions and CloudFront origins
 
 ## Security Module
 

@@ -15,6 +15,7 @@ Minimal S3-backed datastore for early-stage application state.
 
 - `bucket_name`
 - `bucket_arn`
+- `bucket_regional_domain_name`
 - `processed_log_files_table_name`
 - `processed_log_files_table_arn`
 

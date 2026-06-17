@@ -8,9 +8,11 @@ The current runtime is intentionally small:
 
 - `frontend/` contains the Astro frontend source and build script.
 - `infra/live/dev/aws/frontend` creates the `wip.dev.chrispsheehan.com` S3,
-  CloudFront, ACM, and Route53 resources.
+  CloudFront, ACM, and Route53 resources, including cached `/data/*` routing to
+  the S3 database bucket.
 - `infra/live/prod/aws/frontend` creates the `wip.chrispsheehan.com` S3,
-  CloudFront, ACM, and Route53 resources.
+  CloudFront, ACM, and Route53 resources, including cached `/data/*` routing to
+  the S3 database bucket.
 - `infra/live/*/aws/security` creates shared security groups for runtime
   resources.
 - `infra/live/*/aws/s3_database` creates the temporary S3 datastore and

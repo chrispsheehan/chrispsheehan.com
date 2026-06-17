@@ -6,6 +6,10 @@ output "bucket_arn" {
   value = aws_s3_bucket.database.arn
 }
 
+output "bucket_regional_domain_name" {
+  value = aws_s3_bucket.database.bucket_regional_domain_name
+}
+
 output "processed_log_files_table_name" {
   value = aws_dynamodb_table.processed_log_files.name
 }
