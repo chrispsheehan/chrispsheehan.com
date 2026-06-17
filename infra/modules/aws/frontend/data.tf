@@ -49,3 +49,22 @@ data "aws_iam_policy_document" "frontend_bucket_policy" {
     }
   }
 }
+
+data "aws_iam_policy_document" "data_bucket_policy" {
+  statement {
+    sid       = "AllowCloudFrontReadData"
+    actions   = ["s3:GetObject"]
+    resources = ["${var.data_bucket_arn}/data/*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.frontend.arn]
+    }
+  }
+}

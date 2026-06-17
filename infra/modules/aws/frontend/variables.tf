@@ -34,3 +34,18 @@ variable "domain_prefix" {
   type        = string
   description = "Frontend DNS label prefix inside hosted_zone_name"
 }
+
+variable "data_bucket_name" {
+  type        = string
+  description = "S3 bucket name for data objects served under /data/*"
+}
+
+variable "data_bucket_arn" {
+  type        = string
+  description = "S3 bucket ARN for data objects served under /data/*"
+}
+
+variable "data_bucket_regional_domain_name" {
+  type        = string
+  description = "Regional S3 domain name for the data bucket CloudFront origin"
+}

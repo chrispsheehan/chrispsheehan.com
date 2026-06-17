@@ -75,6 +75,34 @@ resource "aws_cloudfront_distribution" "frontend" {
     origin_id                = local.cloudfront_origin_id
   }
 
+  origin {
+    domain_name              = var.data_bucket_regional_domain_name
+    origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
+    origin_id                = local.data_origin_id
+  }
+
+  ordered_cache_behavior {
+    path_pattern           = "/data/*"
+    target_origin_id       = local.data_origin_id
+    viewer_protocol_policy = "redirect-to-https"
+
+    allowed_methods = ["GET", "HEAD"]
+    cached_methods  = ["GET", "HEAD"]
+
+    forwarded_values {
+      query_string = false
+
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 60
+    max_ttl     = 60
+    compress    = true
+  }
+
   default_cache_behavior {
     allowed_methods          = ["GET", "HEAD", "OPTIONS"]
     cached_methods           = ["GET", "HEAD"]
@@ -113,6 +141,11 @@ resource "aws_cloudfront_distribution" "frontend" {
 resource "aws_s3_bucket_policy" "frontend" {
   bucket = aws_s3_bucket.frontend.id
   policy = data.aws_iam_policy_document.frontend_bucket_policy.json
+}
+
+resource "aws_s3_bucket_policy" "data" {
+  bucket = var.data_bucket_name
+  policy = data.aws_iam_policy_document.data_bucket_policy.json
 }
 
 resource "aws_route53_record" "frontend_ipv4" {

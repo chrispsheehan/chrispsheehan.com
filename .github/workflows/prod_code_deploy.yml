@@ -1,11 +1,15 @@
 name: Prod Code Deploy
-# This deploys a previously published frontend artifact to prod.
+# This deploys previously published frontend and lambda artifacts to prod.
 
 on:
   workflow_dispatch:
     inputs:
       frontend_version:
         description: "Frontend artifact version to deploy, usually a commit SHA"
+        required: true
+        type: string
+      lambda_version:
+        description: "Lambda artifact version to deploy, usually the same tag or SHA as the frontend version"
         required: true
         type: string
 
@@ -29,4 +33,5 @@ jobs:
     with:
       environment: prod
       frontend_version: ${{ needs.get_build.outputs.frontend_version }}
+      lambda_version: ${{ inputs.lambda_version }}
       code_bucket: ${{ needs.get_build.outputs.code_bucket }}

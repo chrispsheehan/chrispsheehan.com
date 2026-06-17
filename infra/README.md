@@ -7,8 +7,8 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 | Environment | Stacks |
 | --- | --- |
 | `ci` | `oidc`, `code_bucket` |
-| `dev` | `oidc`, `code_bucket`, `frontend` |
-| `prod` | `oidc`, `frontend` |
+| `dev` | `oidc`, `code_bucket`, `frontend`, `security`, `s3_database`, `log_processor` |
+| `prod` | `oidc`, `frontend`, `security`, `s3_database`, `log_processor` |
 
 `dev` owns `wip.dev.chrispsheehan.com`. `prod` owns
 `wip.chrispsheehan.com`.
@@ -19,9 +19,28 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 
 - private S3 origin bucket
 - CloudFront distribution
+- cached CloudFront `/data/*` behavior backed by the S3 database bucket
 - ACM certificate in `us-east-1`
 - Route53 `A` and `AAAA` aliases in the existing `chrispsheehan.com` hosted zone
 - deploy-role write access to the origin bucket
+- CloudFront read access to database `data/*` objects
+
+## S3 Database Module
+
+`infra/modules/aws/s3_database` owns:
+
+- private S3 bucket for lightweight application state
+- DynamoDB processed-file ledger for CloudFront log ingestion
+- bucket encryption, ownership controls, public access blocking, and versioning
+- bucket name, ARN, and regional domain outputs for consumers such as Lambda
+  functions and CloudFront origins
+
+## Security Module
+
+`infra/modules/aws/security` owns:
+
+- shared runtime security group for Lambda and future application runtimes
+- runtime security group egress rules
 
 ## Artifact Buckets
 

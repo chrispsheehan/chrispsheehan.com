@@ -38,15 +38,85 @@ jobs:
       wave_summary_note: Destroy runs dependency waves in reverse order. OIDC and shared artifact modules are excluded.
       wave_summary_order: reverse
 
+  waves:
+    name: Destroy Waves
+    needs: generate_waves
+    runs-on: ubuntu-latest
+    outputs:
+      wave_0_modules: ${{ steps.emit.outputs.wave_0_modules }}
+      wave_1_modules: ${{ steps.emit.outputs.wave_1_modules }}
+    steps:
+      - name: Derive destroy waves
+        id: emit
+        shell: bash
+        env:
+          RAW_WAVES_JSON: ${{ needs.generate_waves.outputs.waves_json }}
+        run: |
+          set -euo pipefail
+          destroy_waves_json="$(jq -c '
+            [.[1]?, .[2]?]
+            | map(select(. != null))
+            | map(.modules |= map(select(. != "oidc" and . != "code_bucket")))
+            | map(select(.modules | length > 0))
+            | to_entries
+            | map({wave: .key, modules: .value.modules})
+          ' <<<"$RAW_WAVES_JSON")"
+
+          echo "wave_0_modules=$(jq -c '.[0].modules // []' <<<"$destroy_waves_json")" >> "$GITHUB_OUTPUT"
+          echo "wave_1_modules=$(jq -c '.[1].modules // []' <<<"$destroy_waves_json")" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Destroy Wave Summary"
+            echo
+            echo "| Wave | Modules |"
+            echo "| --- | --- |"
+            jq -r '
+              if length == 0 then
+                ["| none | No modules selected |"]
+              else
+                map(
+                  .wave as $wave
+                  | (.modules | map("`" + . + "`") | join(", ")) as $modules
+                  | "| \($wave) | \($modules) |"
+                )
+              end
+              | .[]
+            ' <<<"$destroy_waves_json"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   wave_0:
     name: 0 / ${{ matrix.module }}
-    needs: generate_waves
-    if: ${{ needs.generate_waves.outputs.wave_0_modules != '[]' }}
+    needs: waves
+    if: ${{ needs.waves.outputs.wave_0_modules != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        module: ${{ fromJson(needs.generate_waves.outputs.wave_0_modules) }}
+        module: ${{ fromJson(needs.waves.outputs.wave_0_modules) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Destroy ${{ matrix.module }} infra
+        uses: ./.github/actions/terragrunt
+        with:
+          tg_directory: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
+          tg_action: destroy
+
+  wave_1:
+    name: 1 / ${{ matrix.module }}
+    needs:
+      - waves
+      - wave_0
+    if: ${{ always() && needs.waves.outputs.wave_1_modules != '[]' && (needs.wave_0.result == 'success' || needs.wave_0.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.waves.outputs.wave_1_modules) }}
     steps:
       - uses: actions/checkout@v6
 
