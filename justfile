@@ -47,21 +47,6 @@ lambda-log-fixtures-download limit='10' scan_limit='200':
     limit="{{limit}}"
     scan_limit="{{scan_limit}}"
 
-    case "$dest" in
-        /*) ;;
-        *) dest="{{PROJECT_DIR}}/$dest" ;;
-    esac
-
-    if ! [[ "$limit" =~ ^[0-9]+$ ]] || [[ "$limit" -lt 1 ]]; then
-        echo "limit must be a positive integer" >&2
-        exit 1
-    fi
-
-    if ! [[ "$scan_limit" =~ ^[0-9]+$ ]] || [[ "$scan_limit" -lt "$limit" ]]; then
-        echo "scan_limit must be a positive integer greater than or equal to limit" >&2
-        exit 1
-    fi
-
     mkdir -p "$dest"
     key_file="$(mktemp)"
     trap 'rm -f "$key_file"' EXIT
