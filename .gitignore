@@ -5,6 +5,7 @@
 *.zip
 *.DS_store
 *.lock.hcl
+docker/
 
 # ignore generated files
 infra/live/*.tf
