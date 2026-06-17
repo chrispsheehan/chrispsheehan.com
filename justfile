@@ -21,6 +21,16 @@ start host='127.0.0.1' port='4321':
     npm run astro --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}" -- dev --host "{{host}}" --port "{{port}}"
 
 
+# Run Python unit tests.
+unit-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+    python3.12 -m venv .venv
+    .venv/bin/python -m pip install --quiet --no-cache-dir --group test
+    .venv/bin/python -m pytest
+
+
 # Return the Lambda artifact directory name.
 code-bucket-get-lambda-artifact-dir:
     @echo {{LAMBDA_DIR}}

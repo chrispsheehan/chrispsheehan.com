@@ -27,4 +27,5 @@ tmp/
 !frontend/public/data/**/*.json
 !.vscode/
 !.vscode/launch.json
+!.vscode/settings.json
 !.vscode/tasks.json
