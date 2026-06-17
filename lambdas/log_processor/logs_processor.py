@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 from collections import defaultdict
 from datetime import datetime, timezone
 import gzip
@@ -14,7 +15,7 @@ from urllib.parse import unquote
 import boto3
 
 s3 = boto3.client("s3")
-dynamodb = boto3.client("dynamodb")
+dynamodb: Any | None = None
 
 BOT_PATTERN = re.compile(
     r"bot|spider|crawl|slurp|fetch|python-requests|curl|wget|monitor",
@@ -24,11 +25,47 @@ BOT_PATTERN = re.compile(
 OUTPUT_PREFIX = "data/log-processor"
 
 
+def _dynamodb_client() -> Any:
+    global dynamodb
+
+    if dynamodb is None:
+        region = _required_env("DYNAMODB_AWS_REGION")
+        endpoint = _required_env("DYNAMODB_ENDPOINT")
+        dynamodb = boto3.client(
+            "dynamodb",
+            region_name=region,
+            endpoint_url=endpoint,
+            aws_access_key_id=os.environ.get("DYNAMODB_AWS_ACCESS_KEY_ID", "DUMMYIDEXAMPLE"),
+            aws_secret_access_key=os.environ.get(
+                "DYNAMODB_AWS_SECRET_ACCESS_KEY",
+                "DUMMYEXAMPLEKEY",
+            ),
+        )
+
+    return dynamodb
+
+
 def _required_env(name: str) -> str:
     value = os.environ.get(name)
     if not value:
         raise ValueError(f"{name} must be set")
     return value
+
+
+def _optional_positive_int_env(name: str) -> int | None:
+    value = os.environ.get(name)
+    if value is None or value == "":
+        return None
+
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a positive integer") from exc
+
+    if parsed <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+
+    return parsed
 
 
 def _now() -> str:
@@ -65,9 +102,10 @@ def _list_log_objects(bucket_name: str, prefix: str) -> list[dict[str, Any]]:
 
 def _claim_log_object(table_name: str, bucket_name: str, log_object: dict[str, Any]) -> str | None:
     object_id = _object_id(bucket_name, log_object["key"], log_object["etag"])
+    client = _dynamodb_client()
 
     try:
-        dynamodb.put_item(
+        client.put_item(
             TableName=table_name,
             Item={
                 "object_id": {"S": object_id},
@@ -83,7 +121,7 @@ def _claim_log_object(table_name: str, bucket_name: str, log_object: dict[str, A
             ExpressionAttributeNames={"#status": "status"},
             ExpressionAttributeValues={":complete": {"S": "complete"}},
         )
-    except dynamodb.exceptions.ConditionalCheckFailedException:
+    except client.exceptions.ConditionalCheckFailedException:
         return None
 
     return object_id
@@ -95,7 +133,7 @@ def _mark_complete(
     record_count: int,
     output_keys: list[str],
 ) -> None:
-    dynamodb.update_item(
+    _dynamodb_client().update_item(
         TableName=table_name,
         Key={"object_id": {"S": object_id}},
         UpdateExpression=(
@@ -114,7 +152,7 @@ def _mark_complete(
 
 
 def _mark_failed(table_name: str, object_id: str, exc: Exception) -> None:
-    dynamodb.update_item(
+    _dynamodb_client().update_item(
         TableName=table_name,
         Key={"object_id": {"S": object_id}},
         UpdateExpression="SET #status = :status, failed_at = :failed_at, error = :error",
@@ -206,19 +244,26 @@ def logs_report(report_bucket_name: str) -> dict[str, Any]:
     logs_bucket_name = _required_env("S3_LOGS_BUCKET")
     table_name = _required_env("PROCESSED_LOG_FILES_TABLE")
     logs_prefix = os.environ.get("S3_LOGS_PREFIX", "")
+    max_files = _optional_positive_int_env("S3_LOGS_MAX_FILES")
 
     log_objects = _list_log_objects(logs_bucket_name, logs_prefix)
     visitor_tracker: dict[str, set[str]] = defaultdict(set)
+    claimed_files = 0
     processed_files = 0
     skipped_files = 0
     failed_files = 0
     output_keys: list[str] = []
 
     for log_object in log_objects:
+        if max_files is not None and claimed_files >= max_files:
+            break
+
         object_id = _claim_log_object(table_name, logs_bucket_name, log_object)
         if object_id is None:
             skipped_files += 1
             continue
+
+        claimed_files += 1
 
         try:
             records_by_date = _parse_log_object(logs_bucket_name, log_object["key"])
@@ -247,8 +292,26 @@ def logs_report(report_bucket_name: str) -> dict[str, Any]:
         "last-date": sorted_dates[-1] if sorted_dates else None,
         "generated-at": datetime.now(timezone.utc).date().isoformat(),
         "log-files-found": len(log_objects),
+        "log-files-limit": max_files,
+        "log-files-claimed": claimed_files,
         "log-files-processed": processed_files,
         "log-files-skipped": skipped_files,
         "log-files-failed": failed_files,
         "output-keys": output_keys,
     }
+
+
+def _main() -> None:
+    parser = argparse.ArgumentParser(description="Run logs_report(report_bucket_name) directly.")
+    parser.add_argument(
+        "report_bucket_name",
+        help="S3 database bucket passed directly to logs_report(report_bucket_name).",
+    )
+    args = parser.parse_args()
+
+    report = logs_report(args.report_bucket_name)
+    print(json.dumps(report, indent=2, sort_keys=True))
+
+
+if __name__ == "__main__":
+    _main()

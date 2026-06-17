@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug logs_report(bucket_name)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/lambdas/log_processor/logs_processor.py",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "args": ["${input:reportBucketName}"],
+      "cwd": "${workspaceFolder}/lambdas/log_processor",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "preLaunchTask": "Prepare logs_report Debug",
+      "justMyCode": true
+    }
+  ],
+  "inputs": [
+    {
+      "id": "reportBucketName",
+      "type": "promptString",
+      "description": "Bucket name passed to logs_report(bucket_name)"
+    }
+  ]
+}

@@ -18,6 +18,8 @@ Minimal S3-backed datastore for early-stage application state.
 - `bucket_regional_domain_name`
 - `processed_log_files_table_name`
 - `processed_log_files_table_arn`
+- `processed_log_files_table_region`
+- `processed_log_files_table_endpoint`
 
 The module is intentionally small so application code can use S3 as a temporary
 database before a relational store is introduced. The DynamoDB table is included

@@ -65,6 +65,16 @@ variable "processed_log_files_table_arn" {
   type = string
 }
 
+variable "dynamodb_aws_region" {
+  type        = string
+  description = "AWS region for the processed log files DynamoDB table."
+}
+
+variable "dynamodb_endpoint" {
+  type        = string
+  description = "Endpoint URL for the processed log files DynamoDB table."
+}
+
 variable "log_retention_days" {
   type    = number
   default = 1
