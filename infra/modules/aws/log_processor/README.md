@@ -31,6 +31,11 @@ inputs. The Lambda reads CloudFront log objects from the configured log bucket
 under `cloudfront-logs/` by default, unless the live stack overrides
 `logs_bucket_prefix`.
 
+Production wires the CloudFront log bucket from the frontend stack outputs so it
+reads the deployed site's own logs. Development can still override these values
+from environment inputs when testing against another site's historical log
+bucket.
+
 `log_level` controls the Lambda's `LOG_LEVEL` environment variable and defaults
 to `INFO`. Use `DEBUG` when per-date parsed record counts are needed in
 CloudWatch logs.
