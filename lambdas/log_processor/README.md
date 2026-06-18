@@ -76,9 +76,11 @@ host, URI, status, referrer, user agent, edge result type, request id, and
 source S3 key.
 
 The summary counts unique viewer IPs per day by reading all JSONL request
-record files under `data/log-processor/requests/`. `output-keys` lists the
-stored JSONL files used for the summary, while `run-output-keys` lists only the
-JSONL files written during the current invocation.
+record files under `data/log-processor/requests/`. The public
+`data/log-processor/data.json` file contains only the visit summary and
+processing counts. Lambda direct invocation responses also include
+`output-keys`, the stored JSONL files used for the summary, and
+`run-output-keys`, the JSONL files written during the current invocation.
 
 ## Operational Notes
 

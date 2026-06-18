@@ -11,13 +11,13 @@ try:
     from .aws_clients import create_dynamodb_client, create_s3_client
     from .config import LogProcessorConfig, load_config
     from .logging_config import configure_logging
-    from .output_writer import OUTPUT_PREFIX
+    from .output_writer import OUTPUT_PREFIX, public_summary
     from .report import process_logs
 except ImportError:
     from aws_clients import create_dynamodb_client, create_s3_client
     from config import LogProcessorConfig, load_config
     from logging_config import configure_logging
-    from output_writer import OUTPUT_PREFIX
+    from output_writer import OUTPUT_PREFIX, public_summary
     from report import process_logs
 
 logger = logging.getLogger(__name__)
@@ -173,7 +173,8 @@ def _main() -> None:
 
     if args.summary_output is not None:
         args.summary_output.parent.mkdir(parents=True, exist_ok=True)
-        args.summary_output.write_text(f"{output}\n", encoding="utf-8")
+        summary_output = json.dumps(public_summary(report), indent=2, sort_keys=True)
+        args.summary_output.write_text(f"{summary_output}\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

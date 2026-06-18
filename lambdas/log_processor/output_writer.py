@@ -7,6 +7,7 @@ from typing import Any
 OUTPUT_PREFIX = "data/log-processor"
 REQUESTS_PREFIX = f"{OUTPUT_PREFIX}/requests/"
 SUMMARY_KEY = f"{OUTPUT_PREFIX}/data.json"
+SUMMARY_METADATA_KEYS = {"output-keys", "run-output-keys"}
 
 
 def write_records(
@@ -39,6 +40,10 @@ def write_summary(s3_client: Any, bucket_name: str, summary: dict[str, Any]) -> 
     s3_client.put_object(
         Bucket=bucket_name,
         Key=SUMMARY_KEY,
-        Body=json.dumps(summary, indent=2),
+        Body=json.dumps(public_summary(summary), indent=2),
         ContentType="application/json",
     )
+
+
+def public_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in summary.items() if key not in SUMMARY_METADATA_KEYS}

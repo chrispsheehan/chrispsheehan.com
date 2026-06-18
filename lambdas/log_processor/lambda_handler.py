@@ -46,7 +46,16 @@ def handle_event(event, context, *, s3_client=None, dynamodb_client=None, env=No
     s3_path = f"s3://{config.report_bucket_name}/{SUMMARY_KEY}"
 
     logger.info("Log processor summary written s3_path=%s", s3_path)
-    return {"statusCode": 200, "body": json.dumps({"s3_path": s3_path})}
+    return {
+        "statusCode": 200,
+        "body": json.dumps(
+            {
+                "s3_path": s3_path,
+                "output-keys": combined["output-keys"],
+                "run-output-keys": combined["run-output-keys"],
+            }
+        ),
+    }
 
 
 def lambda_handler(event, context):

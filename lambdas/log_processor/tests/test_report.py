@@ -226,9 +226,16 @@ def test_handle_event_writes_summary_with_injected_clients():
     response = handle_event({}, None, s3_client=s3, dynamodb_client=dynamodb, env=env)
 
     assert response["statusCode"] == 200
-    assert json.loads(response["body"]) == {"s3_path": f"s3://report-bucket/{SUMMARY_KEY}"}
+    response_body = json.loads(response["body"])
+    assert response_body["s3_path"] == f"s3://report-bucket/{SUMMARY_KEY}"
+    assert len(response_body["output-keys"]) == 1
+    assert response_body["run-output-keys"] == response_body["output-keys"]
     assert s3.puts[-1]["Key"] == SUMMARY_KEY
     assert s3.puts[-1]["ContentType"] == "application/json"
+    public_summary = json.loads(s3.puts[-1]["Body"])
+    assert "output-keys" not in public_summary
+    assert "run-output-keys" not in public_summary
+    assert public_summary["total-visits"] == 1
 
 
 def test_local_s3_output_client_writes_objects_under_key_path(tmp_path):
