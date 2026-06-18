@@ -17,6 +17,7 @@ build/
 venv
 .venv/
 __pycache__
+.pytest_cache/
 tmp/
 /data/
 *.json
@@ -27,4 +28,5 @@ tmp/
 !frontend/public/data/**/*.json
 !.vscode/
 !.vscode/launch.json
+!.vscode/settings.json
 !.vscode/tasks.json

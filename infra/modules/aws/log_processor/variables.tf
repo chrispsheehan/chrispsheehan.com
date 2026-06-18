@@ -75,6 +75,31 @@ variable "dynamodb_endpoint" {
   description = "Endpoint URL for the processed log files DynamoDB table."
 }
 
+variable "log_level" {
+  type        = string
+  description = "Python log level for the log processor Lambda."
+  default     = "INFO"
+
+  validation {
+    condition = contains(
+      ["CRITICAL", "ERROR", "WARNING", "WARN", "INFO", "DEBUG", "NOTSET"],
+      upper(var.log_level),
+    )
+    error_message = "log_level must be one of CRITICAL, ERROR, WARNING, WARN, INFO, DEBUG, or NOTSET."
+  }
+}
+
+variable "logs_processor_max_files" {
+  type        = number
+  description = "Optional maximum number of CloudFront log files to claim per invocation."
+  default     = null
+
+  validation {
+    condition     = var.logs_processor_max_files == null || var.logs_processor_max_files > 0
+    error_message = "logs_processor_max_files must be null or a positive number."
+  }
+}
+
 variable "log_retention_days" {
   type    = number
   default = 1

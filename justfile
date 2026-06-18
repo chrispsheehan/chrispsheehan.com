@@ -21,6 +21,38 @@ start host='127.0.0.1' port='4321':
     npm run astro --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}" -- dev --host "{{host}}" --port "{{port}}"
 
 
+# Run Python unit tests.
+unit-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+    python3.12 -m venv .venv
+    .venv/bin/python -m pip install --quiet --no-cache-dir \
+        -r "{{PROJECT_DIR}}/{{LAMBDA_DIR}}/log_processor/requirements.txt" \
+        "pytest>=8,<9"
+    .venv/bin/python -m pytest
+
+
+# Stop Docker Compose services and wipe local persisted service data.
+docker-compose-wipe:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+    docker compose down --volumes --remove-orphans
+    rm -rf "{{PROJECT_DIR}}/docker/dynamodb" "{{PROJECT_DIR}}/docker/log-processor-s3-database"
+    mkdir -p "{{PROJECT_DIR}}/docker/dynamodb" "{{PROJECT_DIR}}/docker/log-processor-s3-database"
+
+
+# Run the log processor in Docker Compose and refresh the frontend summary data file.
+log-processor-run:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+    docker compose up -d --wait dynamodb-local
+    docker compose run --rm dynamodb-setup
+    docker compose run --rm log-processor
+
+
 # Return the Lambda artifact directory name.
 code-bucket-get-lambda-artifact-dir:
     @echo {{LAMBDA_DIR}}

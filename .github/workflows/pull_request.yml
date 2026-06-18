@@ -233,12 +233,12 @@ jobs:
             terragrunt 0.72.6
           github_token: ${{ github.token }}
 
-      - name: Build dev Terragrunt waves
+      - name: Build prod Terragrunt waves
         id: waves
         uses: ./.github/actions/just
         with:
           aws_region: ${{ env.AWS_REGION }}
-          just_action: tg-graph-waves dev
+          just_action: tg-graph-waves prod
 
       - name: Build infra wave JSON
         id: infra_waves
@@ -310,6 +310,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - name: Test log processor
+        uses: ./.github/actions/just
+        with:
+          just_action: unit-test
 
       - name: Build log processor
         uses: ./.github/actions/just

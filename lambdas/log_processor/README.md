@@ -9,7 +9,14 @@ Processes CloudFront standard logs from S3 into a queryable S3 datastore.
 - skips source objects already marked as complete
 - parses non-bot request rows from each log object
 - writes newline-delimited JSON request records into date-partitioned S3 keys
-- writes a small run summary to `data/log-processor/data.json`
+- rebuilds the public visit summary from the stored request record database
+- writes a small summary to `data/log-processor/data.json`
+
+## Build And Deployment
+
+`log_processor` is built into `lambdas/log_processor.zip` by the shared CI
+workflow and deployed through the `infra/live/<environment>/aws/log_processor`
+stack.
 
 ## Invocation Modes
 
@@ -18,6 +25,12 @@ Processes CloudFront standard logs from S3 into a queryable S3 datastore.
 - Local debug mode: use the VS Code `Debug logs_report(bucket_name)` launch
   target to call `logs_report(bucket_name)` directly, bypassing
   `lambda_handler.py` and its final `data/log-processor/data.json` write
+- Local refresh mode: run `just log-processor-run` to invoke
+  `lambdas.log_processor.logs_processor` in Docker Compose. It reads the
+  configured CloudFront logs, uses DynamoDB Local for the ledger, suppresses
+  real S3 writes, mirrors generated report-bucket objects under
+  `docker/log-processor-s3-database/`, and writes the summary directly to
+  `frontend/public/data/log-processor/data.json`.
 
 Direct mode is safe to run repeatedly. Completed source objects are skipped by
 the DynamoDB ledger, and failed or interrupted objects can be claimed again on a
@@ -40,21 +53,6 @@ The pre-launch task creates `.venv` and installs
 credentials out of `.env` for this launch target, because the S3 client is
 intentionally real.
 
-## Local Test Fixtures
-
-Download a small set of CloudFront log files into `tmp/log-processor/logs`:
-
-```sh
-just lambda-log-fixtures-download
-```
-
-The fixture downloader defaults to `chrispsheehan.com.logs`, scans up to 200
-objects, and downloads 10 `.gz` files. Override the limits when needed:
-
-```sh
-just lambda-log-fixtures-download 5 cloudfront-logs/ tmp/log-processor/logs
-```
-
 ## Runtime Configuration
 
 - `REPORT_BUCKET`: S3 database bucket for parsed outputs and run summary
@@ -64,6 +62,7 @@ just lambda-log-fixtures-download 5 cloudfront-logs/ tmp/log-processor/logs
 - `PROCESSED_LOG_FILES_TABLE`: DynamoDB table used as the processed-file ledger
 - `DYNAMODB_ENDPOINT`: DynamoDB endpoint URL
 - `DYNAMODB_AWS_REGION`: DynamoDB region used with `DYNAMODB_ENDPOINT`
+- `LOG_LEVEL`: optional Python log level; defaults to `INFO`
 
 ## Output Shape
 
@@ -76,11 +75,23 @@ Each JSONL row includes the CloudFront request date/time, viewer IP, method,
 host, URI, status, referrer, user agent, edge result type, request id, and
 source S3 key.
 
+The summary counts unique viewer IPs per day by reading all JSONL request
+record files under `data/log-processor/requests/`. The public
+`data/log-processor/data.json` file contains only the visit summary and
+processing counts. Lambda direct invocation responses also include
+`output-keys`, the stored JSONL files used for the summary, and
+`run-output-keys`, the JSONL files written during the current invocation.
+
 ## Operational Notes
 
 - the ledger key is derived from the source bucket, key, and ETag
 - this avoids relying on a timestamp high-water mark, which is unsafe for
   delayed CloudFront log delivery
+- claimed files receive a 15-minute `processing_expires_at` lease; concurrent
+  workers skip active claims and only reclaim failed or expired processing items
+- `INFO` logs show invocation setup, listing totals, per-file claim/skip/start
+  and completion progress, and the final run summary
+- `DEBUG` logs include parsed record counts by source file and request date
 - the Lambda streams gzip objects from S3 and does not download the full log set
   to `/tmp`
 - `S3_LOGS_MAX_FILES` limits how many unskipped source objects are streamed in

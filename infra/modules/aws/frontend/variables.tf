@@ -49,3 +49,14 @@ variable "data_bucket_regional_domain_name" {
   type        = string
   description = "Regional S3 domain name for the data bucket CloudFront origin"
 }
+
+variable "log_retention_days" {
+  type        = number
+  description = "Number of days to retain CloudFront standard logs"
+  default     = 14
+
+  validation {
+    condition     = var.log_retention_days > 0
+    error_message = "log_retention_days must be a positive number."
+  }
+}

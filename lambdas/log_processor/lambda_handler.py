@@ -1,34 +1,69 @@
-import os
-import sys
-import boto3
 import json
+import logging
+import sys
 
-from logs_processor import logs_report
+try:
+    from .aws_clients import create_dynamodb_client, create_s3_client
+    from .config import load_config
+    from .logging_config import configure_logging
+    from .logs_processor import logs_report
+    from .output_writer import SUMMARY_KEY, write_summary
+except ImportError:
+    from aws_clients import create_dynamodb_client, create_s3_client
+    from config import load_config
+    from logging_config import configure_logging
+    from logs_processor import logs_report
+    from output_writer import SUMMARY_KEY, write_summary
 
-s3 = boto3.client("s3")
+logger = logging.getLogger(__name__)
+
+
+def handle_event(event, context, *, s3_client=None, dynamodb_client=None, env=None):
+    config = load_config(env=env)
+    configure_logging(config.log_level)
+
+    request_id = getattr(context, "aws_request_id", None)
+    logger.info(
+        "Starting log processor invocation request_id=%s logs_bucket=%s logs_prefix=%s report_bucket=%s max_files=%s",
+        request_id,
+        config.logs_bucket_name,
+        config.logs_prefix,
+        config.report_bucket_name,
+        config.max_files,
+    )
+
+    s3_client = s3_client or create_s3_client()
+    dynamodb_client = dynamodb_client or create_dynamodb_client(config)
+
+    combined = logs_report(
+        config.report_bucket_name,
+        config=config,
+        s3_client=s3_client,
+        dynamodb_client=dynamodb_client,
+    )
+
+    write_summary(s3_client, config.report_bucket_name, combined)
+    s3_path = f"s3://{config.report_bucket_name}/{SUMMARY_KEY}"
+
+    logger.info("Log processor summary written s3_path=%s", s3_path)
+    return {
+        "statusCode": 200,
+        "body": json.dumps(
+            {
+                "s3_path": s3_path,
+                "output-keys": combined["output-keys"],
+                "run-output-keys": combined["run-output-keys"],
+            }
+        ),
+    }
 
 
 def lambda_handler(event, context):
     try:
-        bucket_name = os.environ["REPORT_BUCKET"]
-
-        combined = logs_report(bucket_name)
-
-        key_name = "data/log-processor/data.json"
-
-        s3.put_object(
-            Bucket=bucket_name,
-            Key=key_name,
-            Body=json.dumps(combined, indent=2),
-            ContentType="application/json",
-        )
-
-        print(f"Log processed and saved to s3://{bucket_name}/{key_name}")
-        return {"statusCode": 200, "body": json.dumps({"s3_path": f"s3://{bucket_name}/{key_name}"})}
-
+        return handle_event(event, context)
     except Exception as exc:
         error_msg = f"Logs processor Lambda failed: {exc}"
-        print(error_msg, file=sys.stderr)
+        logger.exception(error_msg)
 
         # Return 500 JSON for API Gateway / test invocations
         return {"statusCode": 500, "body": json.dumps({"error": str(exc)})}

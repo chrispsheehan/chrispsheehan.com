@@ -249,7 +249,7 @@ tg-validate-static-wave-jobs:
         fi
     }
 
-    echo "Raw dev waves: $raw_waves_json"
+    echo "Raw prod waves: $raw_waves_json"
     echo "Infra plan/apply waves: $infra_waves_json"
     echo "Destroy waves: $destroy_waves_json"
 

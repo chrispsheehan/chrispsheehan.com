@@ -126,6 +126,37 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
   }
 
   statement {
+    sid    = "ReadReportObjects"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = [
+      "${var.report_bucket_arn}/data/log-processor/requests/*",
+    ]
+  }
+
+  statement {
+    sid    = "ListReportBucket"
+    effect = "Allow"
+    actions = [
+      "s3:ListBucket",
+    ]
+    resources = [
+      var.report_bucket_arn,
+    ]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values = [
+        "data/log-processor/requests/",
+        "data/log-processor/requests/*",
+      ]
+    }
+  }
+
+  statement {
     sid     = "ReadReportBucketLocation"
     effect  = "Allow"
     actions = ["s3:GetBucketLocation"]

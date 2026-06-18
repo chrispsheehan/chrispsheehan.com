@@ -4,10 +4,24 @@ include "root" {
 
 dependencies {
   paths = [
+    "../frontend",
     "../oidc",
     "../security",
     "../s3_database",
   ]
+}
+
+dependency "frontend" {
+  config_path = "../frontend"
+
+  mock_outputs = {
+    cloudfront_logs_bucket_name = "wip.chrispsheehan.com.logs"
+    cloudfront_logs_bucket_arn  = "arn:aws:s3:::wip.chrispsheehan.com.logs"
+    cloudfront_logs_prefix      = "cloudfront-logs/"
+  }
+
+  mock_outputs_merge_strategy_with_state  = "shallow"
+  mock_outputs_allowed_terraform_commands = ["validate", "plan", "destroy", "init", "show", "graph-dependencies", "output-module-groups"]
 }
 
 dependency "security" {
@@ -44,12 +58,13 @@ terraform {
 }
 
 inputs = {
-  logs_bucket_name               = dependency.s3_database.outputs.bucket_name
-  logs_bucket_arn                = dependency.s3_database.outputs.bucket_arn
   runtime_security_group_id      = dependency.security.outputs.runtime_security_group_id
   private_subnet_ids             = dependency.security.outputs.private_subnet_ids
   report_bucket_name             = dependency.s3_database.outputs.bucket_name
   report_bucket_arn              = dependency.s3_database.outputs.bucket_arn
+  logs_bucket_name               = dependency.frontend.outputs.cloudfront_logs_bucket_name
+  logs_bucket_arn                = dependency.frontend.outputs.cloudfront_logs_bucket_arn
+  logs_bucket_prefix             = dependency.frontend.outputs.cloudfront_logs_prefix
   processed_log_files_table_name = dependency.s3_database.outputs.processed_log_files_table_name
   processed_log_files_table_arn  = dependency.s3_database.outputs.processed_log_files_table_arn
   dynamodb_aws_region            = dependency.s3_database.outputs.processed_log_files_table_region
