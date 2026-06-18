@@ -27,7 +27,9 @@ unit-test:
     set -euo pipefail
     cd "{{PROJECT_DIR}}"
     python3.12 -m venv .venv
-    .venv/bin/python -m pip install --quiet --no-cache-dir --group test
+    .venv/bin/python -m pip install --quiet --no-cache-dir \
+        -r "{{PROJECT_DIR}}/{{LAMBDA_DIR}}/log_processor/requirements.txt" \
+        "pytest>=8,<9"
     .venv/bin/python -m pytest
 
 
