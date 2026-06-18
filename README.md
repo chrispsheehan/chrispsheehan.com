@@ -29,6 +29,7 @@ The current runtime is intentionally small:
 just --list
 just start
 just unit-test
+just log-processor-run
 just --justfile scripts/deploy/justfile frontend-build
 just tg dev aws/frontend plan
 just tg-all dev plan

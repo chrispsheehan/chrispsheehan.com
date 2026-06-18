@@ -24,6 +24,11 @@ stack.
 - Local debug mode: use the VS Code `Debug logs_report(bucket_name)` launch
   target to call `logs_report(bucket_name)` directly, bypassing
   `lambda_handler.py` and its final `data/log-processor/data.json` write
+- Local refresh mode: run `just log-processor-run` to invoke
+  `lambdas.log_processor.logs_processor` in Docker Compose. It reads the
+  configured CloudFront logs, uses DynamoDB Local for the ledger, suppresses S3
+  writes, and writes the summary directly to
+  `frontend/public/data/log-processor/data.json`.
 
 Direct mode is safe to run repeatedly. Completed source objects are skipped by
 the DynamoDB ledger, and failed or interrupted objects can be claimed again on a
@@ -45,21 +50,6 @@ The pre-launch task creates `.venv` and installs
 `lambdas/log_processor/requirements.txt` if needed. Keep global dummy AWS
 credentials out of `.env` for this launch target, because the S3 client is
 intentionally real.
-
-## Local Test Fixtures
-
-Download a small set of CloudFront log files into `tmp/log-processor/logs`:
-
-```sh
-just lambda-log-fixtures-download
-```
-
-The fixture downloader defaults to `chrispsheehan.com.logs`, scans up to 200
-objects, and downloads 10 `.gz` files. Override the limits when needed:
-
-```sh
-just lambda-log-fixtures-download 5 cloudfront-logs/ tmp/log-processor/logs
-```
 
 ## Runtime Configuration
 

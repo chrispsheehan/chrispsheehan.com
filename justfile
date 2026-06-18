@@ -41,6 +41,16 @@ docker-compose-wipe:
     mkdir -p "{{PROJECT_DIR}}/docker/dynamodb"
 
 
+# Run the log processor in Docker Compose and refresh the frontend summary data file.
+log-processor-run:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+    docker compose up -d --wait dynamodb-local
+    docker compose run --rm dynamodb-setup
+    docker compose run --rm log-processor
+
+
 # Return the Lambda artifact directory name.
 code-bucket-get-lambda-artifact-dir:
     @echo {{LAMBDA_DIR}}

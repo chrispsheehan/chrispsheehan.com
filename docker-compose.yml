@@ -72,3 +72,27 @@ services:
         --key-schema AttributeName=object_id,KeyType=HASH
         --attribute-definitions AttributeName=object_id,AttributeType=S
         >/dev/null
+
+  log-processor:
+    image: python:3.12-slim
+    depends_on:
+      dynamodb-local:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      AWS_PROFILE: ${AWS_PROFILE:-default}
+      DYNAMODB_ENDPOINT: http://dynamodb-local:8000
+    volumes:
+      - ".:/workspace"
+      - "${HOME}/.aws:/root/.aws:ro"
+    working_dir: /workspace
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >
+        set -e;
+        python -m pip install --quiet --no-cache-dir -r lambdas/log_processor/requirements.txt;
+        python -m lambdas.log_processor.logs_processor local-log-processor
+        --suppress-s3-writes
+        --summary-output frontend/public/data/log-processor/data.json
