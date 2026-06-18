@@ -16,12 +16,12 @@ The current runtime is intentionally small:
 - `infra/live/*/aws/security` creates shared security groups for runtime
   resources.
 - `infra/live/*/aws/s3_database` creates the temporary S3 datastore and
-  DynamoDB processed-file ledger used by the log processor Lambda.
+  DynamoDB ledger resources.
 - `infra/live/*/aws/oidc` creates GitHub Actions deploy roles.
 - `infra/live/ci/aws/code_bucket` and `infra/live/dev/aws/code_bucket` store
   deployable frontend artifacts and future Lambda artifacts.
-- `lambdas/` contains Lambda source and the packaging contract for future
-  functions. `lambdas/log_processor` is the first packaged example.
+- `lambdas/` contains Lambda source and the packaging contract, including the
+  deployed `log_processor` runtime.
 
 ## Useful Commands
 

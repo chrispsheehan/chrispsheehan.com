@@ -11,6 +11,12 @@ Processes CloudFront standard logs from S3 into a queryable S3 datastore.
 - writes newline-delimited JSON request records into date-partitioned S3 keys
 - writes a small run summary to `data/log-processor/data.json`
 
+## Build And Deployment
+
+`log_processor` is built into `lambdas/log_processor.zip` by the shared CI
+workflow and deployed through the `infra/live/<environment>/aws/log_processor`
+stack.
+
 ## Invocation Modes
 
 - Scheduled mode: invoked daily by EventBridge through the live Lambda alias

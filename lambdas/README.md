@@ -1,12 +1,13 @@
 # Lambdas
 
-No Lambda runtime is deployed yet, but `log_processor` is the first packaged
-example.
+This directory contains Lambda source and the packaging contract shared by CI
+and local deploy commands.
 
-This directory is kept as the future Lambda source root so Lambda code can be
-added without reworking artifact conventions.
+## Lambda Functions
 
-## Expected Future Shape
+- [`log_processor`](log_processor/README.md): deployed Lambda runtime.
+
+## Adding Lambdas
 
 Add each Lambda under its own directory:
 
@@ -16,12 +17,6 @@ lambdas/
     lambda_handler.py
     requirements.txt
 ```
-
-The current example lives at `lambdas/log_processor` and is built into
-`lambdas/log_processor.zip` by the shared CI workflow. It reads CloudFront log
-objects from S3, tracks processed source files in DynamoDB, and writes parsed
-JSONL records plus run summaries to the S3-backed temporary datastore
-provisioned by `infra/modules/aws/s3_database`.
 
 The deploy helper can package and upload a Lambda artifact:
 
