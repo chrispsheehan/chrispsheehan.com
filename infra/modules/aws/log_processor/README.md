@@ -26,9 +26,10 @@ workflow can publish a new version, roll it out through CodeDeploy, and invoke
 it on a daily schedule through EventBridge.
 
 The live Terragrunt stack passes the CloudFront log bucket, report bucket,
-processed-file ledger, DynamoDB region, and DynamoDB endpoint as explicit inputs
-from the `s3_database` stack. The Lambda reads CloudFront log objects from the
-configured log bucket under `cloudfront-logs/` by default.
+processed-file ledger, DynamoDB region, and DynamoDB endpoint as explicit
+inputs. The Lambda reads CloudFront log objects from the configured log bucket
+under `cloudfront-logs/` by default, unless the live stack overrides
+`logs_bucket_prefix`.
 
 `log_level` controls the Lambda's `LOG_LEVEL` environment variable and defaults
 to `INFO`. Use `DEBUG` when per-date parsed record counts are needed in

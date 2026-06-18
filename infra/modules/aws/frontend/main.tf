@@ -20,6 +20,45 @@ resource "aws_s3_bucket_ownership_controls" "frontend" {
   }
 }
 
+resource "aws_s3_bucket" "frontend_logs" {
+  bucket        = local.logs_bucket_name
+  force_destroy = true
+}
+
+resource "aws_s3_bucket_public_access_block" "frontend_logs" {
+  bucket = aws_s3_bucket.frontend_logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_ownership_controls" "frontend_logs" {
+  bucket = aws_s3_bucket.frontend_logs.id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "frontend_logs" {
+  bucket = aws_s3_bucket.frontend_logs.id
+
+  rule {
+    id     = "expire-cloudfront-logs"
+    status = "Enabled"
+
+    filter {
+      prefix = local.logs_prefix
+    }
+
+    expiration {
+      days = var.log_retention_days
+    }
+  }
+}
+
 resource "aws_acm_certificate" "frontend" {
   provider          = aws.domain_aws_region
   domain_name       = local.domain_name
@@ -62,12 +101,20 @@ resource "aws_cloudfront_origin_access_control" "frontend" {
 }
 
 resource "aws_cloudfront_distribution" "frontend" {
+  depends_on = [aws_s3_bucket_ownership_controls.frontend_logs]
+
   enabled             = true
   is_ipv6_enabled     = true
   comment             = "${var.environment} ${var.project_name} frontend"
   default_root_object = local.root_file
   aliases             = [local.domain_name]
   price_class         = "PriceClass_100"
+
+  logging_config {
+    bucket          = aws_s3_bucket.frontend_logs.bucket_regional_domain_name
+    include_cookies = false
+    prefix          = local.logs_prefix
+  }
 
   origin {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name

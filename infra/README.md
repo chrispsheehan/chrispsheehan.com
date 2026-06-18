@@ -18,6 +18,7 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 `infra/modules/aws/frontend` owns:
 
 - private S3 origin bucket
+- CloudFront standard log bucket
 - CloudFront distribution
 - cached CloudFront `/data/*` behavior backed by the S3 database bucket
 - ACM certificate in `us-east-1`
