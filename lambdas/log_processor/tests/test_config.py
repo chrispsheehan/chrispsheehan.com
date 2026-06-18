@@ -1,6 +1,11 @@
 import pytest
 
-from lambdas.log_processor.config import load_config, optional_positive_int_env, required_env
+from lambdas.log_processor.config import (
+    load_config,
+    log_level_env,
+    optional_positive_int_env,
+    required_env,
+)
 
 
 BASE_ENV = {
@@ -19,6 +24,7 @@ def test_load_config_reads_required_and_optional_values():
         "S3_LOGS_MAX_FILES": "10",
         "DYNAMODB_AWS_ACCESS_KEY_ID": "access",
         "DYNAMODB_AWS_SECRET_ACCESS_KEY": "secret",
+        "LOG_LEVEL": "debug",
     }
 
     config = load_config(env=env)
@@ -30,6 +36,7 @@ def test_load_config_reads_required_and_optional_values():
     assert config.processed_log_files_table == "processed-files"
     assert config.dynamodb_access_key_id == "access"
     assert config.dynamodb_secret_access_key == "secret"
+    assert config.log_level == "DEBUG"
 
 
 def test_load_config_allows_report_bucket_override_and_defaults():
@@ -40,6 +47,7 @@ def test_load_config_allows_report_bucket_override_and_defaults():
     assert config.max_files is None
     assert config.dynamodb_access_key_id == "DUMMYIDEXAMPLE"
     assert config.dynamodb_secret_access_key == "DUMMYEXAMPLEKEY"
+    assert config.log_level == "INFO"
 
 
 def test_required_env_rejects_missing_values():
@@ -51,3 +59,12 @@ def test_required_env_rejects_missing_values():
 def test_optional_positive_int_env_rejects_invalid_values(value):
     with pytest.raises(ValueError, match="S3_LOGS_MAX_FILES must be a positive integer"):
         optional_positive_int_env({"S3_LOGS_MAX_FILES": value}, "S3_LOGS_MAX_FILES")
+
+
+def test_log_level_env_allows_warn_alias():
+    assert log_level_env({"LOG_LEVEL": "warn"}, "LOG_LEVEL") == "WARNING"
+
+
+def test_log_level_env_rejects_invalid_values():
+    with pytest.raises(ValueError, match="LOG_LEVEL must be one of"):
+        log_level_env({"LOG_LEVEL": "chatty"}, "LOG_LEVEL")

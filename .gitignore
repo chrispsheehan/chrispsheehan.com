@@ -17,6 +17,7 @@ build/
 venv
 .venv/
 __pycache__
+.pytest_cache/
 tmp/
 /data/
 *.json

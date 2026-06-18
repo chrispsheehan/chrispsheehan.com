@@ -30,5 +30,9 @@ processed-file ledger, DynamoDB region, and DynamoDB endpoint as explicit inputs
 from the `s3_database` stack. The Lambda reads CloudFront log objects from the
 configured log bucket under `cloudfront-logs/` by default.
 
+`log_level` controls the Lambda's `LOG_LEVEL` environment variable and defaults
+to `INFO`. Use `DEBUG` when per-date parsed record counts are needed in
+CloudWatch logs.
+
 For bootstrap-friendly plan and validate flows, keep Terragrunt dependency
 mocks in the live stack rather than reading sibling state inside this module.

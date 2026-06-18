@@ -1,20 +1,37 @@
-import sys
 import json
+import logging
+import sys
 
 try:
     from .aws_clients import create_dynamodb_client, create_s3_client
     from .config import load_config
+    from .logging_config import configure_logging
     from .logs_processor import logs_report
     from .output_writer import SUMMARY_KEY, write_summary
 except ImportError:
     from aws_clients import create_dynamodb_client, create_s3_client
     from config import load_config
+    from logging_config import configure_logging
     from logs_processor import logs_report
     from output_writer import SUMMARY_KEY, write_summary
+
+logger = logging.getLogger(__name__)
 
 
 def handle_event(event, context, *, s3_client=None, dynamodb_client=None, env=None):
     config = load_config(env=env)
+    configure_logging(config.log_level)
+
+    request_id = getattr(context, "aws_request_id", None)
+    logger.info(
+        "Starting log processor invocation request_id=%s logs_bucket=%s logs_prefix=%s report_bucket=%s max_files=%s",
+        request_id,
+        config.logs_bucket_name,
+        config.logs_prefix,
+        config.report_bucket_name,
+        config.max_files,
+    )
+
     s3_client = s3_client or create_s3_client()
     dynamodb_client = dynamodb_client or create_dynamodb_client(config)
 
@@ -28,7 +45,7 @@ def handle_event(event, context, *, s3_client=None, dynamodb_client=None, env=No
     write_summary(s3_client, config.report_bucket_name, combined)
     s3_path = f"s3://{config.report_bucket_name}/{SUMMARY_KEY}"
 
-    print(f"Log processed and saved to {s3_path}")
+    logger.info("Log processor summary written s3_path=%s", s3_path)
     return {"statusCode": 200, "body": json.dumps({"s3_path": s3_path})}
 
 
@@ -37,7 +54,7 @@ def lambda_handler(event, context):
         return handle_event(event, context)
     except Exception as exc:
         error_msg = f"Logs processor Lambda failed: {exc}"
-        print(error_msg, file=sys.stderr)
+        logger.exception(error_msg)
 
         # Return 500 JSON for API Gateway / test invocations
         return {"statusCode": 500, "body": json.dumps({"error": str(exc)})}

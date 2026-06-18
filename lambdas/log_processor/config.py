@@ -4,6 +4,8 @@ from dataclasses import dataclass
 import os
 from typing import Mapping
 
+VALID_LOG_LEVELS = {"CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"}
+
 
 @dataclass(frozen=True)
 class LogProcessorConfig:
@@ -16,6 +18,7 @@ class LogProcessorConfig:
     dynamodb_endpoint: str
     dynamodb_access_key_id: str
     dynamodb_secret_access_key: str
+    log_level: str
 
 
 def load_config(
@@ -35,6 +38,7 @@ def load_config(
         dynamodb_endpoint=required_env(env, "DYNAMODB_ENDPOINT"),
         dynamodb_access_key_id=env.get("DYNAMODB_AWS_ACCESS_KEY_ID", "DUMMYIDEXAMPLE"),
         dynamodb_secret_access_key=env.get("DYNAMODB_AWS_SECRET_ACCESS_KEY", "DUMMYEXAMPLEKEY"),
+        log_level=log_level_env(env, "LOG_LEVEL"),
     )
 
 
@@ -59,3 +63,14 @@ def optional_positive_int_env(env: Mapping[str, str], name: str) -> int | None:
         raise ValueError(f"{name} must be a positive integer")
 
     return parsed
+
+
+def log_level_env(env: Mapping[str, str], name: str) -> str:
+    value = env.get(name, "INFO").upper()
+    if value == "WARN":
+        value = "WARNING"
+
+    if value not in VALID_LOG_LEVELS:
+        raise ValueError(f"{name} must be one of {', '.join(sorted(VALID_LOG_LEVELS))}")
+
+    return value

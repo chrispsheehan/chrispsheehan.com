@@ -70,6 +70,7 @@ just lambda-log-fixtures-download 5 cloudfront-logs/ tmp/log-processor/logs
 - `PROCESSED_LOG_FILES_TABLE`: DynamoDB table used as the processed-file ledger
 - `DYNAMODB_ENDPOINT`: DynamoDB endpoint URL
 - `DYNAMODB_AWS_REGION`: DynamoDB region used with `DYNAMODB_ENDPOINT`
+- `LOG_LEVEL`: optional Python log level; defaults to `INFO`
 
 ## Output Shape
 
@@ -87,6 +88,9 @@ source S3 key.
 - the ledger key is derived from the source bucket, key, and ETag
 - this avoids relying on a timestamp high-water mark, which is unsafe for
   delayed CloudFront log delivery
+- `INFO` logs show invocation setup, listing totals, per-file claim/skip/start
+  and completion progress, and the final run summary
+- `DEBUG` logs include parsed record counts by source file and request date
 - the Lambda streams gzip objects from S3 and does not download the full log set
   to `/tmp`
 - `S3_LOGS_MAX_FILES` limits how many unskipped source objects are streamed in

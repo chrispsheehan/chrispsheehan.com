@@ -20,6 +20,7 @@ def _config(max_files=None):
         dynamodb_endpoint="http://localhost:8000",
         dynamodb_access_key_id="access",
         dynamodb_secret_access_key="secret",
+        log_level="INFO",
     )
 
 
@@ -174,3 +175,25 @@ def test_handle_event_writes_summary_with_injected_clients():
     assert json.loads(response["body"]) == {"s3_path": f"s3://report-bucket/{SUMMARY_KEY}"}
     assert s3.puts[-1]["Key"] == SUMMARY_KEY
     assert s3.puts[-1]["ContentType"] == "application/json"
+
+
+def test_logs_report_logs_progress_for_each_file(caplog):
+    objects = [
+        _object("cloudfront/one.gz", "etag-1", 1),
+        _object("cloudfront/two.gz", "etag-2", 2),
+    ]
+    bodies = {
+        "cloudfront/one.gz": _gzip_body(_row("2026-01-01", "203.0.113.10", "req-1")),
+        "cloudfront/two.gz": _gzip_body(_row("2026-01-02", "203.0.113.20", "req-2")),
+    }
+    s3 = FakeS3(objects, bodies)
+    dynamodb = FakeDynamoDB()
+
+    with caplog.at_level("INFO"):
+        logs_report("report-bucket", config=_config(), s3_client=s3, dynamodb_client=dynamodb)
+
+    messages = [record.getMessage() for record in caplog.records]
+    assert any("Found 2 CloudFront log object(s)" in message for message in messages)
+    assert any("Processing claimed log file 1/2 key=cloudfront/one.gz" in message for message in messages)
+    assert any("Completed log file 2/2 key=cloudfront/two.gz" in message for message in messages)
+    assert any("Finished log processor run found=2 claimed=2 processed=2" in message for message in messages)
