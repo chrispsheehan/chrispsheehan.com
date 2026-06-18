@@ -9,7 +9,8 @@ Processes CloudFront standard logs from S3 into a queryable S3 datastore.
 - skips source objects already marked as complete
 - parses non-bot request rows from each log object
 - writes newline-delimited JSON request records into date-partitioned S3 keys
-- writes a small run summary to `data/log-processor/data.json`
+- rebuilds the public visit summary from the stored request record database
+- writes a small summary to `data/log-processor/data.json`
 
 ## Build And Deployment
 
@@ -26,8 +27,9 @@ stack.
   `lambda_handler.py` and its final `data/log-processor/data.json` write
 - Local refresh mode: run `just log-processor-run` to invoke
   `lambdas.log_processor.logs_processor` in Docker Compose. It reads the
-  configured CloudFront logs, uses DynamoDB Local for the ledger, suppresses S3
-  writes, and writes the summary directly to
+  configured CloudFront logs, uses DynamoDB Local for the ledger, suppresses
+  real S3 writes, mirrors generated report-bucket objects under
+  `docker/log-processor-s3-database/`, and writes the summary directly to
   `frontend/public/data/log-processor/data.json`.
 
 Direct mode is safe to run repeatedly. Completed source objects are skipped by
@@ -72,6 +74,11 @@ intentionally real.
 Each JSONL row includes the CloudFront request date/time, viewer IP, method,
 host, URI, status, referrer, user agent, edge result type, request id, and
 source S3 key.
+
+The summary counts unique viewer IPs per day by reading all JSONL request
+record files under `data/log-processor/requests/`. `output-keys` lists the
+stored JSONL files used for the summary, while `run-output-keys` lists only the
+JSONL files written during the current invocation.
 
 ## Operational Notes
 

@@ -5,6 +5,7 @@ from typing import Any
 
 
 OUTPUT_PREFIX = "data/log-processor"
+REQUESTS_PREFIX = f"{OUTPUT_PREFIX}/requests/"
 SUMMARY_KEY = f"{OUTPUT_PREFIX}/data.json"
 
 
@@ -21,7 +22,7 @@ def write_records(
         if not records:
             continue
 
-        key = f"{OUTPUT_PREFIX}/requests/date={date}/{source_hash}.jsonl"
+        key = f"{REQUESTS_PREFIX}date={date}/{source_hash}.jsonl"
         body = "\n".join(json.dumps(record, separators=(",", ":")) for record in records)
         s3_client.put_object(
             Bucket=bucket_name,

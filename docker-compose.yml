@@ -95,4 +95,5 @@ services:
         python -m pip install --quiet --no-cache-dir -r lambdas/log_processor/requirements.txt;
         python -m lambdas.log_processor.logs_processor local-log-processor
         --suppress-s3-writes
+        --local-s3-output-dir docker/log-processor-s3-database
         --summary-output frontend/public/data/log-processor/data.json

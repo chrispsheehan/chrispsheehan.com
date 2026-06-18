@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import datetime, timezone
 import logging
 from typing import Any, Callable
@@ -8,11 +7,13 @@ from typing import Any, Callable
 try:
     from .cloudfront_logs import list_log_objects, parse_log_object
     from .config import LogProcessorConfig
+    from .database_reader import build_visitor_tracker_from_database
     from .ledger import claim_log_object, mark_complete, mark_failed
     from .output_writer import write_records
 except ImportError:
     from cloudfront_logs import list_log_objects, parse_log_object
     from config import LogProcessorConfig
+    from database_reader import build_visitor_tracker_from_database
     from ledger import claim_log_object, mark_complete, mark_failed
     from output_writer import write_records
 
@@ -32,12 +33,11 @@ def process_logs(
         config.logs_prefix,
     )
     log_objects = list_log_objects(s3_client, config.logs_bucket_name, config.logs_prefix)
-    visitor_tracker: dict[str, set[str]] = defaultdict(set)
     claimed_files = 0
     processed_files = 0
     skipped_files = 0
     failed_files = 0
-    output_keys: list[str] = []
+    run_output_keys: list[str] = []
 
     logger.info(
         "Found %s CloudFront log object(s) max_claimed_files=%s",
@@ -92,13 +92,11 @@ def process_logs(
         try:
             records_by_date = parse_log_object(s3_client, config.logs_bucket_name, log_object.key)
             for date, records in records_by_date.items():
-                visitor_tracker[date].update(record["viewer_ip"] for record in records)
                 logger.debug(
-                    "Parsed records for log file key=%s date=%s records=%s unique_viewers_for_date=%s",
+                    "Parsed records for log file key=%s date=%s records=%s",
                     log_object.key,
                     date,
                     len(records),
-                    len(visitor_tracker[date]),
                 )
 
             object_output_keys = write_records(
@@ -117,7 +115,7 @@ def process_logs(
             )
 
             processed_files += 1
-            output_keys.extend(object_output_keys)
+            run_output_keys.extend(object_output_keys)
             logger.info(
                 "Completed log file %s/%s key=%s records=%s output_keys=%s processed=%s failed=%s skipped=%s",
                 index,
@@ -142,6 +140,15 @@ def process_logs(
             if report_error is not None:
                 report_error(message)
 
+    logger.info(
+        "Aggregating visit summary from report database bucket=%s prefix=data/log-processor/requests/",
+        config.report_bucket_name,
+    )
+    visitor_tracker, database_output_keys = build_visitor_tracker_from_database(
+        s3_client,
+        config.report_bucket_name,
+    )
+
     summary = build_summary(
         visitor_tracker,
         log_files_found=len(log_objects),
@@ -150,15 +157,17 @@ def process_logs(
         log_files_processed=processed_files,
         log_files_skipped=skipped_files,
         log_files_failed=failed_files,
-        output_keys=output_keys,
+        output_keys=database_output_keys,
+        run_output_keys=run_output_keys,
     )
     logger.info(
-        "Finished log processor run found=%s claimed=%s processed=%s skipped=%s failed=%s output_keys=%s total_visits=%s daily_visits=%s last_date=%s",
+        "Finished log processor run found=%s claimed=%s processed=%s skipped=%s failed=%s run_output_keys=%s database_output_keys=%s total_visits=%s daily_visits=%s last_date=%s",
         summary["log-files-found"],
         summary["log-files-claimed"],
         summary["log-files-processed"],
         summary["log-files-skipped"],
         summary["log-files-failed"],
+        len(summary["run-output-keys"]),
         len(summary["output-keys"]),
         summary["total-visits"],
         summary["daily-visits"],
@@ -177,6 +186,7 @@ def build_summary(
     log_files_skipped: int,
     log_files_failed: int,
     output_keys: list[str],
+    run_output_keys: list[str],
 ) -> dict[str, Any]:
     daily_counts = {date: len(visitors) for date, visitors in visitor_tracker.items()}
     sorted_dates = sorted(daily_counts.keys())
@@ -195,4 +205,5 @@ def build_summary(
         "log-files-skipped": log_files_skipped,
         "log-files-failed": log_files_failed,
         "output-keys": output_keys,
+        "run-output-keys": run_output_keys,
     }
