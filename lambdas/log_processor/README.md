@@ -78,6 +78,8 @@ source S3 key.
 - the ledger key is derived from the source bucket, key, and ETag
 - this avoids relying on a timestamp high-water mark, which is unsafe for
   delayed CloudFront log delivery
+- claimed files receive a 15-minute `processing_expires_at` lease; concurrent
+  workers skip active claims and only reclaim failed or expired processing items
 - `INFO` logs show invocation setup, listing totals, per-file claim/skip/start
   and completion progress, and the final run summary
 - `DEBUG` logs include parsed record counts by source file and request date

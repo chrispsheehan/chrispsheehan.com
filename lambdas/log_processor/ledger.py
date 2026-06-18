@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 from typing import Any
 
@@ -10,8 +10,11 @@ except ImportError:
     from cloudfront_logs import LogObject
 
 
-def utc_timestamp() -> str:
-    return datetime.now(timezone.utc).isoformat()
+PROCESSING_LEASE_SECONDS = 15 * 60
+
+
+def utc_timestamp(moment: datetime | None = None) -> str:
+    return (moment or datetime.now(timezone.utc)).isoformat()
 
 
 def object_id(bucket_name: str, key: str, etag: str) -> str:
@@ -26,6 +29,7 @@ def claim_log_object(
     log_object: LogObject,
 ) -> str | None:
     claimed_object_id = object_id(bucket_name, log_object.key, log_object.etag)
+    claimed_at = datetime.now(timezone.utc)
 
     try:
         dynamodb_client.put_item(
@@ -38,11 +42,24 @@ def claim_log_object(
                 "source_last_modified": {"S": log_object.last_modified},
                 "source_size": {"N": str(log_object.size)},
                 "status": {"S": "processing"},
-                "claimed_at": {"S": utc_timestamp()},
+                "claimed_at": {"S": utc_timestamp(claimed_at)},
+                "processing_expires_at": {
+                    "S": utc_timestamp(
+                        claimed_at + timedelta(seconds=PROCESSING_LEASE_SECONDS)
+                    )
+                },
             },
-            ConditionExpression="attribute_not_exists(object_id) OR #status <> :complete",
+            ConditionExpression=(
+                "attribute_not_exists(object_id) OR "
+                "#status = :failed OR "
+                "(#status = :processing AND processing_expires_at < :now)"
+            ),
             ExpressionAttributeNames={"#status": "status"},
-            ExpressionAttributeValues={":complete": {"S": "complete"}},
+            ExpressionAttributeValues={
+                ":failed": {"S": "failed"},
+                ":processing": {"S": "processing"},
+                ":now": {"S": utc_timestamp(claimed_at)},
+            },
         )
     except dynamodb_client.exceptions.ConditionalCheckFailedException:
         return None
@@ -63,7 +80,7 @@ def mark_complete(
         UpdateExpression=(
             "SET #status = :status, processed_at = :processed_at, "
             "record_count = :record_count, output_keys = :output_keys "
-            "REMOVE #error"
+            "REMOVE #error, processing_expires_at"
         ),
         ExpressionAttributeNames={"#status": "status", "#error": "error"},
         ExpressionAttributeValues={
@@ -84,7 +101,10 @@ def mark_failed(
     dynamodb_client.update_item(
         TableName=table_name,
         Key={"object_id": {"S": claimed_object_id}},
-        UpdateExpression="SET #status = :status, failed_at = :failed_at, error = :error",
+        UpdateExpression=(
+            "SET #status = :status, failed_at = :failed_at, error = :error "
+            "REMOVE processing_expires_at"
+        ),
         ExpressionAttributeNames={"#status": "status"},
         ExpressionAttributeValues={
             ":status": {"S": "failed"},
