@@ -31,6 +31,16 @@ unit-test:
     .venv/bin/python -m pytest
 
 
+# Stop Docker Compose services and wipe local persisted service data.
+docker-compose-wipe:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+    docker compose down --volumes --remove-orphans
+    rm -rf "{{PROJECT_DIR}}/docker/dynamodb"
+    mkdir -p "{{PROJECT_DIR}}/docker/dynamodb"
+
+
 # Return the Lambda artifact directory name.
 code-bucket-get-lambda-artifact-dir:
     @echo {{LAMBDA_DIR}}
