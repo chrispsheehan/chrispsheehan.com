@@ -45,6 +45,7 @@ jobs:
     outputs:
       wave_0_modules: ${{ steps.emit.outputs.wave_0_modules }}
       wave_1_modules: ${{ steps.emit.outputs.wave_1_modules }}
+      wave_2_modules: ${{ steps.emit.outputs.wave_2_modules }}
     steps:
       - name: Derive destroy waves
         id: emit
@@ -54,7 +55,7 @@ jobs:
         run: |
           set -euo pipefail
           destroy_waves_json="$(jq -c '
-            [.[1]?, .[2]?]
+            [.[1]?, .[2]?, .[3]?]
             | map(select(. != null))
             | map(.modules |= map(select(. != "oidc" and . != "code_bucket")))
             | map(select(.modules | length > 0))
@@ -64,6 +65,7 @@ jobs:
 
           echo "wave_0_modules=$(jq -c '.[0].modules // []' <<<"$destroy_waves_json")" >> "$GITHUB_OUTPUT"
           echo "wave_1_modules=$(jq -c '.[1].modules // []' <<<"$destroy_waves_json")" >> "$GITHUB_OUTPUT"
+          echo "wave_2_modules=$(jq -c '.[2].modules // []' <<<"$destroy_waves_json")" >> "$GITHUB_OUTPUT"
           {
             echo "## Destroy Wave Summary"
             echo
@@ -117,6 +119,31 @@ jobs:
       fail-fast: false
       matrix:
         module: ${{ fromJson(needs.waves.outputs.wave_1_modules) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Destroy ${{ matrix.module }} infra
+        uses: ./.github/actions/terragrunt
+        with:
+          tg_directory: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
+          tg_action: destroy
+
+  wave_2:
+    name: 2 / ${{ matrix.module }}
+    needs:
+      - waves
+      - wave_1
+    if: ${{ always() && needs.waves.outputs.wave_2_modules != '[]' && (needs.wave_1.result == 'success' || needs.wave_1.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.waves.outputs.wave_2_modules) }}
     steps:
       - uses: actions/checkout@v6
 

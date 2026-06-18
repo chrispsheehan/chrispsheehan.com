@@ -113,3 +113,30 @@ jobs:
         with:
           tg_directory: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
           tg_action: apply
+
+  wave_3:
+    needs:
+      - generate_waves
+      - wave_2
+    name: 3 / ${{ matrix.module }}
+    if: ${{ always() && needs.generate_waves.outputs.wave_3_modules != '[]' && (needs.wave_2.result == 'success' || needs.wave_2.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.generate_waves.outputs.wave_3_modules) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.infra_version }}
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ${{ env.TG_ACTION_LABEL }} ${{ matrix.module }} infra
+        uses: ./.github/actions/terragrunt
+        with:
+          tg_directory: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
+          tg_action: apply
