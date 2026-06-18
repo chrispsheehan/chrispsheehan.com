@@ -34,5 +34,8 @@ configured log bucket under `cloudfront-logs/` by default.
 to `INFO`. Use `DEBUG` when per-date parsed record counts are needed in
 CloudWatch logs.
 
+`logs_processor_max_files` optionally sets `S3_LOGS_MAX_FILES` to cap claimed
+CloudFront log files per invocation. Leave it unset for unbounded processing.
+
 For bootstrap-friendly plan and validate flows, keep Terragrunt dependency
 mocks in the live stack rather than reading sibling state inside this module.

@@ -89,6 +89,17 @@ variable "log_level" {
   }
 }
 
+variable "logs_processor_max_files" {
+  type        = number
+  description = "Optional maximum number of CloudFront log files to claim per invocation."
+  default     = null
+
+  validation {
+    condition     = var.logs_processor_max_files == null || var.logs_processor_max_files > 0
+    error_message = "logs_processor_max_files must be null or a positive number."
+  }
+}
+
 variable "log_retention_days" {
   type    = number
   default = 1
