@@ -45,8 +45,8 @@ def test_load_config_allows_report_bucket_override_and_defaults():
     assert config.report_bucket_name == "override-bucket"
     assert config.logs_prefix == ""
     assert config.max_files is None
-    assert config.dynamodb_access_key_id == "DUMMYIDEXAMPLE"
-    assert config.dynamodb_secret_access_key == "DUMMYEXAMPLEKEY"
+    assert config.dynamodb_access_key_id is None
+    assert config.dynamodb_secret_access_key is None
     assert config.log_level == "INFO"
 
 
