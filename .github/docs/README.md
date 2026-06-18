@@ -70,7 +70,7 @@ If the live graph grows deeper, update these workflows together:
 Then run:
 
 ```sh
-just tg-graph-waves dev
+just tg-graph-waves prod
 ```
 
 ## Saved Plans
