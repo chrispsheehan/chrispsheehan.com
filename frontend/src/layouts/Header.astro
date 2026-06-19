@@ -1,6 +1,5 @@
 ---
-const { baseDomain, githubRepo } = Astro.props;
-const githubOwner = githubRepo.split("/")[0];
+const { baseDomain } = Astro.props;
 ---
 
 <header>
@@ -9,47 +8,10 @@ const githubOwner = githubRepo.split("/")[0];
       <span class="logo">{baseDomain}</span>
     </div>
 
-    <!-- Top-right nav buttons (desktop) -->
     <div class="nav-links" id="nav-links">
-      <a href="#about-me" class="button hide-on-desktop">About Me</a>
-      <a href="#certifications" class="button hide-on-desktop">Certifications</a
-      >
-      <a href="#this-site" class="button hide-on-desktop">This Site</a>
-      <a
-        href={`https://github.com/${githubOwner}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="button github-text-icon-button"
-      >
-        <span>GitHub</span>
-        <img src="/assets/social/github.png" alt="GitHub" />
-      </a>
-      <a
-        href="https://www.linkedin.com/in/chrispsheehan"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="button"
-      >
-        <span>LinkedIn</span>
-        <img
-          src="/assets/social/linkedin.png"
-          alt="LinkedIn"
-          class="nav-social-icon"
-        />
-      </a>
-      <a
-        href="https://registry.terraform.io/namespaces/chrispsheehan"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="button"
-      >
-        <span>Terraform</span>
-        <img
-          src="/assets/social/terraform.png"
-          alt="Terraform"
-          class="nav-social-icon"
-        />
-      </a>
+      <a href="#about-me" class="button">About Me</a>
+      <a href="#certifications" class="button">Certifications</a>
+      <a href="#this-site" class="button">This Site</a>
     </div>
 
     <!-- Mobile menu -->
@@ -74,39 +36,6 @@ const githubOwner = githubRepo.split("/")[0];
           <a href="#this-site" class="overlay-button" onclick="hideMenu()"
             >This Site</a
           >
-        </div>
-
-        <div class="mobile-menu-social">
-          <a
-            href={`https://github.com/${githubRepo}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="overlay-icon-button"
-            onclick="hideMenu()"
-          >
-            <img src="/assets/social/github.png" alt="" aria-hidden="true" />
-            <span>GitHub</span>
-          </a>
-          <a
-            href="https://www.linkedin.com/in/chrispsheehan"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="overlay-icon-button"
-            onclick="hideMenu()"
-          >
-            <img src="/assets/social/linkedin.png" alt="" aria-hidden="true" />
-            <span>LinkedIn</span>
-          </a>
-          <a
-            href="https://registry.terraform.io/namespaces/chrispsheehan"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="overlay-icon-button"
-            onclick="hideMenu()"
-          >
-            <img src="/assets/social/terraform.png" alt="" aria-hidden="true" />
-            <span>Terraform</span>
-          </a>
         </div>
       </div>
     </div>
@@ -174,16 +103,6 @@ const githubOwner = githubRepo.split("/")[0];
       background: var(--color-surface-2);
       color: var(--color-heading);
       transform: translateY(-1px);
-    }
-
-    .github-text-icon-button img {
-      width: 24px;
-      height: 24px;
-    }
-
-    .nav-social-icon {
-      width: 24px;
-      height: 24px;
     }
 
     .burger {
@@ -306,46 +225,6 @@ const githubOwner = githubRepo.split("/")[0];
       color: var(--color-heading);
     }
 
-    .mobile-menu-social {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .overlay-icon-button {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 56px;
-      width: 100%;
-      border-radius: 8px;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border-strong);
-      transition:
-        background 0.2s ease,
-        transform 0.2s ease;
-      text-decoration: none;
-      color: var(--color-text);
-      gap: 10px;
-      font-size: 1rem;
-      font-weight: 600;
-      padding: 0 12px;
-      box-sizing: border-box;
-    }
-
-    .overlay-icon-button:hover {
-      background: var(--color-surface-2);
-      transform: translateY(-1px);
-    }
-
-    .overlay-icon-button img {
-      width: 24px;
-      height: 24px;
-      display: block;
-      object-fit: contain;
-    }
-
     @media (max-width: 1250px) and (min-width: 1001px) {
       .nav-links {
         gap: 8px;
@@ -376,14 +255,17 @@ const githubOwner = githubRepo.split("/")[0];
     }
 
     @media (min-width: 1000px) {
-      .hide-on-desktop {
-        display: none !important;
+      .button:focus-visible,
+      .overlay-button:focus-visible,
+      .burger:focus-visible,
+      .mobile-close:focus-visible {
+        outline: 2px solid var(--color-hover);
+        outline-offset: 2px;
       }
     }
 
     .button:focus-visible,
     .overlay-button:focus-visible,
-    .overlay-icon-button:focus-visible,
     .burger:focus-visible,
     .mobile-close:focus-visible {
       outline: 2px solid var(--color-hover);

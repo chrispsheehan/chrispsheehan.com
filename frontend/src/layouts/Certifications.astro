@@ -62,7 +62,9 @@ import Certifications from "../components/Certifications";
     width: 150px;
     aspect-ratio: 1 / 1;
     margin: 0 auto;
-    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
     border-radius: 1rem;
     background: transparent;
@@ -79,7 +81,15 @@ import Certifications from "../components/Certifications";
     border-radius: 0.75rem;
     background: var(--color-cert-embed-bg);
     overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
     transition: transform 0.2s ease;
+  }
+
+  .cert-embed-wrapper > div {
+    width: 180px;
+    min-height: 260px;
   }
 
   .cert-embed-wrapper iframe {
@@ -89,36 +99,51 @@ import Certifications from "../components/Certifications";
   }
 
   .cert-img-wrapper img {
-    position: absolute;
-    top: 0;
-    left: 0;
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
+    object-position: center;
   }
 
   @media (max-width: 1000px) {
     .cert-grid {
-      grid-template-columns: repeat(auto-fit, minmax(180px, 180px));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(168px, 168px));
+      gap: 0.85rem;
       justify-content: center;
     }
 
     .cert-grid > a {
-      max-width: 220px;
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      max-width: 168px;
+      padding: 0.35rem;
+    }
+
+    .cert-img-wrapper {
+      width: 100%;
+      max-width: 120px;
+    }
+
+    .cert-embed-wrapper {
+      width: 168px;
+      min-height: 224px;
+    }
+
+    .cert-embed-wrapper > div {
+      transform: scale(0.8);
+      transform-origin: top center;
     }
   }
 </style>
 
 <section id="certifications">
-  <h2>Certifications</h2>
-  <h3>
-    Certifications that back up the platform, cloud, and delivery work I do in
+  <p class="section-eyebrow">Certifications</p>
+  <h2>AWS, Terraform, and DevOps credentials.</h2>
+  <p class="section-intro">
+    Certifications that support the platform and delivery work I do in
     practice.
-  </h3>
-  <p>
-    The focus here is AWS, Terraform, and DevOps capability rather than
-    collecting badges for their own sake.
   </p>
   <Certifications client:load />
 </section>

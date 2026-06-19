@@ -22,15 +22,88 @@ const githubRepo =
     <link rel="icon" type="image/png" href="/face.png" />
   </head>
   <body>
-    <Header baseDomain={baseDomain} githubRepo={githubRepo} />
+    <Header baseDomain={baseDomain} />
 
-    <main>
-      <section id="hero">
-        <h1>Senior Platform Engineer</h1>
-        <p>
-          DevEx-focused. CI/CD-heavy. AWS, Terraform, observability, and
-          internal tooling.
-        </p>
+    <main class="home-shell">
+      <section id="hero" class="hero-section">
+        <div class="hero-copy" data-reveal>
+          <p class="section-eyebrow">Platform engineering for fast-moving teams</p>
+          <h1>Building delivery systems that stay fast under pressure.</h1>
+          <p class="hero-intro">
+            AWS, Terraform, CI/CD, and internal tooling built to improve
+            developer flow without lowering standards.
+          </p>
+          <div class="cta-row">
+            <a
+              class="button-link button-link--primary"
+              href={`https://github.com/${githubRepo}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View Source
+            </a>
+            <a class="button-link" href="#this-site">See Runtime</a>
+            <a class="button-link button-link--ghost" href="#certifications">
+              Certifications
+            </a>
+          </div>
+          <ul class="pill-list" aria-label="Core focus areas">
+            <li class="pill">AWS Platform Delivery</li>
+            <li class="pill">Terraform Architecture</li>
+            <li class="pill">CI/CD Systems</li>
+            <li class="pill">Observability and Tooling</li>
+          </ul>
+          <div class="profile-links" aria-label="External profiles">
+            <a
+              class="profile-link"
+              href={`https://github.com/${githubRepo}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img src="/assets/social/github.png" alt="" aria-hidden="true" />
+              <span>GitHub</span>
+            </a>
+            <a
+              class="profile-link"
+              href="https://www.linkedin.com/in/chrispsheehan"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img src="/assets/social/linkedin.png" alt="" aria-hidden="true" />
+              <span>LinkedIn</span>
+            </a>
+            <a
+              class="profile-link"
+              href="https://registry.terraform.io/namespaces/chrispsheehan"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img src="/assets/social/terraform.png" alt="" aria-hidden="true" />
+              <span>Terraform</span>
+            </a>
+          </div>
+        </div>
+
+        <aside class="hero-panel" data-reveal>
+          <div class="hero-panel-card hero-panel-card--accent">
+            <p class="section-eyebrow">What I optimize for</p>
+            <h2>Reliable releases and less delivery drag.</h2>
+            <div class="hero-metrics">
+              <div>
+                <span class="hero-metric-label">Delivery</span>
+                <strong>Guardrails over gatekeeping</strong>
+              </div>
+              <div>
+                <span class="hero-metric-label">Infrastructure</span>
+                <strong>Composable Terraform and AWS patterns</strong>
+              </div>
+              <div>
+                <span class="hero-metric-label">Teams</span>
+                <strong>Better defaults for everyday engineering work</strong>
+              </div>
+            </div>
+          </div>
+        </aside>
       </section>
 
       <AboutMe />
