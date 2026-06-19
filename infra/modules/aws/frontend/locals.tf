@@ -1,6 +1,6 @@
 locals {
   name                  = "${var.environment}-${replace(var.project_name, ".", "-")}"
-  domain_name           = "${trimsuffix(var.domain_prefix, ".")}.${trimsuffix(var.hosted_zone_name, ".")}"
+  domain_name           = trimsuffix(var.domain_prefix, ".") != "" ? "${trimsuffix(var.domain_prefix, ".")}.${trimsuffix(var.hosted_zone_name, ".")}" : trimsuffix(var.hosted_zone_name, ".")
   bucket_name           = local.domain_name
   logs_bucket_name      = "${local.domain_name}.logs"
   logs_prefix           = "cloudfront-logs/"

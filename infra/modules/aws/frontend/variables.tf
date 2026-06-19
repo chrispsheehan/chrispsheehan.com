@@ -33,6 +33,7 @@ variable "hosted_zone_name" {
 variable "domain_prefix" {
   type        = string
   description = "Frontend DNS label prefix inside hosted_zone_name"
+  default     = ""
 }
 
 variable "data_bucket_name" {

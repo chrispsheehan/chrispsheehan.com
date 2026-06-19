@@ -2,7 +2,7 @@ locals {
   deploy_branches          = ["*"]
   force_delete             = true
   force_destroy_db         = true
-  domain_prefix            = "wip.dev"
+  domain_prefix            = "dev"
   vpc_name                 = "vpc"
   logs_bucket_name         = "chrispsheehan.com.logs"
   logs_bucket_arn          = "arn:aws:s3:::chrispsheehan.com.logs"

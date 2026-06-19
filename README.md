@@ -1,16 +1,16 @@
 # chrispsheehan.com
 
-CloudFront-backed static frontend for `wip.dev.chrispsheehan.com` and
-`wip.chrispsheehan.com`, scaffolded from the local `aws-terragrunt-starter`
+CloudFront-backed static frontend for `dev.chrispsheehan.com` and
+`chrispsheehan.com`, scaffolded from the local `aws-terragrunt-starter`
 golden path.
 
 The current runtime is intentionally small:
 
 - `frontend/` contains the Astro frontend source and build script.
-- `infra/live/dev/aws/frontend` creates the `wip.dev.chrispsheehan.com` S3,
+- `infra/live/dev/aws/frontend` creates the `dev.chrispsheehan.com` S3,
   CloudFront, ACM, and Route53 resources, including cached `/data/*` routing to
   the S3 database bucket.
-- `infra/live/prod/aws/frontend` creates the `wip.chrispsheehan.com` S3,
+- `infra/live/prod/aws/frontend` creates the `chrispsheehan.com` S3,
   CloudFront, ACM, and Route53 resources, including cached `/data/*` routing to
   the S3 database bucket.
 - `infra/live/*/aws/security` creates shared security groups for runtime
@@ -88,7 +88,7 @@ Workflows assume roles named:
 ## Deploy Shape
 
 Development deploys build the current commit and roll it to
-`wip.dev.chrispsheehan.com`:
+`dev.chrispsheehan.com`:
 
 1. `Dev Infra Plan` / `Dev Infra Apply No Plan` creates or updates infra.
 2. `Dev Code Deploy` builds `frontend.zip` and `log_processor.zip`, uploads
@@ -96,7 +96,7 @@ Development deploys build the current commit and roll it to
    bucket, rolls the Lambda through CodeDeploy, and invokes it once.
 
 Production deploys roll a selected frontend artifact to
-`wip.chrispsheehan.com` and deploy the selected `log_processor` Lambda
+`chrispsheehan.com` and deploy the selected `log_processor` Lambda
 artifact.
 
 ## Docs

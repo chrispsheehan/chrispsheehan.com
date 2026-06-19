@@ -15,8 +15,8 @@ dependency "frontend" {
   config_path = "../frontend"
 
   mock_outputs = {
-    cloudfront_logs_bucket_name = "wip.chrispsheehan.com.logs"
-    cloudfront_logs_bucket_arn  = "arn:aws:s3:::wip.chrispsheehan.com.logs"
+    cloudfront_logs_bucket_name = "chrispsheehan.com.logs"
+    cloudfront_logs_bucket_arn  = "arn:aws:s3:::chrispsheehan.com.logs"
     cloudfront_logs_prefix      = "cloudfront-logs/"
   }
 
