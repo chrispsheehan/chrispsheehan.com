@@ -1,7 +1,13 @@
 {
-  "daily-visits": 34,
-  "total-visits": 955,
-  "range": 17,
-  "last-date": "2026-03-30",
-  "generated-at": "2026-03-30"
+  "daily-visits": 5,
+  "generated-at": "2026-06-19",
+  "last-date": "2026-06-04",
+  "log-files-claimed": 5,
+  "log-files-failed": 0,
+  "log-files-found": 1098,
+  "log-files-limit": 5,
+  "log-files-processed": 5,
+  "log-files-skipped": 0,
+  "range": 1,
+  "total-visits": 5
 }

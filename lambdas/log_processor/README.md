@@ -35,11 +35,12 @@ Direct mode is safe to run repeatedly. Completed source objects are skipped by
 the S3 lock-file ledger, and failed or interrupted objects can be claimed again
 on a later run.
 
-The VS Code launch target prompts for the report bucket name and loads the
-remaining runtime configuration from the repository `.env` file. S3 uses the
-normal boto3 credential chain and reads real CloudFront logs from
-`S3_LOGS_BUCKET`. The processed-file ledger is stored as S3 lock files in the
-report bucket under `data/log-processor/locks/`.
+The VS Code launch target always uses `local-log-processor` as the report
+bucket name, prompts for `S3_LOGS_BUCKET`, and loads the remaining runtime
+configuration from the repository `.env` file. S3 uses the normal boto3
+credential chain and reads real CloudFront logs from the selected bucket. The
+processed-file ledger is stored as S3 lock files in the report bucket under
+`data/log-processor/locks/`.
 
 The pre-launch task creates `.venv` and installs
 `lambdas/log_processor/requirements.txt` if needed. Keep global dummy AWS
