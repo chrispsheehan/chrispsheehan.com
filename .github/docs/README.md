@@ -41,12 +41,12 @@ The Lambda artifact version is passed separately to `shared_deploy.yml`.
   `infra/live/<environment>/aws/frontend`
 - downloads the requested `frontend.zip`
 - syncs the build to the private S3 origin bucket
-- creates a CloudFront invalidation
 - reads `lambda_function_name` and `lambda_alias_name` from
   `infra/live/<environment>/aws/log_processor`
 - publishes `lambdas/<version>/log_processor.zip`
 - renders and uploads the AppSpec bundle
 - starts the CodeDeploy deployment and prunes old versions
+- waits for a CloudFront invalidation after the frontend sync
 - invokes the deployed Lambda once after the rollout completes
 
 ## Infra Waves
