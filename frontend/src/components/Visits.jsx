@@ -47,7 +47,8 @@ export default function Visits() {
       rel="noopener noreferrer"
       className="dashboard-card dashboard-card--data"
     >
-      <h3>👥 Logged Visits</h3>
+      <p className="dashboard-card__eyebrow">Traffic snapshot</p>
+      <h3>Recent visits captured by the site pipeline.</h3>
       <ul>
         <li>
           <strong>Daily:</strong>

@@ -5,10 +5,12 @@
   --color-surface: #1a332a;
   --color-surface-2: #244238;
   --color-text: #eaf7f0;
+  --color-text-soft: rgba(234, 247, 240, 0.78);
   --color-heading: #b9f2c8;
   --color-link: #7fd9b3;
   --color-hover: #a4ebcd;
   --color-accent: #23bfa0;
+  --color-accent-warm: #f4b860;
 
   /* UI Tokens */
   --color-border-soft: rgba(185, 242, 200, 0.24);
@@ -45,6 +47,11 @@ body {
 body {
   display: flex;
   flex-direction: column;
+  background:
+    radial-gradient(circle at top left, rgba(35, 191, 160, 0.12), transparent 26%),
+    radial-gradient(circle at top right, rgba(244, 184, 96, 0.08), transparent 22%),
+    linear-gradient(180deg, #10231c 0%, #0d1d18 45%, #0a1612 100%);
+  position: relative;
 }
 
 /* Headings */
@@ -69,9 +76,9 @@ h3 {
 main {
   flex: 1;
   width: 100%;
-  max-width: 1120px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 24px 32px;
+  padding: 32px;
   box-sizing: border-box;
 }
 
@@ -95,17 +102,242 @@ section {
   padding-left: 0;
   padding-right: 0;
   padding-top: 0;
-  padding-bottom: var(--section-gap);
+  padding-bottom: calc(var(--section-gap) + 0.75rem);
 }
 
 #hero,
 #about-me,
 #this-site {
-  background: var(--color-background);
+  background: transparent;
 }
 
 p {
   margin-bottom: 1.25em;
+}
+
+.home-shell {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.section-shell,
+.hero-section,
+#certifications,
+#this-site {
+  position: relative;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 1.75rem;
+  padding: 2rem;
+  background:
+    linear-gradient(180deg, rgba(19, 42, 34, 0.84) 0%, rgba(11, 25, 20, 0.94) 100%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+}
+
+.section-shell::before,
+.hero-section::before,
+#certifications::before,
+#this-site::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at top right, rgba(35, 191, 160, 0.12), transparent 30%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.02), transparent 45%);
+  pointer-events: none;
+}
+
+.section-heading {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 1.5rem;
+}
+
+.section-heading h2 {
+  margin: 0;
+  max-width: 18ch;
+}
+
+.section-intro {
+  max-width: 64ch;
+  color: var(--color-text-soft);
+}
+
+.section-eyebrow {
+  margin: 0 0 0.75rem;
+  color: var(--color-heading);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr);
+  gap: 1.5rem;
+  align-items: stretch;
+  min-height: 460px;
+}
+
+.hero-copy,
+.hero-panel {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.hero-copy h1 {
+  margin: 0;
+  max-width: 12ch;
+  font-size: clamp(3rem, 6vw, 5.2rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.hero-intro {
+  max-width: 60ch;
+  margin-top: 1.25rem;
+  margin-bottom: 1.5rem;
+  color: var(--color-text-soft);
+  font-size: 1.06rem;
+}
+
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.8rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-strong);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text);
+  text-decoration: none;
+  font-weight: 700;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.button-link:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-heading);
+}
+
+.button-link--primary {
+  background: linear-gradient(
+    135deg,
+    rgba(35, 191, 160, 0.9) 0%,
+    rgba(127, 217, 179, 0.88) 100%
+  );
+  color: #062219;
+  border-color: transparent;
+}
+
+.button-link--primary:hover {
+  color: #041611;
+}
+
+.button-link--ghost {
+  background: transparent;
+}
+
+.pill-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pill {
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(185, 242, 200, 0.18);
+  color: var(--color-text-soft);
+  font-size: 0.94rem;
+}
+
+.hero-panel {
+  display: flex;
+  align-items: stretch;
+}
+
+.hero-panel-card {
+  width: 100%;
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(circle at top right, rgba(244, 184, 96, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(22, 49, 39, 0.92) 0%, rgba(12, 27, 22, 0.96) 100%);
+  border: 1px solid var(--color-border-soft);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.hero-panel-card h2 {
+  margin: 0 0 1.25rem;
+  font-size: 1.8rem;
+  line-height: 1.05;
+}
+
+.hero-metrics {
+  display: grid;
+  gap: 1rem;
+}
+
+.hero-metrics div {
+  display: grid;
+  gap: 0.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(185, 242, 200, 0.16);
+}
+
+.hero-metric-label {
+  color: var(--color-accent-warm);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+[data-reveal] {
+  animation: reveal-up 0.7s ease both;
+}
+
+[data-reveal]:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Links */
@@ -137,6 +369,10 @@ a:focus-visible {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+
+  [data-reveal] {
+    animation: none !important;
+  }
 }
 
 @media (max-width: 1000px) {
@@ -147,6 +383,19 @@ a:focus-visible {
 
   main {
     padding: 16px;
+  }
+
+  .hero-section,
+  .section-shell,
+  #certifications,
+  #this-site {
+    padding: 1.4rem;
+    border-radius: 1.25rem;
+  }
+
+  .hero-section {
+    grid-template-columns: 1fr;
+    min-height: auto;
   }
 
   h1 {
@@ -166,5 +415,10 @@ a:focus-visible {
     align-items: flex-start;
     gap: 8px;
     padding: 16px;
+  }
+
+  .section-heading h2,
+  .hero-copy h1 {
+    max-width: none;
   }
 }
