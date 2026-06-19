@@ -43,14 +43,14 @@ Lambda:
   `infra/live/<environment>/aws/frontend`
 - downloads the requested `frontend.zip`
 - syncs the build to the private S3 origin bucket
-- waits for CloudFront invalidation completion in the frontend deploy job
+- runs a separate frontend cache refresh job that waits for CloudFront
+  invalidation completion
 - reads `lambda_function_name` and `lambda_alias_name` from
   `infra/live/<environment>/aws/log_processor`
 - publishes `lambdas/<version>/log_processor.zip`
 - renders and uploads the AppSpec bundle
 - starts the CodeDeploy deployment and prunes old versions
-- invokes the deployed Lambda in the Lambda deploy job after CodeDeploy
-  completes
+- runs a separate Lambda invoke job after the cache refresh completes
 
 ## Infra Waves
 

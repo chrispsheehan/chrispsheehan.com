@@ -69,6 +69,8 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - summary
+    outputs:
+      cloudfront_distribution_id: ${{ steps.get_frontend_outputs.outputs.cloudfront_distribution_id }}
     steps:
       - uses: actions/checkout@v6
 
@@ -102,14 +104,6 @@ jobs:
         with:
           justfile_path: scripts/deploy/justfile
           just_action: frontend-deploy
-
-      - name: Refresh Frontend Cache
-        uses: ./.github/actions/just
-        env:
-          DISTRIBUTION_ID: ${{ steps.get_frontend_outputs.outputs.cloudfront_distribution_id }}
-        with:
-          justfile_path: scripts/deploy/justfile
-          just_action: frontend-refresh
 
       - name: Write URL summary
         shell: bash
@@ -192,10 +186,46 @@ jobs:
         with:
           justfile_path: scripts/deploy/justfile
           just_action: lambda-upload-bundle lambda-deploy lambda-prune
+
+  refresh-frontend:
+    name: Refresh Frontend
+    runs-on: ubuntu-latest
+    needs:
+      - frontend
+      - summary
+    steps:
+      - uses: actions/checkout@v6
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Refresh Frontend Cache
+        uses: ./.github/actions/just
+        env:
+          DISTRIBUTION_ID: ${{ needs.frontend.outputs.cloudfront_distribution_id }}
+        with:
+          justfile_path: scripts/deploy/justfile
+          just_action: frontend-refresh
+
+  invoke-log-processor:
+    name: Invoke Log Processor
+    runs-on: ubuntu-latest
+    needs:
+      - refresh-frontend
+      - lambda-log-processor
+      - summary
+    steps:
+      - uses: actions/checkout@v6
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Invoke Lambda
         uses: ./.github/actions/just
         env:
-          LAMBDA_NAME: ${{ steps.get_infra_detail.outputs.lambda_function_name }}
+          LAMBDA_NAME: ${{ needs.lambda-log-processor.outputs.lambda_function_name }}
         with:
           justfile_path: scripts/deploy/justfile
           just_action: lambda-invoke
