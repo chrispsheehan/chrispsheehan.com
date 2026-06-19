@@ -135,7 +135,7 @@ frontend-deploy-live env:
     just --justfile "{{PROJECT_DIR}}/scripts/deploy/justfile" frontend-build
 
     frontend_outputs="$(
-        just tg "{{env}}" aws/frontend output --json
+        just tg "{{env}}" aws/frontend 'output --json'
     )"
 
     website_bucket="$(jq -r '.bucket_name.value' <<<"$frontend_outputs")"
