@@ -10,8 +10,8 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 | `dev` | `oidc`, `code_bucket`, `frontend`, `security`, `s3_database`, `log_processor` |
 | `prod` | `oidc`, `frontend`, `security`, `s3_database`, `log_processor` |
 
-`dev` owns `wip.dev.chrispsheehan.com`. `prod` owns
-`wip.chrispsheehan.com`.
+`dev` owns `dev.chrispsheehan.com`. `prod` owns
+`chrispsheehan.com`.
 
 ## Frontend Module
 

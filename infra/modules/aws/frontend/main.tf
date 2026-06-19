@@ -60,9 +60,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "frontend_logs" {
 }
 
 resource "aws_acm_certificate" "frontend" {
-  provider          = aws.domain_aws_region
-  domain_name       = local.domain_name
-  validation_method = "DNS"
+  provider                  = aws.domain_aws_region
+  domain_name               = local.domain_name
+  subject_alternative_names = local.domain_records
+  validation_method         = "DNS"
 
   lifecycle {
     create_before_destroy = true
@@ -70,20 +71,26 @@ resource "aws_acm_certificate" "frontend" {
 }
 
 resource "aws_route53_record" "certificate_validation" {
-  for_each = {
-    for option in aws_acm_certificate.frontend.domain_validation_options : option.domain_name => {
-      name   = option.resource_record_name
-      record = option.resource_record_value
-      type   = option.resource_record_type
-    }
-  }
+  for_each = toset(local.domain_records)
 
   allow_overwrite = true
-  name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
-  type            = each.value.type
-  zone_id         = data.aws_route53_zone.selected.zone_id
+  name = one([
+    for option in aws_acm_certificate.frontend.domain_validation_options :
+    option.resource_record_name
+    if option.domain_name == each.value
+  ])
+  records = [one([
+    for option in aws_acm_certificate.frontend.domain_validation_options :
+    option.resource_record_value
+    if option.domain_name == each.value
+  ])]
+  ttl = 60
+  type = one([
+    for option in aws_acm_certificate.frontend.domain_validation_options :
+    option.resource_record_type
+    if option.domain_name == each.value
+  ])
+  zone_id = data.aws_route53_zone.selected.zone_id
 }
 
 resource "aws_acm_certificate_validation" "frontend" {
@@ -107,7 +114,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   is_ipv6_enabled     = true
   comment             = "${var.environment} ${var.project_name} frontend"
   default_root_object = local.root_file
-  aliases             = [local.domain_name]
+  aliases             = local.domain_records
   price_class         = "PriceClass_100"
 
   logging_config {
@@ -196,7 +203,11 @@ resource "aws_s3_bucket_policy" "data" {
 }
 
 resource "aws_route53_record" "frontend_ipv4" {
-  name    = local.domain_name
+  for_each = {
+    for index, record in local.domain_records : index => record
+  }
+
+  name    = each.value
   type    = "A"
   zone_id = data.aws_route53_zone.selected.zone_id
 
@@ -208,7 +219,11 @@ resource "aws_route53_record" "frontend_ipv4" {
 }
 
 resource "aws_route53_record" "frontend_ipv6" {
-  name    = local.domain_name
+  for_each = {
+    for index, record in local.domain_records : index => record
+  }
+
+  name    = each.value
   type    = "AAAA"
   zone_id = data.aws_route53_zone.selected.zone_id
 

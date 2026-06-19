@@ -18,9 +18,13 @@ CloudFront frontend module for a static site.
 ## Requirements
 
 - `hosted_zone_name` must reference an existing public Route53 hosted zone.
-- `domain_prefix` is appended to `hosted_zone_name` to produce the full
-  frontend domain. The private S3 origin bucket is named after this domain, and
-  the CloudFront standard log bucket appends `.logs`.
+- `domain_prefix` is prepended to `hosted_zone_name` to produce the full
+  frontend domain. Pass an empty string to use the hosted zone apex. The
+  private S3 origin bucket is named after this domain, and the CloudFront
+  standard log bucket appends `.logs`.
+- `alternate_domain_prefixes` builds extra DNS names from the frontend domain
+  and adds them to the same ACM certificate, CloudFront aliases, and Route53
+  alias records. The default adds `www.<frontend-domain>`.
 - `data_bucket_name`, `data_bucket_arn`, and `data_bucket_regional_domain_name`
   must reference the S3 database bucket used for `/data/*` objects.
 - The caller must pass a `domain_aws_region` AWS provider alias in `us-east-1`
