@@ -22,7 +22,7 @@ const githubRepo =
     <link rel="icon" type="image/png" href="/face.png" />
   </head>
   <body>
-    <Header baseDomain={baseDomain} githubRepo={githubRepo} />
+    <Header baseDomain={baseDomain} />
 
     <main class="home-shell">
       <section id="hero" class="hero-section">
@@ -54,6 +54,35 @@ const githubRepo =
             <li class="pill">CI/CD Systems</li>
             <li class="pill">Observability and Tooling</li>
           </ul>
+          <div class="profile-links" aria-label="External profiles">
+            <a
+              class="profile-link"
+              href={`https://github.com/${githubRepo}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img src="/assets/social/github.png" alt="" aria-hidden="true" />
+              <span>GitHub</span>
+            </a>
+            <a
+              class="profile-link"
+              href="https://www.linkedin.com/in/chrispsheehan"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img src="/assets/social/linkedin.png" alt="" aria-hidden="true" />
+              <span>LinkedIn</span>
+            </a>
+            <a
+              class="profile-link"
+              href="https://registry.terraform.io/namespaces/chrispsheehan"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img src="/assets/social/terraform.png" alt="" aria-hidden="true" />
+              <span>Terraform</span>
+            </a>
+          </div>
         </div>
 
         <aside class="hero-panel" data-reveal>
