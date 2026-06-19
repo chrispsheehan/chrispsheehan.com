@@ -50,7 +50,7 @@ Lambda:
 - publishes `lambdas/<version>/log_processor.zip`
 - renders and uploads the AppSpec bundle
 - starts the CodeDeploy deployment and prunes old versions
-- runs a separate Lambda invoke job after the cache refresh completes
+- runs a separate Lambda invoke job after the Lambda deploy completes
 
 ## Infra Waves
 
