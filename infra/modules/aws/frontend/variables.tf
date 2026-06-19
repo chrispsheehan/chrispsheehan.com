@@ -36,6 +36,12 @@ variable "domain_prefix" {
   default     = ""
 }
 
+variable "alternate_domain_prefixes" {
+  type        = list(string)
+  description = "Additional DNS label prefixes built from the frontend domain"
+  default     = ["www"]
+}
+
 variable "data_bucket_name" {
   type        = string
   description = "S3 bucket name for data objects served under /data/*"

@@ -60,9 +60,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "frontend_logs" {
 }
 
 resource "aws_acm_certificate" "frontend" {
-  provider          = aws.domain_aws_region
-  domain_name       = local.domain_name
-  validation_method = "DNS"
+  provider                  = aws.domain_aws_region
+  domain_name               = local.domain_name
+  subject_alternative_names = local.domain_records
+  validation_method         = "DNS"
 
   lifecycle {
     create_before_destroy = true
@@ -107,7 +108,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   is_ipv6_enabled     = true
   comment             = "${var.environment} ${var.project_name} frontend"
   default_root_object = local.root_file
-  aliases             = [local.domain_name]
+  aliases             = local.domain_records
   price_class         = "PriceClass_100"
 
   logging_config {
@@ -196,7 +197,11 @@ resource "aws_s3_bucket_policy" "data" {
 }
 
 resource "aws_route53_record" "frontend_ipv4" {
-  name    = local.domain_name
+  for_each = {
+    for index, record in local.domain_records : index => record
+  }
+
+  name    = each.value
   type    = "A"
   zone_id = data.aws_route53_zone.selected.zone_id
 
@@ -208,7 +213,11 @@ resource "aws_route53_record" "frontend_ipv4" {
 }
 
 resource "aws_route53_record" "frontend_ipv6" {
-  name    = local.domain_name
+  for_each = {
+    for index, record in local.domain_records : index => record
+  }
+
+  name    = each.value
   type    = "AAAA"
   zone_id = data.aws_route53_zone.selected.zone_id
 
