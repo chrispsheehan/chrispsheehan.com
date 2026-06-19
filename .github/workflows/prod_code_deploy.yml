@@ -27,7 +27,7 @@ jobs:
 
   deploy:
     name: Deploy
-    uses: ./.github/workflows/shared_deploy.yml
+    uses: ./.github/workflows/shared_code_deploy.yml
     needs:
       - get_build
     with:
