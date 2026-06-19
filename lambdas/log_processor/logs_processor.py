@@ -2,19 +2,22 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+from hashlib import md5
 import json
 import logging
 from pathlib import Path
 from typing import Any
 
+from botocore.exceptions import ClientError
+
 try:
-    from .aws_clients import create_dynamodb_client, create_s3_client
+    from .aws_clients import create_s3_client
     from .config import LogProcessorConfig, load_config
     from .logging_config import configure_logging
     from .output_writer import OUTPUT_PREFIX, public_summary
     from .report import process_logs
 except ImportError:
-    from aws_clients import create_dynamodb_client, create_s3_client
+    from aws_clients import create_s3_client
     from config import LogProcessorConfig, load_config
     from logging_config import configure_logging
     from output_writer import OUTPUT_PREFIX, public_summary
@@ -47,13 +50,18 @@ class LocalS3OutputClient(NoWriteS3Client):
         key = kwargs["Key"]
         body = kwargs.get("Body", b"")
         target = self._local_target(key)
+        body_bytes = body if isinstance(body, bytes) else str(body).encode("utf-8")
+
+        if kwargs.get("IfNoneMatch") == "*" and target.exists():
+            raise s3_client_error("PreconditionFailed", "Object already exists")
+
+        if_match = kwargs.get("IfMatch")
+        if if_match is not None and (not target.exists() or local_etag(target) != if_match):
+            raise s3_client_error("PreconditionFailed", "Object ETag does not match")
 
         target.parent.mkdir(parents=True, exist_ok=True)
-        if isinstance(body, bytes):
-            target.write_bytes(body)
-        else:
-            target.write_text(str(body), encoding="utf-8")
-        return {}
+        target.write_bytes(body_bytes)
+        return {"ETag": f'"{md5(body_bytes).hexdigest()}"'}
 
     def get_paginator(self, name: str) -> Any:
         wrapped_paginator = self._wrapped.get_paginator(name)
@@ -70,6 +78,21 @@ class LocalS3OutputClient(NoWriteS3Client):
             return self._wrapped.get_object(Bucket=Bucket, Key=Key)
 
         return {"Body": target.open("rb")}
+
+    def head_object(self, *, Bucket: str, Key: str) -> dict[str, Any]:
+        if Bucket != self._report_bucket_name:
+            return self._wrapped.head_object(Bucket=Bucket, Key=Key)
+
+        target = self._local_target(Key)
+        if not target.is_file():
+            raise s3_client_error("404", "Object not found")
+
+        stat = target.stat()
+        return {
+            "ETag": f'"{local_etag(target)}"',
+            "LastModified": datetime.fromtimestamp(stat.st_mtime, timezone.utc),
+            "ContentLength": stat.st_size,
+        }
 
     def _local_target(self, key: str) -> Path:
         root = self._output_dir.resolve()
@@ -112,12 +135,22 @@ class LocalS3OutputPaginator:
         return [{"Contents": contents}]
 
 
+def local_etag(path: Path) -> str:
+    return md5(path.read_bytes()).hexdigest()
+
+
+def s3_client_error(code: str, message: str) -> ClientError:
+    return ClientError(
+        {"Error": {"Code": code, "Message": message}, "ResponseMetadata": {"HTTPStatusCode": 412}},
+        "PutObject",
+    )
+
+
 def logs_report(
     report_bucket_name: str,
     *,
     config: LogProcessorConfig | None = None,
     s3_client: Any | None = None,
-    dynamodb_client: Any | None = None,
     env: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     config = config or load_config(report_bucket_name=report_bucket_name, env=env)
@@ -132,9 +165,8 @@ def logs_report(
     )
 
     s3_client = s3_client or create_s3_client()
-    dynamodb_client = dynamodb_client or create_dynamodb_client(config)
 
-    return process_logs(config, s3_client, dynamodb_client)
+    return process_logs(config, s3_client)
 
 
 def _main() -> None:

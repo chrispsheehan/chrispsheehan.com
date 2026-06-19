@@ -16,7 +16,7 @@ The current runtime is intentionally small:
 - `infra/live/*/aws/security` creates shared security groups for runtime
   resources.
 - `infra/live/*/aws/s3_database` creates the temporary S3 datastore and
-  DynamoDB ledger resources.
+  S3 lock-file ledger resources.
 - `infra/live/*/aws/oidc` creates GitHub Actions deploy roles.
 - `infra/live/ci/aws/code_bucket` and `infra/live/dev/aws/code_bucket` store
   deployable frontend artifacts and future Lambda artifacts.

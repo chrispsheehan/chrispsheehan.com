@@ -23,16 +23,6 @@ resource "aws_iam_role_policy_attachment" "lambda_report_bucket" {
   policy_arn = aws_iam_policy.lambda_report_bucket.arn
 }
 
-resource "aws_iam_policy" "lambda_processed_log_files" {
-  name   = "${local.lambda_name}-processed-log-files"
-  policy = data.aws_iam_policy_document.lambda_processed_log_files.json
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_processed_log_files" {
-  role       = aws_iam_role.iam_for_lambda.name
-  policy_arn = aws_iam_policy.lambda_processed_log_files.arn
-}
-
 resource "aws_s3_object" "bootstrap_lambda_zip" {
   bucket = var.code_bucket
   key    = local.lambda_bootstrap_zip_key
@@ -59,13 +49,12 @@ resource "aws_lambda_function" "log_processor" {
   environment {
     variables = merge(
       {
-        DYNAMODB_AWS_REGION       = var.dynamodb_aws_region
-        DYNAMODB_ENDPOINT         = var.dynamodb_endpoint
-        LOG_LEVEL                 = var.log_level
-        PROCESSED_LOG_FILES_TABLE = var.processed_log_files_table_name
-        REPORT_BUCKET             = var.report_bucket_name
-        S3_LOGS_BUCKET            = var.logs_bucket_name
-        S3_LOGS_PREFIX            = var.logs_bucket_prefix
+        LOG_LEVEL      = var.log_level
+        REPORT_BUCKET  = var.report_bucket_name
+        S3_LOGS_BUCKET = var.logs_bucket_name
+      },
+      var.logs_bucket_prefix == "" ? {} : {
+        S3_LOGS_PREFIX = var.logs_bucket_prefix
       },
       var.logs_processor_max_files == null ? {} : {
         S3_LOGS_MAX_FILES = tostring(var.logs_processor_max_files)

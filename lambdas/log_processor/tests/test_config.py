@@ -11,9 +11,6 @@ from lambdas.log_processor.config import (
 BASE_ENV = {
     "REPORT_BUCKET": "report-bucket",
     "S3_LOGS_BUCKET": "logs-bucket",
-    "PROCESSED_LOG_FILES_TABLE": "processed-files",
-    "DYNAMODB_AWS_REGION": "eu-west-2",
-    "DYNAMODB_ENDPOINT": "http://localhost:8000",
 }
 
 
@@ -22,8 +19,6 @@ def test_load_config_reads_required_and_optional_values():
         **BASE_ENV,
         "S3_LOGS_PREFIX": "cloudfront/",
         "S3_LOGS_MAX_FILES": "10",
-        "DYNAMODB_AWS_ACCESS_KEY_ID": "access",
-        "DYNAMODB_AWS_SECRET_ACCESS_KEY": "secret",
         "LOG_LEVEL": "debug",
     }
 
@@ -33,9 +28,6 @@ def test_load_config_reads_required_and_optional_values():
     assert config.logs_bucket_name == "logs-bucket"
     assert config.logs_prefix == "cloudfront/"
     assert config.max_files == 10
-    assert config.processed_log_files_table == "processed-files"
-    assert config.dynamodb_access_key_id == "access"
-    assert config.dynamodb_secret_access_key == "secret"
     assert config.log_level == "DEBUG"
 
 
@@ -45,8 +37,6 @@ def test_load_config_allows_report_bucket_override_and_defaults():
     assert config.report_bucket_name == "override-bucket"
     assert config.logs_prefix == ""
     assert config.max_files is None
-    assert config.dynamodb_access_key_id is None
-    assert config.dynamodb_secret_access_key is None
     assert config.log_level == "INFO"
 
 

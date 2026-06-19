@@ -39,8 +39,8 @@ docker-compose-wipe:
     set -euo pipefail
     cd "{{PROJECT_DIR}}"
     docker compose down --volumes --remove-orphans
-    rm -rf "{{PROJECT_DIR}}/docker/dynamodb" "{{PROJECT_DIR}}/docker/log-processor-s3-database"
-    mkdir -p "{{PROJECT_DIR}}/docker/dynamodb" "{{PROJECT_DIR}}/docker/log-processor-s3-database"
+    rm -rf "{{PROJECT_DIR}}/docker/log-processor-s3-database"
+    mkdir -p "{{PROJECT_DIR}}/docker/log-processor-s3-database"
 
 
 # Run the log processor in Docker Compose and refresh the frontend summary data file.
@@ -48,8 +48,6 @@ log-processor-run:
     #!/usr/bin/env bash
     set -euo pipefail
     cd "{{PROJECT_DIR}}"
-    docker compose up -d --wait dynamodb-local
-    docker compose run --rm dynamodb-setup
     docker compose run --rm log-processor
 
 
