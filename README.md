@@ -30,6 +30,7 @@ just start
 just unit-test
 just log-processor-run
 just --justfile scripts/deploy/justfile frontend-build
+just frontend-deploy-live dev
 just tg dev aws/frontend plan
 just tg-all dev plan
 ```
@@ -40,6 +41,7 @@ The frontend is an Astro static site with React components.
 
 ```sh
 just --justfile scripts/deploy/justfile frontend-build
+just frontend-deploy-live dev
 ```
 
 The build output is written to `frontend/dist`.
