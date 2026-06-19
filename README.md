@@ -1,6 +1,6 @@
 # chrispsheehan.com
 
-CloudFront-backed static frontend for [`chrispsheehan.com`](https://chrispsheehan.com), scaffolded from the local [`aws-terragrunt-starter`](https://github.com/chrispsheehan/aws-terragrunt-starter)
+CloudFront-backed static frontend for [`chrispsheehan.com`](https://chrispsheehan.com), scaffolded from the [`aws-terragrunt-starter`](https://github.com/chrispsheehan/aws-terragrunt-starter)
 golden path.
 
 The current runtime is intentionally small:
