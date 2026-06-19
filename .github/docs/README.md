@@ -33,21 +33,24 @@ notes are generated from the full history up to the new tag.
 `shared_build_get.yml` resolves an existing frontend artifact from the selected
 environment code bucket. Prod deploys use `environment: ci` so production
 promotes frontend artifacts already present in the shared CI artifact bucket.
-The Lambda artifact version is passed separately to `shared_deploy.yml`.
+The Lambda artifact version is passed separately to
+`shared_code_deploy.yml`.
 
-`shared_deploy.yml` rolls out frontend code and the `log_processor` Lambda:
+`shared_code_deploy.yml` rolls out frontend code and the `log_processor`
+Lambda:
 
 - reads `bucket_name`, `cloudfront_distribution_id`, and `website_url` from
   `infra/live/<environment>/aws/frontend`
 - downloads the requested `frontend.zip`
 - syncs the build to the private S3 origin bucket
-- creates a CloudFront invalidation
+- runs a separate frontend cache refresh job that waits for CloudFront
+  invalidation completion
 - reads `lambda_function_name` and `lambda_alias_name` from
   `infra/live/<environment>/aws/log_processor`
 - publishes `lambdas/<version>/log_processor.zip`
 - renders and uploads the AppSpec bundle
 - starts the CodeDeploy deployment and prunes old versions
-- invokes the deployed Lambda once after the rollout completes
+- runs a separate Lambda invoke job after the Lambda deploy completes
 
 ## Infra Waves
 

@@ -1,6 +1,6 @@
 locals {
   log_retention_days = 14
-  deploy_branches    = ["main"]
+  deploy_branches    = ["main", "cache-refresh"]
   vpc_name           = "vpc"
 }
 

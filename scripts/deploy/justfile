@@ -161,19 +161,53 @@ frontend-deploy:
         exit 1
     fi
 
-    if [[ -z "${CLOUDFRONT_DISTRIBUTION_ID:-}" ]]; then
-        echo "❌ CLOUDFRONT_DISTRIBUTION_ID environment variable is not set."
-        exit 1
-    fi
-
     TMPDIR="$(mktemp -d)"
     aws s3 cp "s3://$BUCKET_NAME/frontend/$VERSION/frontend.zip" "$TMPDIR/frontend.zip"
     unzip -q "$TMPDIR/frontend.zip" -d "$TMPDIR/dist"
     aws s3 sync "$TMPDIR/dist/" "s3://$WEBSITE_BUCKET/" --delete
-    aws cloudfront create-invalidation \
-        --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
-        --paths "/*" >/dev/null
-    echo "✅ Frontend deployed to s3://$WEBSITE_BUCKET and CloudFront invalidation requested."
+    echo "✅ Frontend deployed to s3://$WEBSITE_BUCKET."
+
+
+# Create a CloudFront invalidation and wait for completion.
+frontend-refresh:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    distribution_id="${DISTRIBUTION_ID:-${CLOUDFRONT_DISTRIBUTION_ID:-}}"
+    if [[ -z "$distribution_id" ]]; then
+        echo "❌ DISTRIBUTION_ID or CLOUDFRONT_DISTRIBUTION_ID environment variable is not set."
+        exit 1
+    fi
+
+    max_attempts=18
+    sleep_interval=10
+
+    echo "🔄 Creating CloudFront invalidation..."
+    invalidation_id="$(aws cloudfront create-invalidation \
+        --distribution-id "$distribution_id" \
+        --paths "/*" \
+        --query 'Invalidation.Id' \
+        --output text)"
+
+    for ((attempt=1; attempt<=max_attempts; attempt++)); do
+        status="$(aws cloudfront get-invalidation \
+            --distribution-id "$distribution_id" \
+            --id "$invalidation_id" \
+            --query 'Invalidation.Status' \
+            --output text)"
+
+        echo "Attempt $attempt: Invalidation status is $status"
+
+        if [[ "$status" == "Completed" ]]; then
+            echo "✅ Invalidation $invalidation_id completed successfully."
+            exit 0
+        fi
+
+        sleep "$sleep_interval"
+    done
+
+    echo "❌ Invalidation $invalidation_id did not complete within expected time."
+    exit 1
 
 
 # Read the current Lambda alias version.
