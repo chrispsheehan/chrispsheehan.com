@@ -120,6 +120,42 @@ tg env module op:
     terragrunt {{op}}
 
 
+# Build the frontend, sync it to the live S3 bucket for an environment, and
+# refresh the matching CloudFront distribution.
+frontend-deploy-live env:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+
+    if [[ "{{env}}" != "dev" && "{{env}}" != "prod" ]]; then
+        echo "❌ env must be dev or prod."
+        exit 1
+    fi
+
+    just --justfile "{{PROJECT_DIR}}/scripts/deploy/justfile" frontend-build
+
+    frontend_outputs="$(
+        just tg "{{env}}" aws/frontend 'output --json'
+    )"
+
+    website_bucket="$(jq -r '.bucket_name.value' <<<"$frontend_outputs")"
+    distribution_id="$(jq -r '.cloudfront_distribution_id.value' <<<"$frontend_outputs")"
+
+    if [[ -z "$website_bucket" || "$website_bucket" == "null" ]]; then
+        echo "❌ Failed to read bucket_name from infra/live/{{env}}/aws/frontend output."
+        exit 1
+    fi
+
+    if [[ -z "$distribution_id" || "$distribution_id" == "null" ]]; then
+        echo "❌ Failed to read cloudfront_distribution_id from infra/live/{{env}}/aws/frontend output."
+        exit 1
+    fi
+
+    aws s3 sync "{{PROJECT_DIR}}/{{FRONTEND_DIR}}/dist/" "s3://$website_bucket/" --delete
+    DISTRIBUTION_ID="$distribution_id" \
+        just --justfile "{{PROJECT_DIR}}/scripts/deploy/justfile" frontend-refresh
+
+
 # Run a Terragrunt operation across all live stacks.
 tg-all env op:
     #!/usr/bin/env bash

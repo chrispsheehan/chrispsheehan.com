@@ -21,6 +21,7 @@
   --color-cert-card-border: #b7d8c8;
   --shadow-card-hover: 0 8px 18px rgba(0, 0, 0, 0.22);
   --shadow-cert-hover: 0 8px 18px rgba(0, 0, 0, 0.14);
+  --profile-icon-size: 20px;
 
   /* Spacing & Typography */
   --section-gap: 30px;
@@ -294,6 +295,7 @@ p {
   color: var(--color-text-soft);
   text-decoration: none;
   font-weight: 600;
+  line-height: 1;
   transition:
     transform 0.2s ease,
     background 0.2s ease,
@@ -310,12 +312,15 @@ p {
 
 .profile-link img {
   display: block;
-  flex: 0 0 20px;
-  width: 20px;
-  height: 20px;
-  max-width: 20px;
-  max-height: 20px;
+  flex: 0 0 var(--profile-icon-size);
+  inline-size: var(--profile-icon-size);
+  block-size: var(--profile-icon-size);
+  width: var(--profile-icon-size);
+  height: var(--profile-icon-size);
+  max-inline-size: none;
+  max-block-size: none;
   object-fit: contain;
+  aspect-ratio: 1 / 1;
 }
 
 .hero-panel {
@@ -465,6 +470,7 @@ a:focus-visible {
   }
 
   .profile-links {
+    --profile-icon-size: 16px;
     gap: 0.65rem;
   }
 
@@ -474,11 +480,4 @@ a:focus-visible {
     font-size: 0.92rem;
   }
 
-  .profile-link img {
-    flex-basis: 16px;
-    width: 16px;
-    height: 16px;
-    max-width: 16px;
-    max-height: 16px;
-  }
 }
