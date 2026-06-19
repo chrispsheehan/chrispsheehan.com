@@ -117,7 +117,7 @@ frontend-build:
     rm -rf "{{PROJECT_DIR}}/{{FRONTEND_DIR}}/dist"
     echo "📦 Building frontend..."
     npm ci --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}"
-    npm run build --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}"
+    PUBLIC_SITE_VERSION="${VERSION:-}" npm run build --prefix "{{PROJECT_DIR}}/{{FRONTEND_DIR}}"
 
 
 # Upload the frontend build artifact zip to the shared code bucket.
