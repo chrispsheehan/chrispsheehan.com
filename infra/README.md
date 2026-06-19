@@ -31,7 +31,7 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 `infra/modules/aws/s3_database` owns:
 
 - private S3 bucket for lightweight application state
-- DynamoDB processed-file ledger for CloudFront log ingestion
+- S3 lock-file ledger prefix for CloudFront log ingestion
 - bucket encryption, ownership controls, public access blocking, and versioning
 - bucket name, ARN, and regional domain outputs for consumers such as Lambda
   functions and CloudFront origins

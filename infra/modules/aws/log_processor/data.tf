@@ -133,6 +133,7 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
     ]
     resources = [
       "${var.report_bucket_arn}/data/log-processor/requests/*",
+      "${var.report_bucket_arn}/data/log-processor/locks/*",
     ]
   }
 
@@ -163,20 +164,6 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
     resources = [
       var.report_bucket_arn,
       var.logs_bucket_arn,
-    ]
-  }
-}
-
-data "aws_iam_policy_document" "lambda_processed_log_files" {
-  statement {
-    sid    = "WriteProcessedLogFilesLedger"
-    effect = "Allow"
-    actions = [
-      "dynamodb:PutItem",
-      "dynamodb:UpdateItem",
-    ]
-    resources = [
-      var.processed_log_files_table_arn,
     ]
   }
 }

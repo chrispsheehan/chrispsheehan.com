@@ -13,11 +13,6 @@ class LogProcessorConfig:
     logs_bucket_name: str
     logs_prefix: str
     max_files: int | None
-    processed_log_files_table: str
-    dynamodb_region: str
-    dynamodb_endpoint: str
-    dynamodb_access_key_id: str | None
-    dynamodb_secret_access_key: str | None
     log_level: str
 
 
@@ -33,11 +28,6 @@ def load_config(
         logs_bucket_name=required_env(env, "S3_LOGS_BUCKET"),
         logs_prefix=env.get("S3_LOGS_PREFIX", ""),
         max_files=optional_positive_int_env(env, "S3_LOGS_MAX_FILES"),
-        processed_log_files_table=required_env(env, "PROCESSED_LOG_FILES_TABLE"),
-        dynamodb_region=required_env(env, "DYNAMODB_AWS_REGION"),
-        dynamodb_endpoint=required_env(env, "DYNAMODB_ENDPOINT"),
-        dynamodb_access_key_id=env.get("DYNAMODB_AWS_ACCESS_KEY_ID"),
-        dynamodb_secret_access_key=env.get("DYNAMODB_AWS_SECRET_ACCESS_KEY"),
         log_level=log_level_env(env, "LOG_LEVEL"),
     )
 

@@ -3,13 +3,13 @@ import logging
 import sys
 
 try:
-    from .aws_clients import create_dynamodb_client, create_s3_client
+    from .aws_clients import create_s3_client
     from .config import load_config
     from .logging_config import configure_logging
     from .logs_processor import logs_report
     from .output_writer import SUMMARY_KEY, write_summary
 except ImportError:
-    from aws_clients import create_dynamodb_client, create_s3_client
+    from aws_clients import create_s3_client
     from config import load_config
     from logging_config import configure_logging
     from logs_processor import logs_report
@@ -18,7 +18,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def handle_event(event, context, *, s3_client=None, dynamodb_client=None, env=None):
+def handle_event(event, context, *, s3_client=None, env=None):
     config = load_config(env=env)
     configure_logging(config.log_level)
 
@@ -33,13 +33,11 @@ def handle_event(event, context, *, s3_client=None, dynamodb_client=None, env=No
     )
 
     s3_client = s3_client or create_s3_client()
-    dynamodb_client = dynamodb_client or create_dynamodb_client(config)
 
     combined = logs_report(
         config.report_bucket_name,
         config=config,
         s3_client=s3_client,
-        dynamodb_client=dynamodb_client,
     )
 
     write_summary(s3_client, config.report_bucket_name, combined)

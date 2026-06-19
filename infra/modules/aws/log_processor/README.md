@@ -11,7 +11,7 @@ Concrete Lambda module for the repo's minimal deployable Lambda surface.
 - daily EventBridge schedule that invokes the live alias
 - access to the S3 report bucket used as the temporary database
 - read access to the configured CloudFront log bucket prefix
-- write access to the DynamoDB processed-file ledger
+- read/write access to S3 processed-file lock objects in the report bucket
 - IAM roles and policies needed by the Lambda and CodeDeploy
 
 ## Key Outputs
@@ -25,10 +25,9 @@ The module keeps the stable Lambda deployment surface so the code deploy
 workflow can publish a new version, roll it out through CodeDeploy, and invoke
 it on a daily schedule through EventBridge.
 
-The live Terragrunt stack passes the CloudFront log bucket, report bucket,
-processed-file ledger, DynamoDB region, and DynamoDB endpoint as explicit
-inputs. The Lambda reads CloudFront log objects from the configured log bucket
-under `cloudfront-logs/` by default, unless the live stack overrides
+The live Terragrunt stack passes the CloudFront log bucket and report bucket as
+explicit inputs. The Lambda reads CloudFront log objects from the configured log
+bucket under `cloudfront-logs/` by default, unless the live stack overrides
 `logs_bucket_prefix`.
 
 Production wires the CloudFront log bucket from the frontend stack outputs so it

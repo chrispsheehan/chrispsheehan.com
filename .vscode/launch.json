@@ -7,19 +7,29 @@
       "request": "launch",
       "module": "lambdas.log_processor.logs_processor",
       "python": "${workspaceFolder}/.venv/bin/python",
-      "args": ["${input:reportBucketName}"],
+      "args": [
+        "local-log-processor",
+        "--local-s3-output-dir",
+        "docker/log-processor-s3-database",
+        "--summary-output",
+        "frontend/public/data/log-processor/data.json"
+      ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "S3_LOGS_BUCKET": "${input:logsBucketName}"
+      },
       "preLaunchTask": "Prepare logs_report Debug",
       "justMyCode": true
     }
   ],
   "inputs": [
     {
-      "id": "reportBucketName",
+      "id": "logsBucketName",
       "type": "promptString",
-      "description": "Bucket name passed to logs_report(bucket_name)"
+      "description": "S3 bucket containing CloudFront log objects",
+      "default": "chrispsheehan.com.logs"
     }
   ]
 }

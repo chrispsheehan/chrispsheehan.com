@@ -5,8 +5,7 @@
       "label": "Prepare logs_report Debug",
       "dependsOrder": "sequence",
       "dependsOn": [
-        "Install log_processor debug dependencies",
-        "Start DynamoDB Local"
+        "Install log_processor debug dependencies"
       ],
       "problemMatcher": []
     },
@@ -14,15 +13,6 @@
       "label": "Install log_processor debug dependencies",
       "type": "shell",
       "command": "python3.12 -m venv .venv && .venv/bin/python -m pip install --quiet --no-cache-dir -r lambdas/log_processor/requirements.txt \"pytest>=8,<9\"",
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Start DynamoDB Local",
-      "type": "shell",
-      "command": "docker compose up -d --wait dynamodb-local && docker compose run --rm dynamodb-setup",
       "options": {
         "cwd": "${workspaceFolder}"
       },

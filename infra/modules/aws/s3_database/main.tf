@@ -37,18 +37,3 @@ resource "aws_s3_bucket_versioning" "database" {
     status = "Enabled"
   }
 }
-
-resource "aws_dynamodb_table" "processed_log_files" {
-  name         = local.processed_log_files_table
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "object_id"
-
-  attribute {
-    name = "object_id"
-    type = "S"
-  }
-
-  point_in_time_recovery {
-    enabled = true
-  }
-}

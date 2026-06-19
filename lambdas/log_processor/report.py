@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 def process_logs(
     config: LogProcessorConfig,
     s3_client: Any,
-    dynamodb_client: Any,
     *,
     report_error: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
@@ -63,13 +62,13 @@ def process_logs(
             log_object.size,
             log_object.etag,
         )
-        claimed_object_id = claim_log_object(
-            dynamodb_client,
-            config.processed_log_files_table,
+        claim = claim_log_object(
+            s3_client,
+            config.report_bucket_name,
             config.logs_bucket_name,
             log_object,
         )
-        if claimed_object_id is None:
+        if claim is None:
             skipped_files += 1
             logger.info(
                 "Skipping already completed log file %s/%s key=%s skipped=%s",
@@ -102,14 +101,14 @@ def process_logs(
             object_output_keys = write_records(
                 s3_client,
                 config.report_bucket_name,
-                claimed_object_id,
+                claim.object_id,
                 records_by_date,
             )
             record_count = sum(len(records) for records in records_by_date.values())
             mark_complete(
-                dynamodb_client,
-                config.processed_log_files_table,
-                claimed_object_id,
+                s3_client,
+                config.report_bucket_name,
+                claim,
                 record_count,
                 object_output_keys,
             )
@@ -130,9 +129,9 @@ def process_logs(
         except Exception as exc:
             failed_files += 1
             mark_failed(
-                dynamodb_client,
-                config.processed_log_files_table,
-                claimed_object_id,
+                s3_client,
+                config.report_bucket_name,
+                claim,
                 exc,
             )
             message = f"Failed processing s3://{config.logs_bucket_name}/{log_object.key}: {exc}"
