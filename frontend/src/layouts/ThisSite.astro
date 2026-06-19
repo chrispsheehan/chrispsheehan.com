@@ -7,16 +7,50 @@ const { githubRepo } = Astro.props;
 <section id="this-site">
   <div class="section-heading" data-reveal>
     <p class="section-eyebrow">How this site runs</p>
-    <h2>Small surface area, visible operations, automated delivery.</h2>
+    <h2>Small surface area, automated delivery, visible operations.</h2>
     <p class="section-intro">
-      This site is intentionally compact. It exists to show delivery workflow,
-      operational visibility, and a preference for simple, inspectable systems.
+      A small working example of the engineering style I prefer: simple
+      systems, clear ownership, and visible runtime behavior.
     </p>
   </div>
-  <div class="container">
-    <div class="dashboard-wrapper">
-      <div class="dashboard-row" data-reveal>
-        <div class="dashboard-card github-card dashboard-card--spotlight">
+
+  <div class="site-story-grid" data-reveal>
+    <div class="site-story-copy">
+      <div class="architecture-card">
+        <p class="dashboard-card__eyebrow">Architecture summary</p>
+        <h3>About this site.</h3>
+        <ul class="architecture-list">
+          <li>
+            <strong>Astro frontend</strong>
+            <span>Static by default, with React only where it helps.</span>
+          </li>
+          <li>
+            <strong>AWS edge delivery</strong>
+            <span>S3 and CloudFront, with ACM and Route53 at the edge.</span>
+          </li>
+          <li>
+            <strong>Terraform-managed infrastructure</strong>
+            <span>Infrastructure defined alongside the application.</span>
+          </li>
+          <li>
+            <strong>Operational feedback in the UI</strong>
+            <span>Lightweight runtime data surfaced back in the UI.</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="architecture-card architecture-card--note">
+        <p class="dashboard-card__eyebrow">Why it is built this way</p>
+        <p class="dashboard-card__body">
+          The same pattern scales well: low complexity, explicit delivery
+          paths, and visible operations.
+        </p>
+      </div>
+    </div>
+
+    <div class="proof-column">
+      <div class="proof-card-stack">
+        <div class="dashboard-card github-card">
           <a
             href={`https://github.com/${githubRepo}`}
             target="_blank"
@@ -27,14 +61,20 @@ const { githubRepo } = Astro.props;
               <p class="dashboard-card__eyebrow">Repository</p>
               <h3>Source, workflows, and deploy history in one place.</h3>
               <p class="dashboard-card__body">
-                The repo carries the Astro frontend, infrastructure definition,
-                and deploy automation that publishes this site.
+                Frontend, infrastructure, and deploy automation live together.
               </p>
-              <img
-                class="pipeline-badge"
-                src={`https://github.com/${githubRepo}/actions/workflows/release_prod.yml/badge.svg`}
-                alt="Webstack Workflow Status"
-              />
+              <div class="repo-badge-row">
+                <img
+                  class="pipeline-badge"
+                  src={`https://github.com/${githubRepo}/actions/workflows/release_prod.yml/badge.svg`}
+                  alt="Workflow Status"
+                />
+                <img
+                  class="pipeline-badge"
+                  src={`https://img.shields.io/github/v/release/${githubRepo}?display_name=tag&label=latest%20release`}
+                  alt="Latest release version"
+                />
+              </div>
               <div class="github-repo-button">
                 <img src="/assets/social/github.png" alt="GitHub" />
                 <span>Source Code</span>
@@ -43,41 +83,104 @@ const { githubRepo } = Astro.props;
           </a>
         </div>
         <Visits client:load />
-        <div class="dashboard-card">
-          <p class="dashboard-card__eyebrow">Runtime shape</p>
-          <h3>Built static, delivered through AWS, kept easy to inspect.</h3>
-          <ul class="dashboard-notes">
-            <li>Astro frontend with a small React surface for live widgets.</li>
-            <li>CloudFront and S3 for static delivery, Route53 and ACM for edge routing.</li>
-            <li>Lightweight operational data published back into the frontend.</li>
-          </ul>
-        </div>
       </div>
     </div>
   </div>
 </section>
 
 <style is:global>
-  .container {
-    width: 100%;
-    padding: 0;
-    box-sizing: border-box;
+  #this-site .section-heading h2 {
+    max-width: none;
   }
 
-  .dashboard-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    flex: 1 1 0;
-    min-width: 0;
-  }
-
-  .dashboard-row {
+  .site-story-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
     gap: 1.25rem;
     width: 100%;
-    align-items: stretch;
+    align-items: start;
+    position: relative;
+    z-index: 1;
+  }
+
+  .site-story-copy,
+  .proof-column,
+  .proof-card-stack {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .architecture-card {
+    position: relative;
+    padding: 1.5rem;
+    border-radius: 1.25rem;
+    border: 1px solid var(--color-border-soft);
+    background:
+      linear-gradient(180deg, rgba(22, 49, 39, 0.74) 0%, rgba(12, 27, 22, 0.9) 100%);
+    overflow: hidden;
+  }
+
+  .architecture-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at top right, rgba(35, 191, 160, 0.12), transparent 35%),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.02), transparent 45%);
+    pointer-events: none;
+  }
+
+  .architecture-card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .architecture-card h3 {
+    margin: 0.2rem 0 0.75rem;
+    max-width: 20ch;
+  }
+
+  .architecture-card--note {
+    min-height: 0;
+  }
+
+  .architecture-card--note .dashboard-card__body {
+    max-width: 32ch;
+  }
+
+  .architecture-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .architecture-list li {
+    display: grid;
+    gap: 0.25rem;
+    padding-left: 1rem;
+    position: relative;
+  }
+
+  .architecture-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.7rem;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: var(--color-accent-warm);
+    box-shadow: 0 0 0 0.28rem rgba(244, 184, 96, 0.12);
+  }
+
+  .architecture-list strong {
+    color: var(--color-heading);
+  }
+
+  .architecture-list span {
+    color: var(--color-text-soft);
   }
 
   .dashboard-card {
@@ -121,15 +224,22 @@ const { githubRepo } = Astro.props;
     transform: translateY(-2px);
   }
 
+  .repo-badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    align-items: center;
+  }
+
   .pipeline-badge {
     height: 28px;
     object-fit: contain;
-    margin: 0;
+    margin: 0 0 0.25rem;
   }
 
   .github-repo-button img {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     object-fit: contain;
     display: inline-block;
   }
@@ -167,23 +277,38 @@ const { githubRepo } = Astro.props;
   }
 
   .github-repo-button {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 20px;
-    border-radius: 8px;
-    background: var(--color-background-dark);
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 56px;
+    padding: 14px 18px;
+    border-radius: 0.95rem;
+    background: linear-gradient(
+      135deg,
+      rgba(11, 25, 20, 0.96) 0%,
+      rgba(22, 49, 39, 0.94) 100%
+    );
     color: var(--color-text);
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
-    font-size: 1rem;
+    font-size: 1.05rem;
+    border: 1px solid rgba(185, 242, 200, 0.16);
+    box-sizing: border-box;
     transition:
       background 0.2s ease,
-      transform 0.2s ease;
+      transform 0.2s ease,
+      border-color 0.2s ease;
   }
 
   .github-card-link:hover .github-repo-button {
-    background: var(--color-surface-2);
+    background: linear-gradient(
+      135deg,
+      rgba(18, 40, 32, 0.98) 0%,
+      rgba(36, 66, 56, 0.96) 100%
+    );
+    border-color: var(--color-border-strong);
     transform: translateY(-1px);
   }
 
@@ -275,8 +400,8 @@ const { githubRepo } = Astro.props;
     color: var(--color-text);
   }
 
-  .dashboard-card--spotlight {
-    grid-column: span 2;
+  .proof-card-stack .dashboard-card {
+    min-height: 0;
   }
 
   .github-card-link:focus-visible {
@@ -291,16 +416,8 @@ const { githubRepo } = Astro.props;
   }
 
   @media (max-width: 1000px) {
-    .dashboard-wrapper {
-      width: 100%;
-    }
-
-    .dashboard-row {
+    .site-story-grid {
       grid-template-columns: 1fr;
-    }
-
-    .dashboard-card--spotlight {
-      grid-column: auto;
     }
 
     .dashboard-card,
