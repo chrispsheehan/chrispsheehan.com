@@ -66,13 +66,23 @@ const { githubRepo } = Astro.props;
               <div class="repo-badge-row">
                 <img
                   class="pipeline-badge"
-                  src={`https://github.com/${githubRepo}/actions/workflows/release_prod.yml/badge.svg`}
-                  alt="Workflow Status"
+                  src={`https://img.shields.io/github/v/release/${githubRepo}?display_name=tag&label=Latest%20Release`}
+                  alt="Latest release version"
                 />
                 <img
                   class="pipeline-badge"
-                  src={`https://img.shields.io/github/v/release/${githubRepo}?display_name=tag&label=latest%20release`}
-                  alt="Latest release version"
+                  src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_infra_plan.yml?label=Infra%20Plan`}
+                  alt="Infra plan workflow status"
+                />
+                <img
+                  class="pipeline-badge"
+                  src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_infra_apply_from_plan.yml?label=Infra%20Apply`}
+                  alt="Infra apply workflow status"
+                />
+                <img
+                  class="pipeline-badge"
+                  src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_code_deploy.yml?label=Code%20deploy`}
+                  alt="Code deploy workflow status"
                 />
               </div>
               <div class="github-repo-button">
@@ -225,10 +235,11 @@ const { githubRepo } = Astro.props;
   }
 
   .repo-badge-row {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, max-content));
     gap: 0.65rem;
     align-items: center;
+    justify-content: start;
   }
 
   .pipeline-badge {
@@ -417,6 +428,10 @@ const { githubRepo } = Astro.props;
 
   @media (max-width: 1000px) {
     .site-story-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .repo-badge-row {
       grid-template-columns: 1fr;
     }
 
