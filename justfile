@@ -39,8 +39,8 @@ docker-compose-wipe:
     set -euo pipefail
     cd "{{PROJECT_DIR}}"
     docker compose down --volumes --remove-orphans
-    rm -rf "{{PROJECT_DIR}}/docker/log-processor-s3-database"
-    mkdir -p "{{PROJECT_DIR}}/docker/log-processor-s3-database"
+    rm -rf "{{PROJECT_DIR}}/docker/local-s3-database"
+    mkdir -p "{{PROJECT_DIR}}/docker/local-s3-database"
 
 
 # Run the log processor in Docker Compose and refresh the frontend summary data file.
@@ -99,6 +99,7 @@ branch name:
     git pull origin
     git checkout -b {{ name }}
     git push -u origin {{ name }}
+    just git-tidy
 
 
 # Run Terraform and Terragrunt formatting locally.

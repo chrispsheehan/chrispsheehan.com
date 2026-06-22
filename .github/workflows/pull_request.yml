@@ -324,3 +324,21 @@ jobs:
         with:
           justfile_path: scripts/deploy/justfile
           just_action: lambda-build
+
+  build-cost-explorer:
+    name: Cost Explorer
+    if: ${{ needs.check.outputs.lambdas == 'true' }}
+    needs:
+      - check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build cost explorer
+        uses: ./.github/actions/just
+        env:
+          LAMBDA_SOURCE_DIR: lambdas/cost_explorer
+          LAMBDA_ARTIFACT_NAME: cost_explorer
+        with:
+          justfile_path: scripts/deploy/justfile
+          just_action: lambda-build
