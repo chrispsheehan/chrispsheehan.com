@@ -191,11 +191,11 @@ p {
 .hero-copy {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 .hero-copy h1 {
-  margin: 0;
+  margin: 0 0 1rem;
   max-width: 12ch;
   font-size: clamp(3rem, 6vw, 5.2rem);
   line-height: 0.95;
@@ -214,7 +214,7 @@ p {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.9rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
   width: 100%;
 }
 
