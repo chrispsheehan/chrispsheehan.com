@@ -5,9 +5,9 @@ database bucket for frontend display.
 
 ## What It Does
 
-- queries Cost Explorer for the current month spend for this repo's tagged AWS resources
-- queries Cost Explorer for the previous month spend for the same tag set
-- writes a small JSON summary to `data/cost-explorer/data.json`
+- queries Cost Explorer for the previous month spend for this repo's tagged AWS resources
+- writes the latest public summary to `data/cost-explorer/data.json`
+- writes the same monthly result to a dated history key in the S3 database bucket
 
 ## Build And Deployment
 
@@ -17,7 +17,7 @@ stack.
 
 ## Invocation Modes
 
-- Scheduled mode: invoked daily by EventBridge through the live Lambda alias
+- Scheduled mode: invoked monthly on the 1st by EventBridge through the live Lambda alias
 - Direct mode: invoke with `{}` to refresh the current report immediately
 
 ## Runtime Configuration
@@ -30,6 +30,8 @@ stack.
 
 - cost summary:
   `data/cost-explorer/data.json`
+- historical monthly summaries:
+  `data/cost-explorer/history/month=<yyyy-mm>/data.json`
 
-The summary currently contains `current-month-total`, `last-month-total`, and
+The summary currently contains `billing-month`, `last-month-total`, and
 `generated-at`.

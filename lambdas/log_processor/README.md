@@ -28,7 +28,7 @@ stack.
 - Local refresh mode: run `just log-processor-run` to invoke
   `lambdas.log_processor.logs_processor` in Docker Compose. It reads the
   configured CloudFront logs, mirrors generated report-bucket objects and S3
-  lock files under `docker/log-processor-s3-database/`, and writes the summary
+  lock files under `docker/local-s3-database/`, and writes the summary
   directly to `frontend/public/data/log-processor/data.json`.
 
 Direct mode is safe to run repeatedly. Completed source objects are skipped by

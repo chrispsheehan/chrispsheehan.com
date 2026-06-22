@@ -8,7 +8,7 @@ Concrete Lambda module for the repo's cost summary export.
 - Lambda CloudWatch log group
 - bootstrap Lambda zip object in the code bucket
 - all-at-once Lambda CodeDeploy application, deployment group, and deployment config
-- daily EventBridge schedule that invokes the live alias
+- monthly EventBridge schedule on the 1st that invokes the live alias
 - access to the S3 report bucket used as the temporary database
 - IAM roles and policies needed by the Lambda and CodeDeploy
 
@@ -25,7 +25,8 @@ it on demand after deployment.
 
 The live Terragrunt stack passes the shared S3 database bucket as an explicit
 input. The Lambda writes its published summary to
-`data/cost-explorer/data.json`.
+`data/cost-explorer/data.json` and archives monthly results under
+`data/cost-explorer/history/`.
 
 For bootstrap-friendly plan and validate flows, keep Terragrunt dependency
 mocks in the live stack rather than reading sibling state inside this module.

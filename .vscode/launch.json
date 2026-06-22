@@ -10,7 +10,7 @@
       "args": [
         "local-log-processor",
         "--local-s3-output-dir",
-        "docker/log-processor-s3-database",
+        "docker/local-s3-database",
         "--summary-output",
         "frontend/public/data/log-processor/data.json"
       ],
@@ -22,6 +22,29 @@
       },
       "preLaunchTask": "Prepare logs_report Debug",
       "justMyCode": true
+    },
+    {
+      "name": "Debug cost_explorer lambda",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "lambdas.cost_explorer.local_debug",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "args": [
+        "local-cost-explorer",
+        "--environment-name",
+        "${input:costExplorerEnvironment}",
+        "--project-name",
+        "${input:costExplorerProjectName}",
+        "--local-s3-output-dir",
+        "docker/local-s3-database",
+        "--summary-output",
+        "frontend/public/data/cost-explorer/data.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "preLaunchTask": "Prepare cost_explorer Debug",
+      "justMyCode": true
     }
   ],
   "inputs": [
@@ -30,6 +53,18 @@
       "type": "promptString",
       "description": "S3 bucket containing CloudFront log objects",
       "default": "chrispsheehan.com.logs"
+    },
+    {
+      "id": "costExplorerEnvironment",
+      "type": "promptString",
+      "description": "Environment tag used in the Cost Explorer filter",
+      "default": "prod"
+    },
+    {
+      "id": "costExplorerProjectName",
+      "type": "promptString",
+      "description": "Project tag used in the Cost Explorer filter",
+      "default": "chrispsheehan.com"
     }
   ]
 }

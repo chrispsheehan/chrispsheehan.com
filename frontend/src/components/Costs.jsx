@@ -57,21 +57,16 @@ export default function Costs() {
       className="dashboard-card dashboard-card--data"
     >
       <p className="dashboard-card__eyebrow">Site costs</p>
-      <h3>AWS spend snapshot.</h3>
+      <h3>Last month spend.</h3>
       <ul>
         <li>
-          <strong>This month:</strong>
-          <span className="metric-value">
-            {formatUsd(costs["current-month-total"])}
-          </span>
-        </li>
-        <li>
-          <strong>Last month:</strong>
+          <strong>{costs["billing-month"]}:</strong>
           <span className="metric-value">
             {formatUsd(costs["last-month-total"])}
           </span>
         </li>
       </ul>
+      <small>Generated {costs["generated-at"]}</small>
     </a>
   );
 }

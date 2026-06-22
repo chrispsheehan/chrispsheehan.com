@@ -145,8 +145,8 @@ resource "aws_codedeploy_deployment_group" "cost_explorer" {
 
 resource "aws_cloudwatch_event_rule" "daily" {
   name                = "${local.lambda_name}-daily"
-  description         = "Invoke ${local.lambda_name} daily"
-  schedule_expression = local.daily_schedule_expression
+  description         = "Invoke ${local.lambda_name} monthly on the 1st"
+  schedule_expression = local.monthly_schedule_expression
 }
 
 resource "aws_cloudwatch_event_target" "daily" {
