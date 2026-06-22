@@ -17,10 +17,11 @@ The current runtime is intentionally small:
 - `infra/live/*/aws/s3_database` creates the temporary S3 datastore and
   S3 lock-file ledger resources.
 - `infra/live/*/aws/oidc` creates GitHub Actions deploy roles.
+- `infra/live/*/aws/cost_explorer` deploys the Lambda that publishes the site cost summary.
 - `infra/live/ci/aws/code_bucket` and `infra/live/dev/aws/code_bucket` store
   deployable frontend artifacts and future Lambda artifacts.
 - `lambdas/` contains Lambda source and the packaging contract, including the
-  deployed `log_processor` runtime.
+  deployed `log_processor` and `cost_explorer` runtimes.
 
 ## Useful Commands
 
@@ -86,14 +87,15 @@ Development deploys build the current commit and roll it to
 `dev.chrispsheehan.com`:
 
 1. `Dev Infra Plan` / `Dev Infra Apply No Plan` creates or updates infra.
-2. `Dev Code Deploy` builds `frontend.zip` and `log_processor.zip`, uploads
-   them to the dev code bucket, syncs the frontend artifact to the S3 origin
-   bucket, refreshes CloudFront in a separate CI job, rolls the Lambda through
-   CodeDeploy, and invokes it once in a separate CI job.
+2. `Dev Code Deploy` builds `frontend.zip`, `log_processor.zip`, and
+   `cost_explorer.zip`, uploads them to the dev code bucket, syncs the frontend
+   artifact to the S3 origin bucket, refreshes CloudFront in a separate CI job,
+   rolls both Lambdas through CodeDeploy, and invokes each Lambda once in a
+   separate CI job.
 
 Production deploys roll a selected frontend artifact to
-`chrispsheehan.com` and deploy the selected `log_processor` Lambda
-artifact.
+`chrispsheehan.com` and deploy the selected `log_processor` and
+`cost_explorer` Lambda artifacts.
 
 ## Docs
 

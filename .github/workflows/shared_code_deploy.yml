@@ -62,6 +62,7 @@ jobs:
             echo "- \`code_bucket\`: \`$CODE_BUCKET\`"
             echo "- \`frontend\`: \`frontend.zip -> infra/live/$ENVIRONMENT/aws/frontend\`"
             echo "- \`log_processor\`: \`log_processor.zip -> infra/live/$ENVIRONMENT/aws/log_processor\`"
+            echo "- \`cost_explorer\`: \`cost_explorer.zip -> infra/live/$ENVIRONMENT/aws/cost_explorer\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
   frontend:
@@ -187,6 +188,81 @@ jobs:
           justfile_path: scripts/deploy/justfile
           just_action: lambda-upload-bundle lambda-deploy lambda-prune
 
+  lambda-cost-explorer:
+    name: Cost Explorer Lambda
+    needs: summary
+    runs-on: ubuntu-latest
+    outputs:
+      lambda_function_name: ${{ steps.get_infra_detail.outputs.lambda_function_name }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set Lambda deploy paths
+        id: lambda_paths
+        shell: bash
+        run: |
+          stack_name="cost_explorer"
+          lambda_zip_key="lambdas/${{ inputs.lambda_version }}/cost_explorer.zip"
+          lambda_appspec_key="lambdas/${{ inputs.lambda_version }}/$stack_name-appspec.zip"
+          echo "lambda_zip_key=$lambda_zip_key" >> $GITHUB_OUTPUT
+          echo "lambda_appspec_key=$lambda_appspec_key" >> $GITHUB_OUTPUT
+
+      - name: Get cost explorer infra
+        uses: ./.github/actions/terragrunt
+        id: get-infra
+        with:
+          tg_directory: infra/live/${{ inputs.environment }}/aws/cost_explorer
+          tg_action: init
+
+      - name: Get infra detail
+        id: get_infra_detail
+        env:
+          TG_OUTPUTS: ${{ steps.get-infra.outputs.tg_outputs  }}
+        run: |
+          echo "lambda_function_name=$(echo $TG_OUTPUTS | jq -r '.lambda_function_name.value')" >> $GITHUB_OUTPUT
+          echo "lambda_alias_name=$(echo $TG_OUTPUTS | jq -r '.lambda_alias_name.value')" >> $GITHUB_OUTPUT
+
+      - name: Publish new lambda version
+        id: publish
+        uses: ./.github/actions/just
+        env:
+          BUCKET_NAME: ${{ inputs.code_bucket }}
+          FUNCTION_NAME: ${{ steps.get_infra_detail.outputs.lambda_function_name }}
+          LAMBDA_ZIP_KEY: ${{ steps.lambda_paths.outputs.lambda_zip_key }}
+        with:
+          justfile_path: scripts/deploy/justfile
+          just_action: lambda-create-version
+
+      - name: Get current lambda version
+        id: get-version
+        uses: ./.github/actions/just
+        env:
+          FUNCTION_NAME: ${{ steps.get_infra_detail.outputs.lambda_function_name }}
+          ALIAS_NAME: ${{ steps.get_infra_detail.outputs.lambda_alias_name }}
+        with:
+          justfile_path: scripts/deploy/justfile
+          just_action: lambda-get-version
+
+      - name: Run CodeDeploy
+        uses: ./.github/actions/just
+        env:
+          KEEP: ${{ inputs.lambda_keep }}
+          BUCKET_NAME: ${{ inputs.code_bucket }}
+          FUNCTION_NAME: ${{ steps.get_infra_detail.outputs.lambda_function_name }}
+          ALIAS_NAME: ${{ steps.get_infra_detail.outputs.lambda_alias_name }}
+          CURRENT_VERSION: ${{ steps.get-version.outputs.just_outputs }}
+          NEW_VERSION: ${{ steps.publish.outputs.just_outputs }}
+          APP_SPEC_FILE: ${{ github.workspace }}/lambdas/appspec-lambda.rendered.yml
+          APP_SPEC_KEY: ${{ steps.lambda_paths.outputs.lambda_appspec_key }}
+        with:
+          justfile_path: scripts/deploy/justfile
+          just_action: lambda-upload-bundle lambda-deploy lambda-prune
+
   refresh-frontend:
     name: Refresh Frontend
     runs-on: ubuntu-latest
@@ -224,6 +300,26 @@ jobs:
         uses: ./.github/actions/just
         env:
           LAMBDA_NAME: ${{ needs.lambda-log-processor.outputs.lambda_function_name }}
+        with:
+          justfile_path: scripts/deploy/justfile
+          just_action: lambda-invoke
+
+  invoke-cost-explorer:
+    name: Invoke Cost Explorer
+    runs-on: ubuntu-latest
+    needs:
+      - lambda-cost-explorer
+    steps:
+      - uses: actions/checkout@v6
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Invoke Lambda
+        uses: ./.github/actions/just
+        env:
+          LAMBDA_NAME: ${{ needs.lambda-cost-explorer.outputs.lambda_function_name }}
         with:
           justfile_path: scripts/deploy/justfile
           just_action: lambda-invoke

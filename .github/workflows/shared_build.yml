@@ -114,3 +114,26 @@ jobs:
         with:
           justfile_path: scripts/deploy/justfile
           just_action: lambda-build lambda-upload
+
+  cost-explorer:
+    name: Cost Explorer
+    needs: bucket
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build and upload cost explorer
+        uses: ./.github/actions/just
+        env:
+          BUCKET_NAME: ${{ needs.bucket.outputs.code_bucket_name }}
+          VERSION: ${{ inputs.lambda_version }}
+          LAMBDA_SOURCE_DIR: lambdas/cost_explorer
+          LAMBDA_ARTIFACT_NAME: cost_explorer
+        with:
+          justfile_path: scripts/deploy/justfile
+          just_action: lambda-build lambda-upload

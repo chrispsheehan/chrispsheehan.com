@@ -6,6 +6,7 @@ and local deploy commands.
 ## Lambda Functions
 
 - [`log_processor`](log_processor/README.md): deployed Lambda runtime.
+- [`cost_explorer`](cost_explorer/README.md): deployed Lambda runtime.
 
 ## Adding Lambdas
 
