@@ -273,12 +273,22 @@ const { githubRepo } = Astro.props;
     display: block;
     width: 100%;
     height: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .github-card-link:focus {
+    outline: none;
   }
 
   .dashboard-card--data {
     text-decoration: none;
     color: inherit;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dashboard-card--data:focus {
+    outline: none;
   }
 
   .github-card-content {
