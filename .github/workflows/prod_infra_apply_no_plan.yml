@@ -2,6 +2,12 @@ name: Prod Infra Apply (no plan)
 
 on:
   workflow_dispatch:
+    inputs:
+      infra_version:
+        description: "Infrastructure ref to apply"
+        required: true
+        default: "main"
+        type: string
 
 permissions:
   id-token: write
@@ -14,4 +20,4 @@ jobs:
     uses: ./.github/workflows/shared_infra_apply_no_plan.yml
     with:
       environment: prod
-      infra_version: 1.0.0
+      infra_version: ${{ inputs.infra_version }}
