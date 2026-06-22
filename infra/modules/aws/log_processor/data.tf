@@ -1,11 +1,7 @@
 data "archive_file" "bootstrap_lambda" {
-  type                    = "zip"
-  source_content          = <<-PY
-def lambda_handler(event, context):
-    return {"statusCode": 200, "body": "bootstrap"}
-PY
-  source_content_filename = "index.py"
-  output_path             = "${path.module}/bootstrap-lambda.zip"
+  type        = "zip"
+  source_file = "${path.module}/bootstrap/index.py"
+  output_path = "${path.module}/${local.lambda_bootstrap_zip_key}"
 }
 
 data "aws_iam_policy_document" "assume_role" {
