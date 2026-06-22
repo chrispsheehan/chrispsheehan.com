@@ -1,5 +1,5 @@
 ---
-const { baseDomain } = Astro.props;
+const { baseDomain, githubRepo } = Astro.props;
 ---
 
 <header>
@@ -27,6 +27,7 @@ const { baseDomain } = Astro.props;
         </div>
 
         <div class="mobile-menu-links">
+          <p class="mobile-menu-section">Sections</p>
           <a href="#about-me" class="overlay-button" onclick="hideMenu()"
             >About</a
           >
@@ -36,6 +37,52 @@ const { baseDomain } = Astro.props;
           <a href="#this-site" class="overlay-button" onclick="hideMenu()"
             >This Site</a
           >
+        </div>
+
+        <div class="mobile-menu-links mobile-menu-links--profiles">
+          <p class="mobile-menu-section">Profiles</p>
+          <div class="mobile-profile-grid">
+            <a
+              href="https://www.linkedin.com/in/chrispsheehan"
+              class="mobile-profile-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              onclick="hideMenu()"
+            >
+              <img src="/assets/social/linkedin.png" alt="" aria-hidden="true" />
+              <span>LinkedIn</span>
+            </a>
+            <a
+              href={`https://github.com/${githubRepo}`}
+              class="mobile-profile-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              onclick="hideMenu()"
+            >
+              <img src="/assets/social/github.png" alt="" aria-hidden="true" />
+              <span>GitHub</span>
+            </a>
+            <a
+              href="https://registry.terraform.io/namespaces/chrispsheehan"
+              class="mobile-profile-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              onclick="hideMenu()"
+            >
+              <img src="/assets/social/terraform.png" alt="" aria-hidden="true" />
+              <span>Terraform</span>
+            </a>
+            <a
+              href="https://www.credly.com/users/chris-sheehan.b081233e/badges/credly"
+              class="mobile-profile-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              onclick="hideMenu()"
+            >
+              <img src="/assets/social/credly.png" alt="" aria-hidden="true" />
+              <span>Credly</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -209,6 +256,15 @@ const { baseDomain } = Astro.props;
       gap: 10px;
     }
 
+    .mobile-menu-section {
+      margin: 0;
+      color: var(--color-heading);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
     .overlay-button {
       padding: 12px 16px;
       font-size: 1.1rem;
@@ -223,6 +279,50 @@ const { baseDomain } = Astro.props;
     .overlay-button:hover {
       background: var(--color-surface-2);
       color: var(--color-heading);
+    }
+
+    .mobile-profile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .mobile-profile-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 56px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--color-border-strong);
+      background: var(--color-surface);
+      color: var(--color-text);
+      text-decoration: none;
+      font-weight: 700;
+      transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .mobile-profile-link:hover {
+      background: var(--color-surface-2);
+      color: var(--color-heading);
+      transform: translateY(-1px);
+    }
+
+    .mobile-profile-link img {
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      min-height: 22px;
+      max-width: 22px;
+      max-height: 22px;
+      inline-size: 22px;
+      block-size: 22px;
+      flex: 0 0 22px;
+      object-fit: contain;
+      display: block;
     }
 
     @media (max-width: 1250px) and (min-width: 1001px) {
@@ -251,6 +351,10 @@ const { baseDomain } = Astro.props;
 
       .mobile-menu-panel {
         padding: 14px;
+      }
+
+      .mobile-profile-grid {
+        grid-template-columns: 1fr;
       }
     }
 
