@@ -51,46 +51,78 @@ const { githubRepo } = Astro.props;
     <div class="proof-column">
       <div class="proof-card-stack">
         <div class="dashboard-card github-card">
-          <a
-            href={`https://github.com/${githubRepo}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="github-card-link"
-          >
-            <div class="github-card-content">
-              <p class="dashboard-card__eyebrow">Repository</p>
-              <h3>Source, workflows, and deploy history in one place.</h3>
-              <p class="dashboard-card__body">
-                Frontend, infrastructure, and deploy automation live together.
-              </p>
-              <div class="repo-badge-row">
+          <div class="github-card-content">
+            <p class="dashboard-card__eyebrow">Repository</p>
+            <h3>Source, workflows, and deploy history in one place.</h3>
+            <p class="dashboard-card__body">
+              Frontend, infrastructure, and deploy automation live together.
+            </p>
+            <div class="repo-badge-row">
+              <a
+                href={`https://github.com/${githubRepo}/releases`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="github-card-link github-card-link--badge"
+                aria-label="Open releases"
+              >
                 <img
                   class="pipeline-badge"
                   src={`https://img.shields.io/github/v/release/${githubRepo}?display_name=tag&label=Latest%20Release`}
                   alt="Latest release version"
                 />
+              </a>
+              <a
+                href={`https://github.com/${githubRepo}/actions/workflows/prod_infra_plan.yml`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="github-card-link github-card-link--badge"
+                aria-label="Open infra plan workflow"
+              >
                 <img
                   class="pipeline-badge"
                   src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_infra_plan.yml?label=Infra%20Plan`}
                   alt="Infra plan workflow status"
                 />
+              </a>
+              <a
+                href={`https://github.com/${githubRepo}/actions/workflows/prod_infra_apply_from_plan.yml`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="github-card-link github-card-link--badge"
+                aria-label="Open infra apply workflow"
+              >
                 <img
                   class="pipeline-badge"
                   src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_infra_apply_from_plan.yml?label=Infra%20Apply`}
                   alt="Infra apply workflow status"
                 />
+              </a>
+              <a
+                href={`https://github.com/${githubRepo}/actions/workflows/prod_code_deploy.yml`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="github-card-link github-card-link--badge"
+                aria-label="Open code deploy workflow"
+              >
                 <img
                   class="pipeline-badge"
                   src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_code_deploy.yml?label=Code%20deploy`}
                   alt="Code deploy workflow status"
                 />
-              </div>
+              </a>
+            </div>
+            <a
+              href={`https://github.com/${githubRepo}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="github-card-link github-card-link--button"
+            >
               <div class="github-repo-button">
                 <img src="/assets/social/github.png" alt="GitHub" />
                 <span>Source Code</span>
               </div>
-            </div>
-          </a>
+            </a>
+          </div>
         </div>
         <Visits client:load />
       </div>
@@ -246,6 +278,7 @@ const { githubRepo } = Astro.props;
     height: 28px;
     object-fit: contain;
     margin: 0 0 0.25rem;
+    display: block;
   }
 
   .github-repo-button img {
@@ -267,17 +300,42 @@ const { githubRepo } = Astro.props;
     text-align: left;
   }
 
+  .github-card:hover {
+    background: linear-gradient(
+      180deg,
+      rgba(22, 49, 39, 0.88) 0%,
+      rgba(12, 27, 22, 0.96) 100%
+    );
+    box-shadow: none;
+    transform: none;
+  }
+
   .github-card-link {
     text-decoration: none;
     color: inherit;
     display: block;
-    width: 100%;
-    height: 100%;
     -webkit-tap-highlight-color: transparent;
   }
 
   .github-card-link:focus {
     outline: none;
+  }
+
+  .github-card-link--badge {
+    display: inline-flex;
+    border-radius: 999px;
+    transition:
+      filter 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .github-card-link--badge:hover {
+    filter: brightness(1.08) saturate(1.05);
+    transform: translateY(-2px);
+  }
+
+  .github-card-link--button {
+    width: 100%;
   }
 
   .dashboard-card--data {
@@ -434,6 +492,10 @@ const { githubRepo } = Astro.props;
     outline: 2px solid var(--color-accent);
     outline-offset: 4px;
     border-radius: 1.25rem;
+  }
+
+  .github-card-link--badge:focus-visible {
+    border-radius: 999px;
   }
 
   .dashboard-card:focus-within {
