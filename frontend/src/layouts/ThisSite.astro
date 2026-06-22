@@ -1,4 +1,5 @@
 ---
+import Costs from "../components/Costs";
 import Visits from "../components/Visits";
 
 const { githubRepo } = Astro.props;
@@ -125,6 +126,7 @@ const { githubRepo } = Astro.props;
           </div>
         </div>
         <Visits client:load />
+        <Costs client:load />
       </div>
     </div>
   </div>
