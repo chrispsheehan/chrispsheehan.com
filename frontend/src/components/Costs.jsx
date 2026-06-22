@@ -56,11 +56,10 @@ export default function Costs() {
       rel="noopener noreferrer"
       className="dashboard-card dashboard-card--data"
     >
-      <p className="dashboard-card__eyebrow">Site costs</p>
-      <h3>Last month spend.</h3>
+      <p className="dashboard-card__eyebrow">Cost</p>
       <ul>
         <li>
-          <strong>{costs["billing-month"]}:</strong>
+          <strong>{costs["billing-month"]}</strong>
           <span className="metric-value">
             {formatUsd(costs["last-month-total"])}
           </span>

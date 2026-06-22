@@ -47,15 +47,14 @@ export default function Visits() {
       rel="noopener noreferrer"
       className="dashboard-card dashboard-card--data"
     >
-      <p className="dashboard-card__eyebrow">Traffic snapshot</p>
-      <h3>Recent visits.</h3>
+      <p className="dashboard-card__eyebrow">Traffic</p>
       <ul>
         <li>
-          <strong>Daily:</strong>
+          <strong>Daily</strong>
           <span className="metric-value">{visits["daily-visits"]}</span>
         </li>
         <li>
-          <strong>Total ({visits["range"]} days):</strong>
+          <strong>{visits["range"]}-day total</strong>
           <span className="metric-value">{visits["total-visits"]}</span>
         </li>
       </ul>

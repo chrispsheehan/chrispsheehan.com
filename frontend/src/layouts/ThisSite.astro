@@ -1,6 +1,5 @@
 ---
-import Costs from "../components/Costs";
-import Visits from "../components/Visits";
+import RuntimeSummary from "../components/RuntimeSummary";
 
 const { githubRepo } = Astro.props;
 ---
@@ -38,9 +37,9 @@ const { githubRepo } = Astro.props;
     <div class="dashboard-card github-card">
       <div class="github-card-content">
         <p class="dashboard-card__eyebrow">Repository</p>
-        <h3>Source, workflows, and release evidence in one place.</h3>
+        <h3>Source, workflows,<br />and release evidence.</h3>
         <p class="dashboard-card__body">
-          Frontend, infrastructure, and deployment automation live together.
+          Frontend, infrastructure, and deploy automation live together.
         </p>
         <div class="repo-badge-row">
           <a
@@ -107,23 +106,20 @@ const { githubRepo } = Astro.props;
             <span>Browse Repository</span>
           </div>
         </a>
+        <RuntimeSummary client:load />
       </div>
     </div>
 
-    <div class="runtime-row-heading">
-      <p class="dashboard-card__eyebrow">Runtime data</p>
-    </div>
-
-    <div class="proof-data-grid">
-      <Visits client:load />
-      <Costs client:load />
-    </div>
   </div>
 </section>
 
 <style is:global>
   #this-site .section-heading h2 {
     max-width: none;
+  }
+
+  #this-site .section-heading {
+    margin-bottom: 1.25rem;
   }
 
   .site-story-grid {
@@ -136,34 +132,20 @@ const { githubRepo } = Astro.props;
     z-index: 1;
   }
 
-  .proof-data-grid {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.25rem;
-    align-items: stretch;
-  }
-
-  .runtime-row-heading {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    min-width: 0;
-    padding-top: 0.15rem;
-  }
-
-  .runtime-row-heading .dashboard-card__eyebrow {
-    white-space: nowrap;
-  }
-
   .architecture-card {
     position: relative;
     height: 100%;
     padding: 1.5rem;
+    box-sizing: border-box;
     border-radius: 1.25rem;
+    clip-path: inset(0 round 1.25rem);
     border: 1px solid var(--color-border-soft);
-    background:
-      linear-gradient(180deg, rgba(22, 49, 39, 0.74) 0%, rgba(12, 27, 22, 0.9) 100%);
+    background: linear-gradient(
+      180deg,
+      rgba(16, 35, 28, 0.72) 0%,
+      rgba(11, 25, 20, 0.9) 100%
+    );
+    box-shadow: var(--shadow-card-hover);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -228,14 +210,14 @@ const { githubRepo } = Astro.props;
   .dashboard-card {
     background: linear-gradient(
       180deg,
-      rgba(22, 49, 39, 0.88) 0%,
-      rgba(12, 27, 22, 0.96) 100%
+      rgba(16, 35, 28, 0.72) 0%,
+      rgba(11, 25, 20, 0.9) 100%
     );
     border-radius: 1.25rem;
     padding: 1.5rem;
     max-width: none;
     min-width: 0;
-    min-height: 220px;
+    min-height: 0;
     width: 100%;
     box-sizing: border-box;
     display: flex;
@@ -247,6 +229,7 @@ const { githubRepo } = Astro.props;
       box-shadow 0.2s ease,
       transform 0.2s ease;
     border: 1px solid var(--color-border-soft);
+    box-shadow: var(--shadow-card-hover);
     overflow: hidden;
   }
 
@@ -294,7 +277,7 @@ const { githubRepo } = Astro.props;
   }
 
   .github-card {
-    justify-content: center;
+    justify-content: flex-start;
     min-width: 0;
     align-items: flex-start;
     text-align: left;
@@ -303,11 +286,9 @@ const { githubRepo } = Astro.props;
   .github-card:hover {
     background: linear-gradient(
       180deg,
-      rgba(22, 49, 39, 0.88) 0%,
-      rgba(12, 27, 22, 0.96) 100%
+      rgba(18, 40, 32, 0.8) 0%,
+      rgba(12, 27, 22, 0.92) 100%
     );
-    box-shadow: none;
-    transform: none;
   }
 
   .github-card-link {
@@ -338,55 +319,75 @@ const { githubRepo } = Astro.props;
     width: 100%;
   }
 
-  .dashboard-card--data {
-    text-decoration: none;
-    color: inherit;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    min-height: 0;
-    gap: 0.9rem;
-    height: 100%;
-  }
-
-  .dashboard-card--data:focus {
-    outline: none;
-  }
-
-  .dashboard-card--data h3 {
-    max-width: none;
-  }
-
-  .dashboard-card--data li {
-    grid-template-columns: 1fr;
-    gap: 0.2rem;
-    align-items: start;
-    margin-bottom: 0.85rem;
-  }
-
-  .dashboard-card--data .metric-value {
-    justify-self: start;
-    text-align: left;
-    font-size: 1.35rem;
-  }
-
-  .dashboard-card--data small {
-    margin-top: auto;
-    color: var(--color-text-soft);
-  }
-
-  .proof-data-grid > * {
-    height: 100%;
-  }
-
   .github-card-content {
     border: none;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 1rem;
-    justify-content: center;
+    gap: 0.9rem;
+    justify-content: flex-start;
     position: relative;
     z-index: 1;
+  }
+
+  .github-card h3 {
+    max-width: 19ch;
+    color: var(--color-heading);
+  }
+
+  .runtime-summary {
+    width: 100%;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .runtime-summary__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+    width: 100%;
+  }
+
+  .runtime-summary__item {
+    display: grid;
+    gap: 0.22rem;
+    padding: 0.9rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(185, 242, 200, 0.14);
+    background: rgba(255, 255, 255, 0.03);
+    color: inherit;
+    text-decoration: none;
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .runtime-summary__item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--color-border-strong);
+    transform: translateY(-1px);
+  }
+
+  .runtime-summary__label {
+    color: var(--color-text-soft);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .runtime-summary__value {
+    color: var(--color-heading);
+    font-size: 1.35rem;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .runtime-summary__meta,
+  .runtime-summary__status {
+    color: var(--color-text-soft);
+    font-size: 0.92rem;
   }
 
   .github-repo-button {
@@ -513,10 +514,6 @@ const { githubRepo } = Astro.props;
     color: var(--color-text);
   }
 
-  .proof-card-stack .dashboard-card {
-    min-height: 0;
-  }
-
   .github-card-link:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 4px;
@@ -537,7 +534,7 @@ const { githubRepo } = Astro.props;
       grid-template-columns: 1fr;
     }
 
-    .proof-data-grid {
+    .runtime-summary__grid {
       grid-template-columns: 1fr;
     }
 
