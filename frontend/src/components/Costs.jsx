@@ -66,7 +66,6 @@ export default function Costs() {
           </span>
         </li>
       </ul>
-      <small>Generated {costs["generated-at"]}</small>
     </a>
   );
 }

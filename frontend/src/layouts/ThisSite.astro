@@ -16,114 +16,107 @@ const { githubRepo } = Astro.props;
   </div>
 
   <div class="site-story-grid" data-reveal>
-    <div class="site-story-copy">
-      <div class="architecture-card">
-        <p class="dashboard-card__eyebrow">Build shape</p>
-        <h3>Simple stack, explicit delivery path.</h3>
-        <ul class="architecture-list">
-          <li>
-            <strong>Astro frontend</strong>
-            <span>Static by default, with React only where runtime UI adds value.</span>
-          </li>
-          <li>
-            <strong>AWS edge delivery</strong>
-            <span>S3, CloudFront, ACM, and Route53 for a low-complexity public edge.</span>
-          </li>
-          <li>
-            <strong>Terraform-managed infrastructure</strong>
-            <span>Application, infrastructure, and deploy automation kept together.</span>
-          </li>
-        </ul>
-      </div>
+    <div class="architecture-card">
+      <p class="dashboard-card__eyebrow">Build shape</p>
+      <h3>Simple stack, explicit delivery path.</h3>
+      <ul class="architecture-list">
+        <li>
+          <strong>Astro frontend</strong>
+          <span>Static by default, with React only where runtime UI adds value.</span>
+        </li>
+        <li>
+          <strong>AWS edge delivery</strong>
+          <span>S3, CloudFront, ACM, and Route53 for a low-complexity public edge.</span>
+        </li>
+        <li>
+          <strong>Terraform-managed infrastructure</strong>
+          <span>Application, infrastructure, and deploy automation kept together.</span>
+        </li>
+      </ul>
+    </div>
 
-      <div class="architecture-card architecture-card--note">
-        <p class="dashboard-card__eyebrow">Why include this section</p>
+    <div class="dashboard-card github-card">
+      <div class="github-card-content">
+        <p class="dashboard-card__eyebrow">Repository</p>
+        <h3>Source, workflows, and release evidence in one place.</h3>
         <p class="dashboard-card__body">
-          The goal is not to make the site complex. The goal is to make the
-          runtime understandable and the delivery path visible.
+          Frontend, infrastructure, and deployment automation live together.
         </p>
+        <div class="repo-badge-row">
+          <a
+            href={`https://github.com/${githubRepo}/releases`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="github-card-link github-card-link--badge"
+            aria-label="Open releases"
+          >
+            <img
+              class="pipeline-badge"
+              src={`https://img.shields.io/github/v/release/${githubRepo}?display_name=tag&label=Latest%20Release`}
+              alt="Latest release version"
+            />
+          </a>
+          <a
+            href={`https://github.com/${githubRepo}/actions/workflows/prod_infra_plan.yml`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="github-card-link github-card-link--badge"
+            aria-label="Open infra plan workflow"
+          >
+            <img
+              class="pipeline-badge"
+              src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_infra_plan.yml?label=Infra%20Plan`}
+              alt="Infra plan workflow status"
+            />
+          </a>
+          <a
+            href={`https://github.com/${githubRepo}/actions/workflows/prod_infra_apply_from_plan.yml`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="github-card-link github-card-link--badge"
+            aria-label="Open infra apply workflow"
+          >
+            <img
+              class="pipeline-badge"
+              src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_infra_apply_from_plan.yml?label=Infra%20Apply`}
+              alt="Infra apply workflow status"
+            />
+          </a>
+          <a
+            href={`https://github.com/${githubRepo}/actions/workflows/prod_code_deploy.yml`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="github-card-link github-card-link--badge"
+            aria-label="Open code deploy workflow"
+          >
+            <img
+              class="pipeline-badge"
+              src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_code_deploy.yml?label=Code%20deploy`}
+              alt="Code deploy workflow status"
+            />
+          </a>
+        </div>
+        <a
+          href={`https://github.com/${githubRepo}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="github-card-link github-card-link--button"
+        >
+          <div class="github-repo-button">
+            <img src="/assets/social/github.png" alt="GitHub" />
+            <span>Browse Repository</span>
+          </div>
+        </a>
       </div>
     </div>
 
-    <div class="proof-column">
-      <div class="proof-card-stack">
-        <div class="dashboard-card github-card">
-          <div class="github-card-content">
-            <p class="dashboard-card__eyebrow">Repository</p>
-            <h3>Source, workflows, and release evidence in one place.</h3>
-            <p class="dashboard-card__body">
-              Frontend, infrastructure, and deployment automation live together.
-            </p>
-            <div class="repo-badge-row">
-              <a
-                href={`https://github.com/${githubRepo}/releases`}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="github-card-link github-card-link--badge"
-                aria-label="Open releases"
-              >
-                <img
-                  class="pipeline-badge"
-                  src={`https://img.shields.io/github/v/release/${githubRepo}?display_name=tag&label=Latest%20Release`}
-                  alt="Latest release version"
-                />
-              </a>
-              <a
-                href={`https://github.com/${githubRepo}/actions/workflows/prod_infra_plan.yml`}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="github-card-link github-card-link--badge"
-                aria-label="Open infra plan workflow"
-              >
-                <img
-                  class="pipeline-badge"
-                  src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_infra_plan.yml?label=Infra%20Plan`}
-                  alt="Infra plan workflow status"
-                />
-              </a>
-              <a
-                href={`https://github.com/${githubRepo}/actions/workflows/prod_infra_apply_from_plan.yml`}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="github-card-link github-card-link--badge"
-                aria-label="Open infra apply workflow"
-              >
-                <img
-                  class="pipeline-badge"
-                  src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_infra_apply_from_plan.yml?label=Infra%20Apply`}
-                  alt="Infra apply workflow status"
-                />
-              </a>
-              <a
-                href={`https://github.com/${githubRepo}/actions/workflows/prod_code_deploy.yml`}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="github-card-link github-card-link--badge"
-                aria-label="Open code deploy workflow"
-              >
-                <img
-                  class="pipeline-badge"
-                  src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_code_deploy.yml?label=Code%20deploy`}
-                  alt="Code deploy workflow status"
-                />
-              </a>
-            </div>
-            <a
-              href={`https://github.com/${githubRepo}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="github-card-link github-card-link--button"
-            >
-              <div class="github-repo-button">
-                <img src="/assets/social/github.png" alt="GitHub" />
-                <span>Browse Repository</span>
-              </div>
-            </a>
-          </div>
-        </div>
-        <Visits client:load />
-        <Costs client:load />
-      </div>
+    <div class="runtime-row-heading">
+      <p class="dashboard-card__eyebrow">Runtime data</p>
+    </div>
+
+    <div class="proof-data-grid">
+      <Visits client:load />
+      <Costs client:load />
     </div>
   </div>
 </section>
@@ -135,28 +128,45 @@ const { githubRepo } = Astro.props;
 
   .site-story-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.25rem;
     width: 100%;
-    align-items: start;
+    align-items: stretch;
     position: relative;
     z-index: 1;
   }
 
-  .site-story-copy,
-  .proof-column,
-  .proof-card-stack {
+  .proof-data-grid {
     display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.25rem;
+    align-items: stretch;
+  }
+
+  .runtime-row-heading {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding-top: 0.15rem;
+  }
+
+  .runtime-row-heading .dashboard-card__eyebrow {
+    white-space: nowrap;
   }
 
   .architecture-card {
     position: relative;
+    height: 100%;
     padding: 1.5rem;
     border-radius: 1.25rem;
     border: 1px solid var(--color-border-soft);
     background:
       linear-gradient(180deg, rgba(22, 49, 39, 0.74) 0%, rgba(12, 27, 22, 0.9) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     overflow: hidden;
   }
 
@@ -178,14 +188,6 @@ const { githubRepo } = Astro.props;
   .architecture-card h3 {
     margin: 0.2rem 0 0.75rem;
     max-width: 20ch;
-  }
-
-  .architecture-card--note {
-    min-height: 0;
-  }
-
-  .architecture-card--note .dashboard-card__body {
-    max-width: 32ch;
   }
 
   .architecture-list {
@@ -232,7 +234,7 @@ const { githubRepo } = Astro.props;
     border-radius: 1.25rem;
     padding: 1.5rem;
     max-width: none;
-    min-width: 280px;
+    min-width: 0;
     min-height: 220px;
     width: 100%;
     box-sizing: border-box;
@@ -341,10 +343,39 @@ const { githubRepo } = Astro.props;
     color: inherit;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    min-height: 0;
+    gap: 0.9rem;
+    height: 100%;
   }
 
   .dashboard-card--data:focus {
     outline: none;
+  }
+
+  .dashboard-card--data h3 {
+    max-width: none;
+  }
+
+  .dashboard-card--data li {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+    align-items: start;
+    margin-bottom: 0.85rem;
+  }
+
+  .dashboard-card--data .metric-value {
+    justify-self: start;
+    text-align: left;
+    font-size: 1.35rem;
+  }
+
+  .dashboard-card--data small {
+    margin-top: auto;
+    color: var(--color-text-soft);
+  }
+
+  .proof-data-grid > * {
+    height: 100%;
   }
 
   .github-card-content {
@@ -503,6 +534,10 @@ const { githubRepo } = Astro.props;
 
   @media (max-width: 1000px) {
     .site-story-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .proof-data-grid {
       grid-template-columns: 1fr;
     }
 

@@ -36,57 +36,47 @@ const githubRepo =
           </p>
           <div class="cta-row">
             <a
-              class="button-link button-link--primary"
-              href={`https://github.com/${githubRepo}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View Source
-            </a>
-            <a
-              class="button-link"
+              class="button-link button-link--icon"
               href="https://www.linkedin.com/in/chrispsheehan"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="LinkedIn"
             >
-              LinkedIn
+              <img src="/assets/social/linkedin.png" alt="" aria-hidden="true" />
             </a>
-            <a class="button-link button-link--ghost" href="#this-site">Runtime</a>
+            <a
+              class="button-link button-link--icon"
+              href={`https://github.com/${githubRepo}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="GitHub"
+            >
+              <img src="/assets/social/github.png" alt="" aria-hidden="true" />
+            </a>
+            <a
+              class="button-link button-link--icon"
+              href="https://registry.terraform.io/namespaces/chrispsheehan"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Terraform Registry"
+            >
+              <img src="/assets/social/terraform.png" alt="" aria-hidden="true" />
+            </a>
+            <a
+              class="button-link button-link--icon"
+              href="https://www.credly.com/users/chris-sheehan.b081233e/badges/credly"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Credly"
+            >
+              <img src="/assets/social/credly.png" alt="" aria-hidden="true" />
+            </a>
           </div>
           <ul class="pill-list" aria-label="Core focus areas">
             <li class="pill">Platform Architecture</li>
             <li class="pill">Release Engineering</li>
             <li class="pill">Developer Enablement</li>
           </ul>
-          <div class="profile-links" aria-label="External profiles">
-            <a
-              class="profile-link"
-              href={`https://github.com/${githubRepo}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img src="/assets/social/github.png" alt="" aria-hidden="true" />
-              <span>GitHub</span>
-            </a>
-            <a
-              class="profile-link"
-              href="https://www.linkedin.com/in/chrispsheehan"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img src="/assets/social/linkedin.png" alt="" aria-hidden="true" />
-              <span>LinkedIn</span>
-            </a>
-            <a
-              class="profile-link"
-              href="https://registry.terraform.io/namespaces/chrispsheehan"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img src="/assets/social/terraform.png" alt="" aria-hidden="true" />
-              <span>Terraform</span>
-            </a>
-          </div>
         </div>
 
         <aside class="hero-panel" data-reveal>
