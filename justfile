@@ -99,6 +99,7 @@ branch name:
     git pull origin
     git checkout -b {{ name }}
     git push -u origin {{ name }}
+    just git-tidy
 
 
 # Run Terraform and Terragrunt formatting locally.
