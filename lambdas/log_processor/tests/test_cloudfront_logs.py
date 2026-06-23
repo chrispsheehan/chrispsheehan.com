@@ -47,6 +47,29 @@ def test_list_log_objects_filters_gzip_and_sorts_oldest_first():
     assert objects[0].size == 10
 
 
+def test_list_log_objects_passes_start_after_when_provided():
+    class StartAfterPaginator:
+        def paginate(self, **kwargs):
+            assert kwargs == {
+                "Bucket": "logs-bucket",
+                "Prefix": "cloudfront/",
+                "StartAfter": "cloudfront/a.gz",
+            }
+            return [{"Contents": []}]
+
+    class StartAfterS3:
+        def get_paginator(self, name):
+            assert name == "list_objects_v2"
+            return StartAfterPaginator()
+
+    assert list_log_objects(
+        StartAfterS3(),
+        "logs-bucket",
+        "cloudfront/",
+        start_after="cloudfront/a.gz",
+    ) == []
+
+
 def test_parse_log_line_returns_decoded_non_bot_record():
     line = (
         "2026-01-02\t12:00:00\tLHR\t123\t203.0.113.10\tGET\texample.com\t"

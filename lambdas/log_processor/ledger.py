@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
-from typing import Any
+from typing import Any, Literal
 
 from botocore.exceptions import ClientError
 
@@ -25,6 +25,12 @@ class LockClaim:
     etag: str | None
 
 
+@dataclass(frozen=True)
+class ClaimDecision:
+    status: Literal["claimed", "complete", "busy"]
+    claim: LockClaim | None = None
+
+
 def utc_timestamp(moment: datetime | None = None) -> str:
     return (moment or datetime.now(timezone.utc)).isoformat()
 
@@ -43,7 +49,7 @@ def claim_log_object(
     database_bucket_name: str,
     source_bucket_name: str,
     log_object: LogObject,
-) -> LockClaim | None:
+) -> ClaimDecision:
     claimed_object_id = object_id(source_bucket_name, log_object.key, log_object.etag)
     key = lock_key(claimed_object_id)
     claimed_at = datetime.now(timezone.utc)
@@ -63,18 +69,24 @@ def claim_log_object(
             body,
             if_none_match="*",
         )
-        return LockClaim(claimed_object_id, key, response_etag(response))
+        return ClaimDecision(
+            status="claimed",
+            claim=LockClaim(claimed_object_id, key, response_etag(response)),
+        )
     except ClientError as exc:
         if not is_precondition_failed(exc):
             raise
 
     existing = read_lock_object(s3_client, database_bucket_name, key)
     if existing is None:
-        return None
+        return ClaimDecision(status="busy")
 
     current_body, current_etag = existing
+    if current_body.get("status") == "complete":
+        return ClaimDecision(status="complete")
+
     if not can_reclaim(current_body, claimed_at):
-        return None
+        return ClaimDecision(status="busy")
 
     try:
         response = put_lock_object(
@@ -86,10 +98,13 @@ def claim_log_object(
         )
     except ClientError as exc:
         if is_precondition_failed(exc):
-            return None
+            return ClaimDecision(status="busy")
         raise
 
-    return LockClaim(claimed_object_id, key, response_etag(response))
+    return ClaimDecision(
+        status="claimed",
+        claim=LockClaim(claimed_object_id, key, response_etag(response)),
+    )
 
 
 def mark_complete(

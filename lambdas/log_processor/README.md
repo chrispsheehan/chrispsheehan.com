@@ -9,6 +9,8 @@ Processes CloudFront standard logs from S3 into a queryable S3 datastore.
 - skips source objects already marked as complete
 - parses non-bot request rows from each log object
 - writes newline-delimited JSON request records into date-partitioned S3 keys
+- persists a private source-log cursor in the database bucket to avoid relisting
+  older CloudFront log objects on every run
 - rebuilds the public visit summary from the stored request record database
 - writes a small summary to `data/log-processor/data.json`
 
@@ -35,12 +37,12 @@ Direct mode is safe to run repeatedly. Completed source objects are skipped by
 the S3 lock-file ledger, and failed or interrupted objects can be claimed again
 on a later run.
 
-The VS Code launch target always uses `local-log-processor` as the report
+The VS Code launch target always uses `local-log-processor` as the database
 bucket name, prompts for `S3_LOGS_BUCKET`, and loads the remaining runtime
 configuration from the repository `.env` file. S3 uses the normal boto3
 credential chain and reads real CloudFront logs from the selected bucket. The
-processed-file ledger is stored as S3 lock files in the report bucket under
-`data/log-processor/locks/`.
+processed-file ledger and source cursor are stored in the database bucket under
+`data/log-processor/`.
 
 The pre-launch task creates `.venv` and installs
 `lambdas/log_processor/requirements.txt` if needed. Keep global dummy AWS
@@ -60,6 +62,8 @@ intentionally real.
 
 - parsed request records:
   `data/log-processor/requests/date=<yyyy-mm-dd>/<source-hash>.jsonl`
+- private processor state:
+  `data/log-processor/state.json`
 - run summary:
   `data/log-processor/data.json`
 
@@ -77,8 +81,10 @@ processing counts. Lambda direct invocation responses also include
 ## Operational Notes
 
 - the ledger key is derived from the source bucket, key, and ETag
-- this avoids relying on a timestamp high-water mark, which is unsafe for
-  delayed CloudFront log delivery
+- the processor also keeps a private source-log cursor in `state.json` and
+  passes it to S3 `StartAfter`, which reduces repeated source-log listing work
+- the cursor only advances through a contiguous run of completed files so a
+  failed or still-processing object cannot be skipped permanently
 - claimed files receive a 15-minute `processing_expires_at` lease in an S3 lock
   file; concurrent workers skip active claims and only reclaim failed or expired
   processing locks

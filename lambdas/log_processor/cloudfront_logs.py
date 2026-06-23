@@ -23,9 +23,21 @@ class LogObject:
     size: int
 
 
-def list_log_objects(s3_client: Any, bucket_name: str, prefix: str) -> list[LogObject]:
+def list_log_objects(
+    s3_client: Any,
+    bucket_name: str,
+    prefix: str,
+    *,
+    start_after: str | None = None,
+) -> list[LogObject]:
     paginator = s3_client.get_paginator("list_objects_v2")
-    page_iterator = paginator.paginate(Bucket=bucket_name, Prefix=prefix)
+    paginate_kwargs = {
+        "Bucket": bucket_name,
+        "Prefix": prefix,
+    }
+    if start_after:
+        paginate_kwargs["StartAfter"] = start_after
+    page_iterator = paginator.paginate(**paginate_kwargs)
     objects = []
 
     for page in page_iterator:
@@ -43,7 +55,7 @@ def list_log_objects(s3_client: Any, bucket_name: str, prefix: str) -> list[LogO
                 )
             )
 
-    return sorted(objects, key=lambda item: (item.last_modified, item.key))
+    return sorted(objects, key=lambda item: item.key)
 
 
 def parse_log_line(line: str, source_key: str) -> dict[str, Any] | None:

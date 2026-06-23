@@ -10,6 +10,7 @@ from lambdas.log_processor.config import LogProcessorConfig
 from lambdas.log_processor.ledger import lock_key, object_id
 from lambdas.log_processor.logs_processor import LocalS3OutputClient, logs_report
 from lambdas.log_processor.output_writer import SUMMARY_KEY
+from lambdas.log_processor.state import STATE_KEY
 from lambdas.log_processor.lambda_handler import handle_event
 
 
@@ -42,8 +43,12 @@ class FakePaginator:
     def paginate(self, **kwargs):
         bucket = kwargs["Bucket"]
         prefix = kwargs.get("Prefix", "")
+        start_after = kwargs.get("StartAfter")
         if bucket == "logs-bucket":
-            return [{"Contents": [obj for obj in self.s3.objects if obj["Key"].startswith(prefix)]}]
+            contents = [obj for obj in self.s3.objects if obj["Key"].startswith(prefix)]
+            if start_after:
+                contents = [obj for obj in contents if obj["Key"] > start_after]
+            return [{"Contents": contents}]
         if bucket == "database-bucket":
             return [
                 {
@@ -76,6 +81,8 @@ class FakeS3:
         if Bucket == "logs-bucket":
             return {"Body": FakeBody(self.bodies[Key])}
         if Bucket == "database-bucket":
+            if Key not in self.report_bodies:
+                raise _client_error("404")
             body = self.report_bodies[Key]
             if isinstance(body, str):
                 body = body.encode("utf-8")
@@ -227,6 +234,30 @@ def test_logs_report_builds_visit_summary_from_existing_database_files():
     assert summary["log-files-processed"] == 0
     assert len(summary["output-keys"]) == 1
     assert summary["run-output-keys"] == []
+
+
+def test_logs_report_uses_and_updates_database_state_cursor():
+    objects = [
+        _object("cloudfront/a.gz", "etag-1", 1),
+        _object("cloudfront/b.gz", "etag-2", 2),
+    ]
+    bodies = {
+        "cloudfront/b.gz": _gzip_body(_row("2026-01-02", "203.0.113.20", "req-2")),
+    }
+    s3 = FakeS3(
+        objects,
+        bodies,
+        report_bodies={
+            STATE_KEY: json.dumps({"source_cursor_key": "cloudfront/a.gz"}),
+        },
+    )
+
+    summary = logs_report("database-bucket", config=_config(max_files=1), s3_client=s3)
+
+    assert summary["log-files-found"] == 1
+    assert summary["log-files-claimed"] == 1
+    state = json.loads(s3.report_bodies[STATE_KEY])
+    assert state["source_cursor_key"] == "cloudfront/b.gz"
 
 
 def test_handle_event_writes_summary_with_injected_clients():

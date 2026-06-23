@@ -11,7 +11,7 @@ Concrete Lambda module for the repo's minimal deployable Lambda surface.
 - access to the S3 reports bucket for the public summary
 - access to the S3 database bucket used for private log-processor data
 - read access to the configured CloudFront log bucket prefix
-- read/write access to S3 processed-file lock objects in the report bucket
+- read/write access to S3 processed-file lock objects and cursor state in the database bucket
 - IAM roles and policies needed by the Lambda and CodeDeploy
 
 ## Key Outputs

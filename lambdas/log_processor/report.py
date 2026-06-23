@@ -10,12 +10,14 @@ try:
     from .database_reader import build_visitor_tracker_from_database
     from .ledger import claim_log_object, mark_complete, mark_failed
     from .output_writer import write_records
+    from .state import ProcessingState, read_processing_state, write_processing_state
 except ImportError:
     from cloudfront_logs import list_log_objects, parse_log_object
     from config import LogProcessorConfig
     from database_reader import build_visitor_tracker_from_database
     from ledger import claim_log_object, mark_complete, mark_failed
     from output_writer import write_records
+    from state import ProcessingState, read_processing_state, write_processing_state
 
 logger = logging.getLogger(__name__)
 
@@ -31,12 +33,25 @@ def process_logs(
         config.logs_bucket_name,
         config.logs_prefix,
     )
-    log_objects = list_log_objects(s3_client, config.logs_bucket_name, config.logs_prefix)
+    processing_state = read_processing_state(s3_client, config.database_bucket_name)
+    logger.info(
+        "Loaded log processor state database_bucket=%s source_cursor_key=%s",
+        config.database_bucket_name,
+        processing_state.source_cursor_key,
+    )
+    log_objects = list_log_objects(
+        s3_client,
+        config.logs_bucket_name,
+        config.logs_prefix,
+        start_after=processing_state.source_cursor_key,
+    )
     claimed_files = 0
     processed_files = 0
     skipped_files = 0
     failed_files = 0
     run_output_keys: list[str] = []
+    source_cursor_key = processing_state.source_cursor_key
+    cursor_blocked = False
 
     logger.info(
         "Found %s CloudFront log object(s) max_claimed_files=%s",
@@ -62,13 +77,13 @@ def process_logs(
             log_object.size,
             log_object.etag,
         )
-        claim = claim_log_object(
+        decision = claim_log_object(
             s3_client,
             config.database_bucket_name,
             config.logs_bucket_name,
             log_object,
         )
-        if claim is None:
+        if decision.status == "complete":
             skipped_files += 1
             logger.info(
                 "Skipping already completed log file %s/%s key=%s skipped=%s",
@@ -77,8 +92,24 @@ def process_logs(
                 log_object.key,
                 skipped_files,
             )
+            if not cursor_blocked:
+                source_cursor_key = log_object.key
             continue
 
+        if decision.status == "busy":
+            skipped_files += 1
+            cursor_blocked = True
+            logger.info(
+                "Skipping busy log file %s/%s key=%s skipped=%s",
+                index,
+                len(log_objects),
+                log_object.key,
+                skipped_files,
+            )
+            continue
+
+        claim = decision.claim
+        assert claim is not None
         claimed_files += 1
         logger.info(
             "Processing claimed log file %s/%s key=%s claimed=%s",
@@ -114,6 +145,8 @@ def process_logs(
             )
 
             processed_files += 1
+            if not cursor_blocked:
+                source_cursor_key = log_object.key
             run_output_keys.extend(object_output_keys)
             logger.info(
                 "Completed log file %s/%s key=%s records=%s output_keys=%s processed=%s failed=%s skipped=%s",
@@ -128,6 +161,7 @@ def process_logs(
             )
         except Exception as exc:
             failed_files += 1
+            cursor_blocked = True
             mark_failed(
                 s3_client,
                 config.database_bucket_name,
@@ -138,6 +172,18 @@ def process_logs(
             logger.exception(message)
             if report_error is not None:
                 report_error(message)
+
+    if source_cursor_key != processing_state.source_cursor_key:
+        write_processing_state(
+            s3_client,
+            config.database_bucket_name,
+            ProcessingState(source_cursor_key=source_cursor_key),
+        )
+        logger.info(
+            "Updated log processor state database_bucket=%s source_cursor_key=%s",
+            config.database_bucket_name,
+            source_cursor_key,
+        )
 
     logger.info(
         "Aggregating visit summary from database bucket=%s prefix=data/log-processor/requests/",

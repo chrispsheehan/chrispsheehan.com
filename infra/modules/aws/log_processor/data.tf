@@ -124,6 +124,19 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
     resources = [
       "${var.database_bucket_arn}/data/log-processor/requests/*",
       "${var.database_bucket_arn}/data/log-processor/locks/*",
+      "${var.database_bucket_arn}/data/log-processor/state.json",
+    ]
+  }
+
+  statement {
+    sid    = "WriteDatabaseState"
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+    ]
+    resources = [
+      "${var.database_bucket_arn}/data/log-processor/state.json",
     ]
   }
 

@@ -9,6 +9,7 @@ from botocore.exceptions import ClientError
 
 from lambdas.log_processor.cloudfront_logs import LogObject
 from lambdas.log_processor.ledger import (
+    ClaimDecision,
     LOCKS_PREFIX,
     LockClaim,
     claim_log_object,
@@ -94,9 +95,13 @@ def test_claim_log_object_creates_processing_lock_with_if_none_match():
         _log_object(),
     )
 
-    assert claim == LockClaim(_object_id(), lock_key(_object_id()), claim.etag)
-    assert claim.lock_key == f"{LOCKS_PREFIX}{_object_id()}.json"
-    lock = json.loads(s3.objects[claim.lock_key])
+    assert claim == ClaimDecision(
+        status="claimed",
+        claim=LockClaim(_object_id(), lock_key(_object_id()), claim.claim.etag),
+    )
+    assert claim.claim is not None
+    assert claim.claim.lock_key == f"{LOCKS_PREFIX}{_object_id()}.json"
+    lock = json.loads(s3.objects[claim.claim.lock_key])
     assert lock["status"] == "processing"
     assert lock["processing_expires_at"] > lock["claimed_at"]
     assert s3.puts[0]["IfNoneMatch"] == "*"
@@ -113,7 +118,7 @@ def test_claim_log_object_does_not_steal_active_processing_lock():
         _log_object(),
     )
 
-    assert claim is None
+    assert claim == ClaimDecision(status="busy")
 
 
 def test_claim_log_object_reclaims_expired_processing_lock_with_if_match():
@@ -128,9 +133,13 @@ def test_claim_log_object_reclaims_expired_processing_lock_with_if_match():
         _log_object(),
     )
 
-    assert claim is not None
+    assert claim == ClaimDecision(
+        status="claimed",
+        claim=LockClaim(_object_id(), lock_key(_object_id()), claim.claim.etag),
+    )
+    assert claim.claim is not None
     assert s3.puts[-1]["IfMatch"] == old_etag
-    assert json.loads(s3.objects[claim.lock_key])["status"] == "processing"
+    assert json.loads(s3.objects[claim.claim.lock_key])["status"] == "processing"
 
 
 def test_claim_log_object_reclaims_failed_lock():
@@ -143,22 +152,30 @@ def test_claim_log_object_reclaims_failed_lock():
         _log_object(),
     )
 
-    assert claim is not None
+    assert claim == ClaimDecision(
+        status="claimed",
+        claim=LockClaim(_object_id(), lock_key(_object_id()), claim.claim.etag),
+    )
 
 
 def test_terminal_updates_use_claim_etag():
     s3 = FakeS3()
     claim = claim_log_object(s3, "report-bucket", "logs-bucket", _log_object())
+    assert claim.claim is not None
 
-    mark_complete(s3, "report-bucket", claim, 3, ["output.jsonl"])
-    complete = json.loads(s3.objects[claim.lock_key])
+    mark_complete(s3, "report-bucket", claim.claim, 3, ["output.jsonl"])
+    complete = json.loads(s3.objects[claim.claim.lock_key])
     assert complete["status"] == "complete"
     assert complete["record_count"] == 3
     assert complete["output_keys"] == ["output.jsonl"]
-    assert s3.puts[-1]["IfMatch"] == claim.etag
+    assert s3.puts[-1]["IfMatch"] == claim.claim.etag
 
-    failed_claim = LockClaim(claim.object_id, claim.lock_key, s3._etag(claim.lock_key))
+    failed_claim = LockClaim(
+        claim.claim.object_id,
+        claim.claim.lock_key,
+        s3._etag(claim.claim.lock_key),
+    )
     mark_failed(s3, "report-bucket", failed_claim, RuntimeError("failed"))
-    failed = json.loads(s3.objects[claim.lock_key])
+    failed = json.loads(s3.objects[claim.claim.lock_key])
     assert failed["status"] == "failed"
     assert failed["error"] == "failed"
