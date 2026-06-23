@@ -1,5 +1,6 @@
 ---
-const { baseDomain, githubRepo } = Astro.props;
+const { baseDomain } = Astro.props;
+const githubProfile = "https://github.com/chrispsheehan";
 ---
 
 <header>
@@ -53,7 +54,7 @@ const { baseDomain, githubRepo } = Astro.props;
               <span>LinkedIn</span>
             </a>
             <a
-              href={`https://github.com/${githubRepo}`}
+              href={githubProfile}
               class="mobile-profile-link"
               target="_blank"
               rel="noopener noreferrer"
