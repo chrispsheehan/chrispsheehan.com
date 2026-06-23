@@ -28,6 +28,22 @@ locals {
   }
 }
 
+data "archive_file" "shared_bootstrap_lambda" {
+  type        = "zip"
+  source_file = "${path.module}/../../cost_explorer/bootstrap/index.py"
+  output_path = "${path.module}/bootstrap-lambda.zip"
+}
+
+resource "aws_s3_object" "shared_bootstrap_lambda_zip" {
+  bucket = aws_s3_bucket.code.bucket
+  key    = var.lambda_bootstrap_zip_key
+
+  source = data.archive_file.shared_bootstrap_lambda.output_path
+  etag   = data.archive_file.shared_bootstrap_lambda.output_md5
+
+  content_type = "application/zip"
+}
+
 resource "aws_s3_bucket_lifecycle_configuration" "managed_artifact_retention" {
   count = length({
     for name, rule in local.lifecycle_rules : name => rule
