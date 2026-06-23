@@ -132,28 +132,3 @@ jobs:
         with:
           tg_directory: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
           tg_action: destroy
-
-  wave_2:
-    name: 2 / ${{ matrix.module }}
-    needs:
-      - waves
-      - wave_1
-    if: ${{ always() && needs.waves.outputs.wave_2_modules != '[]' && (needs.wave_1.result == 'success' || needs.wave_1.result == 'skipped') }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        module: ${{ fromJson(needs.waves.outputs.wave_2_modules) }}
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Destroy ${{ matrix.module }} infra
-        uses: ./.github/actions/terragrunt
-        with:
-          tg_directory: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
-          tg_action: destroy
