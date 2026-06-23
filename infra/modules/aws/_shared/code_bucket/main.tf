@@ -30,7 +30,7 @@ locals {
 
 data "archive_file" "shared_bootstrap_lambda" {
   type        = "zip"
-  source_file = "${path.module}/../../cost_explorer/bootstrap/index.py"
+  source_file = "${path.module}/bootstrap/index.py"
   output_path = "${path.module}/bootstrap-lambda.zip"
 }
 
