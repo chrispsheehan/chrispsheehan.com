@@ -104,37 +104,37 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
   }
 
   statement {
-    sid    = "WriteReportObject"
+    sid    = "WriteReportSummary"
     effect = "Allow"
     actions = [
       "s3:PutObject",
       "s3:PutObjectTagging",
     ]
     resources = [
-      "${var.report_bucket_arn}/*",
+      "${var.report_bucket_arn}/data/log-processor/*",
     ]
   }
 
   statement {
-    sid    = "ReadReportObjects"
+    sid    = "ReadDatabaseObjects"
     effect = "Allow"
     actions = [
       "s3:GetObject",
     ]
     resources = [
-      "${var.report_bucket_arn}/data/log-processor/requests/*",
-      "${var.report_bucket_arn}/data/log-processor/locks/*",
+      "${var.database_bucket_arn}/data/log-processor/requests/*",
+      "${var.database_bucket_arn}/data/log-processor/locks/*",
     ]
   }
 
   statement {
-    sid    = "ListReportBucket"
+    sid    = "ListDatabaseBucket"
     effect = "Allow"
     actions = [
       "s3:ListBucket",
     ]
     resources = [
-      var.report_bucket_arn,
+      var.database_bucket_arn,
     ]
 
     condition {
@@ -148,11 +148,12 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
   }
 
   statement {
-    sid     = "ReadReportBucketLocation"
+    sid     = "ReadBucketLocations"
     effect  = "Allow"
     actions = ["s3:GetBucketLocation"]
     resources = [
       var.report_bucket_arn,
+      var.database_bucket_arn,
       var.logs_bucket_arn,
     ]
   }

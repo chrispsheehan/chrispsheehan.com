@@ -24,18 +24,19 @@ def handle_event(event, context, *, s3_client=None, env=None):
 
     request_id = getattr(context, "aws_request_id", None)
     logger.info(
-        "Starting log processor invocation request_id=%s logs_bucket=%s logs_prefix=%s report_bucket=%s max_files=%s",
+        "Starting log processor invocation request_id=%s logs_bucket=%s logs_prefix=%s report_bucket=%s database_bucket=%s max_files=%s",
         request_id,
         config.logs_bucket_name,
         config.logs_prefix,
         config.report_bucket_name,
+        config.database_bucket_name,
         config.max_files,
     )
 
     s3_client = s3_client or create_s3_client()
 
     combined = logs_report(
-        config.report_bucket_name,
+        config.database_bucket_name,
         config=config,
         s3_client=s3_client,
     )

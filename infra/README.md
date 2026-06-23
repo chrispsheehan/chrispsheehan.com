@@ -18,13 +18,14 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 `infra/modules/aws/frontend` owns:
 
 - private S3 origin bucket
+- private S3 reports bucket for public generated `/data/*` artifacts
 - CloudFront standard log bucket
 - CloudFront distribution
-- cached CloudFront `/data/*` behavior backed by the S3 database bucket
+- cached CloudFront `/data/*` behavior backed by the frontend-managed reports bucket
 - ACM certificate in `us-east-1`
 - Route53 `A` and `AAAA` aliases in the existing `chrispsheehan.com` hosted zone
 - deploy-role write access to the origin bucket
-- CloudFront read access to database `data/*` objects
+- CloudFront read access to public reports `data/*` objects
 
 ## S3 Database Module
 
@@ -34,7 +35,11 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 - S3 lock-file ledger prefix for CloudFront log ingestion
 - bucket encryption, ownership controls, public access blocking, and versioning
 - bucket name, ARN, and regional domain outputs for consumers such as Lambda
-  functions and CloudFront origins
+  functions
+
+`log_processor` now reads and writes its private request/lock data in this
+bucket, while public `/data/*` report artifacts are served from the
+frontend-managed reports bucket.
 
 ## Security Module
 

@@ -64,7 +64,7 @@ def process_logs(
         )
         claim = claim_log_object(
             s3_client,
-            config.report_bucket_name,
+            config.database_bucket_name,
             config.logs_bucket_name,
             log_object,
         )
@@ -100,14 +100,14 @@ def process_logs(
 
             object_output_keys = write_records(
                 s3_client,
-                config.report_bucket_name,
+                config.database_bucket_name,
                 claim.object_id,
                 records_by_date,
             )
             record_count = sum(len(records) for records in records_by_date.values())
             mark_complete(
                 s3_client,
-                config.report_bucket_name,
+                config.database_bucket_name,
                 claim,
                 record_count,
                 object_output_keys,
@@ -130,7 +130,7 @@ def process_logs(
             failed_files += 1
             mark_failed(
                 s3_client,
-                config.report_bucket_name,
+                config.database_bucket_name,
                 claim,
                 exc,
             )
@@ -140,12 +140,12 @@ def process_logs(
                 report_error(message)
 
     logger.info(
-        "Aggregating visit summary from report database bucket=%s prefix=data/log-processor/requests/",
-        config.report_bucket_name,
+        "Aggregating visit summary from database bucket=%s prefix=data/log-processor/requests/",
+        config.database_bucket_name,
     )
     visitor_tracker, database_output_keys = build_visitor_tracker_from_database(
         s3_client,
-        config.report_bucket_name,
+        config.database_bucket_name,
     )
 
     summary = build_summary(

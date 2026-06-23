@@ -40,7 +40,7 @@ def lock_key(claimed_object_id: str) -> str:
 
 def claim_log_object(
     s3_client: Any,
-    report_bucket_name: str,
+    database_bucket_name: str,
     source_bucket_name: str,
     log_object: LogObject,
 ) -> LockClaim | None:
@@ -58,7 +58,7 @@ def claim_log_object(
     try:
         response = put_lock_object(
             s3_client,
-            report_bucket_name,
+            database_bucket_name,
             key,
             body,
             if_none_match="*",
@@ -68,7 +68,7 @@ def claim_log_object(
         if not is_precondition_failed(exc):
             raise
 
-    existing = read_lock_object(s3_client, report_bucket_name, key)
+    existing = read_lock_object(s3_client, database_bucket_name, key)
     if existing is None:
         return None
 
@@ -79,7 +79,7 @@ def claim_log_object(
     try:
         response = put_lock_object(
             s3_client,
-            report_bucket_name,
+            database_bucket_name,
             key,
             body,
             if_match=current_etag,
@@ -94,7 +94,7 @@ def claim_log_object(
 
 def mark_complete(
     s3_client: Any,
-    report_bucket_name: str,
+    database_bucket_name: str,
     claim: LockClaim,
     record_count: int,
     output_keys: list[str],
@@ -106,12 +106,12 @@ def mark_complete(
         "record_count": record_count,
         "output_keys": output_keys,
     }
-    put_claim_update(s3_client, report_bucket_name, claim, body)
+    put_claim_update(s3_client, database_bucket_name, claim, body)
 
 
 def mark_failed(
     s3_client: Any,
-    report_bucket_name: str,
+    database_bucket_name: str,
     claim: LockClaim,
     exc: Exception,
 ) -> None:
@@ -121,7 +121,7 @@ def mark_failed(
         "failed_at": utc_timestamp(),
         "error": str(exc)[:1000],
     }
-    put_claim_update(s3_client, report_bucket_name, claim, body)
+    put_claim_update(s3_client, database_bucket_name, claim, body)
 
 
 def lock_body(
@@ -149,14 +149,14 @@ def lock_body(
 
 def put_claim_update(
     s3_client: Any,
-    report_bucket_name: str,
+    database_bucket_name: str,
     claim: LockClaim,
     body: dict[str, Any],
 ) -> None:
     try:
         put_lock_object(
             s3_client,
-            report_bucket_name,
+            database_bucket_name,
             claim.lock_key,
             body,
             if_match=claim.etag,

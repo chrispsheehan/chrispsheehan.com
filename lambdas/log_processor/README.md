@@ -49,7 +49,8 @@ intentionally real.
 
 ## Runtime Configuration
 
-- `REPORT_BUCKET`: S3 database bucket for parsed outputs and run summary
+- `REPORT_BUCKET`: S3 reports bucket for the public `data.json` summary
+- `DATABASE_BUCKET`: S3 database bucket for parsed request records and lock files
 - `S3_LOGS_BUCKET`: S3 bucket containing CloudFront `.gz` log objects
 - `S3_LOGS_PREFIX`: prefix to scan for CloudFront log objects
 - `S3_LOGS_MAX_FILES`: optional cap on claimed source log files per run

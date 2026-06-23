@@ -30,6 +30,14 @@ variable "report_bucket_arn" {
   type = string
 }
 
+variable "database_bucket_name" {
+  type = string
+}
+
+variable "database_bucket_arn" {
+  type = string
+}
+
 variable "logs_bucket_name" {
   type = string
 }
