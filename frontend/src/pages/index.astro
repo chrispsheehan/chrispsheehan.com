@@ -10,6 +10,7 @@ const baseDomain = import.meta.env.DEV
   : "chrispsheehan.com";
 const githubRepo =
   import.meta.env.GITHUB_REPOSITORY ?? "chrispsheehan/chrispsheehan.com";
+const githubProfile = "https://github.com/chrispsheehan";
 ---
 
 <!doctype html>
@@ -41,7 +42,7 @@ const githubRepo =
             </a>
             <a
               class="button-link button-link--icon"
-              href={`https://github.com/${githubRepo}`}
+              href={githubProfile}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub"
