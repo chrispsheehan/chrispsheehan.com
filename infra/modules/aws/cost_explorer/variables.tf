@@ -18,6 +18,10 @@ variable "code_bucket" {
   type = string
 }
 
+variable "bootstrap_zip_key" {
+  type = string
+}
+
 variable "report_bucket_name" {
   type = string
 }

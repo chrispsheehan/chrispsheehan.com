@@ -23,6 +23,11 @@ variable "frontend_artifact_dir" {
   default     = "frontend"
 }
 
+variable "lambda_bootstrap_zip_key" {
+  description = "S3 object key used for the shared Lambda bootstrap zip"
+  type        = string
+}
+
 variable "code_artifact_expiration_days" {
   description = "Number of days before deployable code artifacts are deleted (set to 0 to disable)"
   type        = number

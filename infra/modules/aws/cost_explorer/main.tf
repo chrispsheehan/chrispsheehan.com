@@ -33,16 +33,6 @@ resource "aws_iam_role_policy_attachment" "lambda_cost_explorer" {
   policy_arn = aws_iam_policy.lambda_cost_explorer.arn
 }
 
-resource "aws_s3_object" "bootstrap_lambda_zip" {
-  bucket = var.code_bucket
-  key    = local.lambda_bootstrap_zip_key
-
-  source = data.archive_file.bootstrap_lambda.output_path
-  etag   = data.archive_file.bootstrap_lambda.output_md5
-
-  content_type = "application/zip"
-}
-
 resource "aws_lambda_function" "cost_explorer" {
   function_name                  = local.lambda_name
   role                           = aws_iam_role.iam_for_lambda.arn
@@ -52,7 +42,7 @@ resource "aws_lambda_function" "cost_explorer" {
   reserved_concurrent_executions = 1
 
   s3_bucket = var.code_bucket
-  s3_key    = aws_s3_object.bootstrap_lambda_zip.key
+  s3_key    = var.bootstrap_zip_key
 
   publish = true
 

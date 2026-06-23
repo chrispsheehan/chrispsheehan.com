@@ -94,6 +94,7 @@ inputs = merge(
     aws_account_id               = local.aws_account_id
     allowed_read_aws_account_ids = local.allowed_read_aws_account_ids
     aws_region                   = local.aws_region
+    bootstrap_zip_key            = local.global_vars.inputs.lambda_bootstrap_zip_key
     project_name                 = local.project_name
     environment                  = local.environment
     github_repo                  = local.github_repo

@@ -6,7 +6,6 @@ Concrete Lambda module for the repo's cost summary export.
 
 - Lambda function and alias
 - Lambda CloudWatch log group
-- bootstrap Lambda zip object in the code bucket
 - all-at-once Lambda CodeDeploy application, deployment group, and deployment config
 - monthly EventBridge schedule on the 1st that invokes the live alias
 - access to the S3 report bucket used as the temporary database
@@ -22,6 +21,8 @@ The current Lambda handler is `lambdas/cost_explorer`.
 The module keeps the stable Lambda deployment surface so the code deploy
 workflow can publish a new version, roll it out through CodeDeploy, and invoke
 it on demand after deployment.
+Its bootstrap Lambda zip is the shared bootstrap object published by the
+`_shared/code_bucket` module and passed in as an explicit input.
 
 The live Terragrunt stack passes the shared S3 database bucket as an explicit
 input. The Lambda writes its published summary to
