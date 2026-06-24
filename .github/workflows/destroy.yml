@@ -55,10 +55,7 @@ jobs:
         run: |
           set -euo pipefail
           destroy_waves_json="$(jq -c '
-            [.[1]?, .[2]?, .[3]?]
-            | map(select(. != null))
-            | map(.modules |= map(select(. != "oidc" and . != "code_bucket")))
-            | map(select(.modules | length > 0))
+            reverse
             | to_entries
             | map({wave: .key, modules: .value.modules})
           ' <<<"$RAW_WAVES_JSON")"
