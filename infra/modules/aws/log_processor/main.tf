@@ -39,9 +39,10 @@ resource "aws_lambda_function" "log_processor" {
   environment {
     variables = merge(
       {
-        LOG_LEVEL      = var.log_level
-        REPORT_BUCKET  = var.report_bucket_name
-        S3_LOGS_BUCKET = var.logs_bucket_name
+        LOG_LEVEL       = var.log_level
+        REPORT_BUCKET   = var.report_bucket_name
+        DATABASE_BUCKET = var.database_bucket_name
+        S3_LOGS_BUCKET  = var.logs_bucket_name
       },
       var.logs_bucket_prefix == "" ? {} : {
         S3_LOGS_PREFIX = var.logs_bucket_prefix

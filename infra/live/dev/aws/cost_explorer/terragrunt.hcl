@@ -4,10 +4,22 @@ include "root" {
 
 dependencies {
   paths = [
+    "../frontend",
     "../oidc",
     "../security",
-    "../s3_database",
   ]
+}
+
+dependency "frontend" {
+  config_path = "../frontend"
+
+  mock_outputs = {
+    reports_bucket_name = "dev-chrispsheehan-com-reports"
+    reports_bucket_arn  = "arn:aws:s3:::dev-chrispsheehan-com-reports"
+  }
+
+  mock_outputs_merge_strategy_with_state  = "shallow"
+  mock_outputs_allowed_terraform_commands = ["validate", "plan", "destroy", "init", "show", "graph-dependencies", "output-module-groups"]
 }
 
 dependency "security" {
@@ -23,18 +35,6 @@ dependency "security" {
   mock_outputs_allowed_terraform_commands = ["validate", "plan", "destroy", "init", "show", "graph-dependencies", "output-module-groups"]
 }
 
-dependency "s3_database" {
-  config_path = "../s3_database"
-
-  mock_outputs = {
-    bucket_name = "dev-placeholder-report-bucket"
-    bucket_arn  = "arn:aws:s3:::dev-placeholder-report-bucket"
-  }
-
-  mock_outputs_merge_strategy_with_state  = "shallow"
-  mock_outputs_allowed_terraform_commands = ["validate", "plan", "destroy", "init", "show", "graph-dependencies", "output-module-groups"]
-}
-
 terraform {
   source = "../../../../modules//aws//cost_explorer"
 }
@@ -42,6 +42,6 @@ terraform {
 inputs = {
   runtime_security_group_id = dependency.security.outputs.runtime_security_group_id
   private_subnet_ids        = dependency.security.outputs.private_subnet_ids
-  report_bucket_name        = dependency.s3_database.outputs.bucket_name
-  report_bucket_arn         = dependency.s3_database.outputs.bucket_arn
+  report_bucket_name        = dependency.frontend.outputs.reports_bucket_name
+  report_bucket_arn         = dependency.frontend.outputs.reports_bucket_arn
 }

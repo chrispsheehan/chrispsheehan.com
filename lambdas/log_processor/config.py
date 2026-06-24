@@ -10,6 +10,7 @@ VALID_LOG_LEVELS = {"CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"}
 @dataclass(frozen=True)
 class LogProcessorConfig:
     report_bucket_name: str
+    database_bucket_name: str
     logs_bucket_name: str
     logs_prefix: str
     max_files: int | None
@@ -19,12 +20,14 @@ class LogProcessorConfig:
 def load_config(
     *,
     report_bucket_name: str | None = None,
+    database_bucket_name: str | None = None,
     env: Mapping[str, str] | None = None,
 ) -> LogProcessorConfig:
     env = env or os.environ
 
     return LogProcessorConfig(
         report_bucket_name=report_bucket_name or required_env(env, "REPORT_BUCKET"),
+        database_bucket_name=database_bucket_name or required_env(env, "DATABASE_BUCKET"),
         logs_bucket_name=required_env(env, "S3_LOGS_BUCKET"),
         logs_prefix=env.get("S3_LOGS_PREFIX", ""),
         max_files=optional_positive_int_env(env, "S3_LOGS_MAX_FILES"),

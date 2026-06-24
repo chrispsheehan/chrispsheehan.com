@@ -50,11 +50,11 @@ data "aws_iam_policy_document" "frontend_bucket_policy" {
   }
 }
 
-data "aws_iam_policy_document" "data_bucket_policy" {
+data "aws_iam_policy_document" "reports_bucket_policy" {
   statement {
-    sid       = "AllowCloudFrontReadData"
+    sid       = "AllowCloudFrontReadReports"
     actions   = ["s3:GetObject"]
-    resources = ["${var.data_bucket_arn}/data/*"]
+    resources = ["${aws_s3_bucket.reports.arn}/data/*"]
 
     principals {
       type        = "Service"

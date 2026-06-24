@@ -3,6 +3,11 @@ resource "aws_s3_bucket" "frontend" {
   force_destroy = true
 }
 
+resource "aws_s3_bucket" "reports" {
+  bucket        = local.reports_bucket_name
+  force_destroy = true
+}
+
 resource "aws_s3_bucket_public_access_block" "frontend" {
   bucket = aws_s3_bucket.frontend.id
 
@@ -12,8 +17,25 @@ resource "aws_s3_bucket_public_access_block" "frontend" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_public_access_block" "reports" {
+  bucket = aws_s3_bucket.reports.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 resource "aws_s3_bucket_ownership_controls" "frontend" {
   bucket = aws_s3_bucket.frontend.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_ownership_controls" "reports" {
+  bucket = aws_s3_bucket.reports.id
 
   rule {
     object_ownership = "BucketOwnerEnforced"
@@ -130,14 +152,14 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   origin {
-    domain_name              = var.data_bucket_regional_domain_name
+    domain_name              = aws_s3_bucket.reports.bucket_regional_domain_name
     origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
-    origin_id                = local.data_origin_id
+    origin_id                = local.reports_origin_id
   }
 
   ordered_cache_behavior {
     path_pattern           = "/data/*"
-    target_origin_id       = local.data_origin_id
+    target_origin_id       = local.reports_origin_id
     viewer_protocol_policy = "redirect-to-https"
 
     allowed_methods = ["GET", "HEAD"]
@@ -197,9 +219,9 @@ resource "aws_s3_bucket_policy" "frontend" {
   policy = data.aws_iam_policy_document.frontend_bucket_policy.json
 }
 
-resource "aws_s3_bucket_policy" "data" {
-  bucket = var.data_bucket_name
-  policy = data.aws_iam_policy_document.data_bucket_policy.json
+resource "aws_s3_bucket_policy" "reports" {
+  bucket = aws_s3_bucket.reports.id
+  policy = data.aws_iam_policy_document.reports_bucket_policy.json
 }
 
 resource "aws_route53_record" "frontend_ipv4" {

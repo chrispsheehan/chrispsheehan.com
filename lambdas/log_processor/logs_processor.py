@@ -38,13 +38,13 @@ class NoWriteS3Client:
 
 
 class LocalS3OutputClient(NoWriteS3Client):
-    def __init__(self, wrapped: Any, output_dir: Path, report_bucket_name: str) -> None:
+    def __init__(self, wrapped: Any, output_dir: Path, database_bucket_name: str) -> None:
         super().__init__(wrapped)
         self._output_dir = output_dir
-        self._report_bucket_name = report_bucket_name
+        self._database_bucket_name = database_bucket_name
 
     def put_object(self, **kwargs: Any) -> dict[str, Any]:
-        if kwargs["Bucket"] != self._report_bucket_name:
+        if kwargs["Bucket"] != self._database_bucket_name:
             return {}
 
         key = kwargs["Key"]
@@ -67,10 +67,10 @@ class LocalS3OutputClient(NoWriteS3Client):
         wrapped_paginator = self._wrapped.get_paginator(name)
         if name != "list_objects_v2":
             return wrapped_paginator
-        return LocalS3OutputPaginator(wrapped_paginator, self._output_dir, self._report_bucket_name)
+        return LocalS3OutputPaginator(wrapped_paginator, self._output_dir, self._database_bucket_name)
 
     def get_object(self, *, Bucket: str, Key: str) -> dict[str, Any]:
-        if Bucket != self._report_bucket_name:
+        if Bucket != self._database_bucket_name:
             return self._wrapped.get_object(Bucket=Bucket, Key=Key)
 
         target = self._local_target(Key)
@@ -80,7 +80,7 @@ class LocalS3OutputClient(NoWriteS3Client):
         return {"Body": target.open("rb")}
 
     def head_object(self, *, Bucket: str, Key: str) -> dict[str, Any]:
-        if Bucket != self._report_bucket_name:
+        if Bucket != self._database_bucket_name:
             return self._wrapped.head_object(Bucket=Bucket, Key=Key)
 
         target = self._local_target(Key)
@@ -103,13 +103,13 @@ class LocalS3OutputClient(NoWriteS3Client):
 
 
 class LocalS3OutputPaginator:
-    def __init__(self, wrapped: Any, output_dir: Path, report_bucket_name: str) -> None:
+    def __init__(self, wrapped: Any, output_dir: Path, database_bucket_name: str) -> None:
         self._wrapped = wrapped
         self._output_dir = output_dir
-        self._report_bucket_name = report_bucket_name
+        self._database_bucket_name = database_bucket_name
 
     def paginate(self, **kwargs: Any) -> Any:
-        if kwargs.get("Bucket") != self._report_bucket_name:
+        if kwargs.get("Bucket") != self._database_bucket_name:
             return self._wrapped.paginate(**kwargs)
 
         prefix = kwargs.get("Prefix", "")
@@ -147,19 +147,20 @@ def s3_client_error(code: str, message: str) -> ClientError:
 
 
 def logs_report(
-    report_bucket_name: str,
+    database_bucket_name: str,
     *,
     config: LogProcessorConfig | None = None,
     s3_client: Any | None = None,
     env: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    config = config or load_config(report_bucket_name=report_bucket_name, env=env)
+    config = config or load_config(database_bucket_name=database_bucket_name, env=env)
     configure_logging(config.log_level)
 
     logger.info(
-        "Preparing log processor report logs_bucket=%s logs_prefix=%s report_bucket=%s max_files=%s",
+        "Preparing log processor report logs_bucket=%s logs_prefix=%s database_bucket=%s report_bucket=%s max_files=%s",
         config.logs_bucket_name,
         config.logs_prefix,
+        config.database_bucket_name,
         config.report_bucket_name,
         config.max_files,
     )
@@ -170,15 +171,15 @@ def logs_report(
 
 
 def _main() -> None:
-    parser = argparse.ArgumentParser(description="Run logs_report(report_bucket_name) directly.")
+    parser = argparse.ArgumentParser(description="Run logs_report(database_bucket_name) directly.")
     parser.add_argument(
-        "report_bucket_name",
-        help="S3 database bucket passed directly to logs_report(report_bucket_name).",
+        "database_bucket_name",
+        help="S3 database bucket passed directly to logs_report(database_bucket_name).",
     )
     parser.add_argument(
         "--suppress-s3-writes",
         action="store_true",
-        help="Read source logs normally but suppress report bucket writes.",
+        help="Read source logs normally but suppress database bucket writes.",
     )
     parser.add_argument(
         "--summary-output",
@@ -188,17 +189,17 @@ def _main() -> None:
     parser.add_argument(
         "--local-s3-output-dir",
         type=Path,
-        help="Write report bucket put_object payloads to this local directory instead of S3.",
+        help="Write database bucket put_object payloads to this local directory instead of S3.",
     )
     args = parser.parse_args()
 
     s3_client = create_s3_client()
     if args.local_s3_output_dir is not None:
-        s3_client = LocalS3OutputClient(s3_client, args.local_s3_output_dir, args.report_bucket_name)
+        s3_client = LocalS3OutputClient(s3_client, args.local_s3_output_dir, args.database_bucket_name)
     elif args.suppress_s3_writes:
         s3_client = NoWriteS3Client(s3_client)
 
-    report = logs_report(args.report_bucket_name, s3_client=s3_client)
+    report = logs_report(args.database_bucket_name, s3_client=s3_client)
     output = json.dumps(report, indent=2, sort_keys=True)
 
     print(output)

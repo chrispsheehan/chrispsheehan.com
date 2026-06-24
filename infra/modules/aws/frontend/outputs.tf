@@ -2,6 +2,18 @@ output "bucket_name" {
   value = aws_s3_bucket.frontend.id
 }
 
+output "reports_bucket_name" {
+  value = aws_s3_bucket.reports.id
+}
+
+output "reports_bucket_arn" {
+  value = aws_s3_bucket.reports.arn
+}
+
+output "reports_bucket_regional_domain_name" {
+  value = aws_s3_bucket.reports.bucket_regional_domain_name
+}
+
 output "cloudfront_logs_bucket_name" {
   value = aws_s3_bucket.frontend_logs.id
 }

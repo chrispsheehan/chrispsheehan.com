@@ -18,6 +18,8 @@ dependency "frontend" {
     cloudfront_logs_bucket_name = "chrispsheehan.com.logs"
     cloudfront_logs_bucket_arn  = "arn:aws:s3:::chrispsheehan.com.logs"
     cloudfront_logs_prefix      = "cloudfront-logs/"
+    reports_bucket_name         = "prod-chrispsheehan-com-reports"
+    reports_bucket_arn          = "arn:aws:s3:::prod-chrispsheehan-com-reports"
   }
 
   mock_outputs_merge_strategy_with_state  = "shallow"
@@ -41,8 +43,8 @@ dependency "s3_database" {
   config_path = "../s3_database"
 
   mock_outputs = {
-    bucket_name = "prod-placeholder-report-bucket"
-    bucket_arn  = "arn:aws:s3:::prod-placeholder-report-bucket"
+    bucket_name = "prod-chrispsheehan-com-database"
+    bucket_arn  = "arn:aws:s3:::prod-chrispsheehan-com-database"
   }
 
   mock_outputs_merge_strategy_with_state  = "shallow"
@@ -56,8 +58,10 @@ terraform {
 inputs = {
   runtime_security_group_id = dependency.security.outputs.runtime_security_group_id
   private_subnet_ids        = dependency.security.outputs.private_subnet_ids
-  report_bucket_name        = dependency.s3_database.outputs.bucket_name
-  report_bucket_arn         = dependency.s3_database.outputs.bucket_arn
+  report_bucket_name        = dependency.frontend.outputs.reports_bucket_name
+  report_bucket_arn         = dependency.frontend.outputs.reports_bucket_arn
+  database_bucket_name      = dependency.s3_database.outputs.bucket_name
+  database_bucket_arn       = dependency.s3_database.outputs.bucket_arn
   logs_bucket_name          = dependency.frontend.outputs.cloudfront_logs_bucket_name
   logs_bucket_arn           = dependency.frontend.outputs.cloudfront_logs_bucket_arn
   logs_bucket_prefix        = dependency.frontend.outputs.cloudfront_logs_prefix

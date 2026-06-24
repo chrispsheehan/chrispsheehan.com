@@ -10,12 +10,14 @@ from lambdas.log_processor.config import LogProcessorConfig
 from lambdas.log_processor.ledger import lock_key, object_id
 from lambdas.log_processor.logs_processor import LocalS3OutputClient, logs_report
 from lambdas.log_processor.output_writer import SUMMARY_KEY
+from lambdas.log_processor.state import STATE_KEY
 from lambdas.log_processor.lambda_handler import handle_event
 
 
 def _config(max_files=None):
     return LogProcessorConfig(
         report_bucket_name="report-bucket",
+        database_bucket_name="database-bucket",
         logs_bucket_name="logs-bucket",
         logs_prefix="cloudfront/",
         max_files=max_files,
@@ -41,9 +43,13 @@ class FakePaginator:
     def paginate(self, **kwargs):
         bucket = kwargs["Bucket"]
         prefix = kwargs.get("Prefix", "")
+        start_after = kwargs.get("StartAfter")
         if bucket == "logs-bucket":
-            return [{"Contents": [obj for obj in self.s3.objects if obj["Key"].startswith(prefix)]}]
-        if bucket == "report-bucket":
+            contents = [obj for obj in self.s3.objects if obj["Key"].startswith(prefix)]
+            if start_after:
+                contents = [obj for obj in contents if obj["Key"] > start_after]
+            return [{"Contents": contents}]
+        if bucket == "database-bucket":
             return [
                 {
                     "Contents": [
@@ -74,7 +80,9 @@ class FakeS3:
     def get_object(self, *, Bucket, Key):
         if Bucket == "logs-bucket":
             return {"Body": FakeBody(self.bodies[Key])}
-        if Bucket == "report-bucket":
+        if Bucket == "database-bucket":
+            if Key not in self.report_bodies:
+                raise _client_error("404")
             body = self.report_bodies[Key]
             if isinstance(body, str):
                 body = body.encode("utf-8")
@@ -83,7 +91,7 @@ class FakeS3:
 
     def put_object(self, **kwargs):
         self.puts.append(kwargs)
-        if kwargs["Bucket"] != "report-bucket":
+        if kwargs["Bucket"] != "database-bucket":
             return {}
 
         key = kwargs["Key"]
@@ -98,7 +106,7 @@ class FakeS3:
         return {"ETag": f'"{self._report_etag(key)}"'}
 
     def head_object(self, *, Bucket, Key):
-        if Bucket != "report-bucket":
+        if Bucket != "database-bucket":
             raise AssertionError(f"Unexpected bucket: {Bucket}")
         if Key not in self.report_bodies:
             raise _client_error("404")
@@ -151,7 +159,7 @@ def test_logs_report_processes_claimed_logs_and_writes_jsonl():
     }
     s3 = FakeS3(objects, bodies, report_bodies=dict([_completed_lock("logs-bucket", objects[1])]))
 
-    summary = logs_report("report-bucket", config=_config(), s3_client=s3)
+    summary = logs_report("database-bucket", config=_config(), s3_client=s3)
 
     assert summary["daily-visits"] == 1
     assert summary["total-visits"] == 2
@@ -193,7 +201,7 @@ def test_logs_report_respects_max_claimed_files():
     }
     s3 = FakeS3(objects, bodies)
 
-    summary = logs_report("report-bucket", config=_config(max_files=1), s3_client=s3)
+    summary = logs_report("database-bucket", config=_config(max_files=1), s3_client=s3)
 
     assert summary["log-files-found"] == 2
     assert summary["log-files-limit"] == 1
@@ -217,7 +225,7 @@ def test_logs_report_builds_visit_summary_from_existing_database_files():
         },
     )
 
-    summary = logs_report("report-bucket", config=_config(), s3_client=s3)
+    summary = logs_report("database-bucket", config=_config(), s3_client=s3)
 
     assert summary["daily-visits"] == 1
     assert summary["total-visits"] == 2
@@ -228,6 +236,30 @@ def test_logs_report_builds_visit_summary_from_existing_database_files():
     assert summary["run-output-keys"] == []
 
 
+def test_logs_report_uses_and_updates_database_state_cursor():
+    objects = [
+        _object("cloudfront/a.gz", "etag-1", 1),
+        _object("cloudfront/b.gz", "etag-2", 2),
+    ]
+    bodies = {
+        "cloudfront/b.gz": _gzip_body(_row("2026-01-02", "203.0.113.20", "req-2")),
+    }
+    s3 = FakeS3(
+        objects,
+        bodies,
+        report_bodies={
+            STATE_KEY: json.dumps({"source_cursor_key": "cloudfront/a.gz"}),
+        },
+    )
+
+    summary = logs_report("database-bucket", config=_config(max_files=1), s3_client=s3)
+
+    assert summary["log-files-found"] == 1
+    assert summary["log-files-claimed"] == 1
+    state = json.loads(s3.report_bodies[STATE_KEY])
+    assert state["source_cursor_key"] == "cloudfront/b.gz"
+
+
 def test_handle_event_writes_summary_with_injected_clients():
     objects = [_object("cloudfront/one.gz", "etag-1", 1)]
     bodies = {
@@ -236,6 +268,7 @@ def test_handle_event_writes_summary_with_injected_clients():
     s3 = FakeS3(objects, bodies)
     env = {
         "REPORT_BUCKET": "report-bucket",
+        "DATABASE_BUCKET": "database-bucket",
         "S3_LOGS_BUCKET": "logs-bucket",
         "S3_LOGS_PREFIX": "cloudfront/",
     }
@@ -259,11 +292,11 @@ def test_local_s3_output_client_writes_objects_under_key_path(tmp_path):
     client = LocalS3OutputClient(
         FakeS3([], {}),
         tmp_path,
-        "report-bucket",
+        "database-bucket",
     )
 
     client.put_object(
-        Bucket="report-bucket",
+        Bucket="database-bucket",
         Key="data/log-processor/requests/date=2026-01-01/source.jsonl",
         Body='{"viewer_ip":"203.0.113.10"}\n',
         ContentType="application/x-ndjson",
@@ -274,13 +307,13 @@ def test_local_s3_output_client_writes_objects_under_key_path(tmp_path):
     ).read_text(encoding="utf-8") == '{"viewer_ip":"203.0.113.10"}\n'
     pages = list(
         client.get_paginator("list_objects_v2").paginate(
-            Bucket="report-bucket",
+            Bucket="database-bucket",
             Prefix="data/log-processor/requests/",
         )
     )
     assert pages[0]["Contents"][0]["Key"] == "data/log-processor/requests/date=2026-01-01/source.jsonl"
     response = client.get_object(
-        Bucket="report-bucket",
+        Bucket="database-bucket",
         Key="data/log-processor/requests/date=2026-01-01/source.jsonl",
     )
     assert response["Body"].read().decode("utf-8") == '{"viewer_ip":"203.0.113.10"}\n'
@@ -298,7 +331,7 @@ def test_logs_report_logs_progress_for_each_file(caplog):
     s3 = FakeS3(objects, bodies)
 
     with caplog.at_level("INFO"):
-        logs_report("report-bucket", config=_config(), s3_client=s3)
+        logs_report("database-bucket", config=_config(), s3_client=s3)
 
     messages = [record.getMessage() for record in caplog.records]
     assert any("Found 2 CloudFront log object(s)" in message for message in messages)

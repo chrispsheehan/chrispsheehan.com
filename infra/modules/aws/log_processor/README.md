@@ -8,9 +8,10 @@ Concrete Lambda module for the repo's minimal deployable Lambda surface.
 - Lambda CloudWatch log group
 - all-at-once Lambda CodeDeploy application, deployment group, and deployment config
 - daily EventBridge schedule that invokes the live alias
-- access to the S3 report bucket used as the temporary database
+- access to the S3 reports bucket for the public summary
+- access to the S3 database bucket used for private log-processor data
 - read access to the configured CloudFront log bucket prefix
-- read/write access to S3 processed-file lock objects in the report bucket
+- read/write access to S3 processed-file lock objects and cursor state in the database bucket
 - IAM roles and policies needed by the Lambda and CodeDeploy
 
 ## Key Outputs
@@ -26,10 +27,10 @@ it on a daily schedule through EventBridge.
 Its bootstrap Lambda zip is the shared bootstrap object published by the
 `_shared/code_bucket` module and passed in as an explicit input.
 
-The live Terragrunt stack passes the CloudFront log bucket and report bucket as
-explicit inputs. The Lambda reads CloudFront log objects from the configured log
-bucket under `cloudfront-logs/` by default, unless the live stack overrides
-`logs_bucket_prefix`.
+The live Terragrunt stack passes the CloudFront log bucket, reports bucket, and
+database bucket as explicit inputs. The Lambda reads CloudFront log objects
+from the configured log bucket under `cloudfront-logs/` by default, unless the
+live stack overrides `logs_bucket_prefix`.
 
 Production wires the CloudFront log bucket from the frontend stack outputs so it
 reads the deployed site's own logs. Development can still override these values

@@ -171,42 +171,6 @@ jobs:
           path: ${{ steps.terragrunt_plan.outputs.plan_artifact_directory }}
           if-no-files-found: warn
 
-  wave_3:
-    needs:
-      - generate_waves
-      - wave_2
-    name: 3 / ${{ matrix.module }}
-    if: ${{ always() && needs.generate_waves.outputs.wave_3_modules != '[]' && (needs.wave_2.result == 'success' || needs.wave_2.result == 'skipped') }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        module: ${{ fromJson(needs.generate_waves.outputs.wave_3_modules) }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.infra_version }}
-
-      - uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: ${{ env.TG_ACTION_LABEL }} ${{ matrix.module }} infra
-        id: terragrunt_plan
-        uses: ./.github/actions/terragrunt
-        with:
-          tg_directory: infra/live/${{ inputs.environment }}/aws/${{ matrix.module }}
-          tg_action: plan
-
-      - name: Upload plan artifacts
-        if: ${{ success() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: terragrunt-plan-${{ inputs.environment }}-${{ matrix.module }}
-          path: ${{ steps.terragrunt_plan.outputs.plan_artifact_directory }}
-          if-no-files-found: warn
-
   plan_context:
     name: Plan Context
     runs-on: ubuntu-latest
@@ -236,8 +200,7 @@ jobs:
       - wave_0
       - wave_1
       - wave_2
-      - wave_3
-    if: ${{ always() && needs.generate_waves.result == 'success' && needs.metadata.result == 'success' && (needs.wave_0.result == 'success' || needs.wave_0.result == 'skipped') && (needs.wave_1.result == 'success' || needs.wave_1.result == 'skipped') && (needs.wave_2.result == 'success' || needs.wave_2.result == 'skipped') && (needs.wave_3.result == 'success' || needs.wave_3.result == 'skipped') }}
+    if: ${{ always() && needs.generate_waves.result == 'success' && needs.metadata.result == 'success' && (needs.wave_0.result == 'success' || needs.wave_0.result == 'skipped') && (needs.wave_1.result == 'success' || needs.wave_1.result == 'skipped') && (needs.wave_2.result == 'success' || needs.wave_2.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Download saved plan metadata artifacts

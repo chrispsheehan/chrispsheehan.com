@@ -10,6 +10,7 @@ from lambdas.log_processor.config import (
 
 BASE_ENV = {
     "REPORT_BUCKET": "report-bucket",
+    "DATABASE_BUCKET": "database-bucket",
     "S3_LOGS_BUCKET": "logs-bucket",
 }
 
@@ -25,6 +26,7 @@ def test_load_config_reads_required_and_optional_values():
     config = load_config(env=env)
 
     assert config.report_bucket_name == "report-bucket"
+    assert config.database_bucket_name == "database-bucket"
     assert config.logs_bucket_name == "logs-bucket"
     assert config.logs_prefix == "cloudfront/"
     assert config.max_files == 10
@@ -38,6 +40,13 @@ def test_load_config_allows_report_bucket_override_and_defaults():
     assert config.logs_prefix == ""
     assert config.max_files is None
     assert config.log_level == "INFO"
+
+
+def test_load_config_allows_database_bucket_override():
+    config = load_config(database_bucket_name="override-database", env=BASE_ENV)
+
+    assert config.report_bucket_name == "report-bucket"
+    assert config.database_bucket_name == "override-database"
 
 
 def test_required_env_rejects_missing_values():

@@ -9,6 +9,8 @@ Shared S3 bucket for deployable artifacts.
 - future Lambda zip storage
 - future Lambda AppSpec storage
 
+The shared bootstrap zip source lives at `bootstrap/index.py` in this module.
+
 ## Inputs That Change Behavior
 
 - `frontend_artifact_dir`
