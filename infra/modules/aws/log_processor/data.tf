@@ -129,14 +129,14 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
   }
 
   statement {
-    sid    = "WriteDatabaseState"
+    sid    = "WriteDatabaseObjects"
     effect = "Allow"
     actions = [
       "s3:PutObject",
       "s3:PutObjectTagging",
     ]
     resources = [
-      "${var.database_bucket_arn}/data/log-processor/state.json",
+      "${var.database_bucket_arn}/data/log-processor/*",
     ]
   }
 
@@ -154,8 +154,8 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
       test     = "StringLike"
       variable = "s3:prefix"
       values = [
-        "data/log-processor/requests/",
-        "data/log-processor/requests/*",
+        "data/log-processor/",
+        "data/log-processor/*",
       ]
     }
   }
