@@ -50,8 +50,11 @@ def handle_event(event, context, *, s3_client=None, env=None):
         "body": json.dumps(
             {
                 "s3_path": s3_path,
-                "output-keys": combined["output-keys"],
-                "run-output-keys": combined["run-output-keys"],
+                "log-files-found": combined["log-files-found"],
+                "log-files-claimed": combined["log-files-claimed"],
+                "log-files-processed": combined["log-files-processed"],
+                "log-files-skipped": combined["log-files-skipped"],
+                "log-files-failed": combined["log-files-failed"],
             }
         ),
     }
