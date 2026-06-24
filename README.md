@@ -40,7 +40,7 @@ just log-processor-run
 just frontend-deploy-live dev
 just tg dev aws/frontend plan
 just tg-all dev plan
-LAMBDA_NAME=prod-chrispsheehan-com-log-processor just --justfile scripts/deploy/justfile lambda-invoke
+AWS_REGION=eu-west-2 LAMBDA_NAME=prod-chrispsheehan-com-log-processor just --justfile scripts/deploy/justfile lambda-invoke
 ```
 
 ## Setup
