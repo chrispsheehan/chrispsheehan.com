@@ -6,7 +6,7 @@ locals {
   vpc_name                 = "vpc"
   logs_bucket_name         = "chrispsheehan.com.logs"
   logs_bucket_arn          = "arn:aws:s3:::chrispsheehan.com.logs"
-  logs_bucket_prefix       = ""
+  logs_bucket_prefix       = "cloudfront-logs/"
   logs_processor_max_files = 10
 }
 
