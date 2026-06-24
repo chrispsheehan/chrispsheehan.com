@@ -2,6 +2,10 @@ include "root" {
   path = find_in_parent_folders("root.hcl")
 }
 
+locals {
+  environment_vars = read_terragrunt_config(find_in_parent_folders("environment_vars.hcl"))
+}
+
 dependencies {
   paths = [
     "../frontend",
@@ -62,7 +66,7 @@ inputs = {
   report_bucket_arn         = dependency.frontend.outputs.reports_bucket_arn
   database_bucket_name      = dependency.s3_database.outputs.bucket_name
   database_bucket_arn       = dependency.s3_database.outputs.bucket_arn
-  logs_bucket_name          = dependency.frontend.outputs.cloudfront_logs_bucket_name
-  logs_bucket_arn           = dependency.frontend.outputs.cloudfront_logs_bucket_arn
-  logs_bucket_prefix        = dependency.frontend.outputs.cloudfront_logs_prefix
+  logs_bucket_name          = try(local.environment_vars.inputs.logs_bucket_name, dependency.frontend.outputs.cloudfront_logs_bucket_name)
+  logs_bucket_arn           = try(local.environment_vars.inputs.logs_bucket_arn, dependency.frontend.outputs.cloudfront_logs_bucket_arn)
+  logs_bucket_prefix        = try(local.environment_vars.inputs.logs_bucket_prefix, dependency.frontend.outputs.cloudfront_logs_prefix)
 }

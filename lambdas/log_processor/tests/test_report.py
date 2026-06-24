@@ -278,8 +278,11 @@ def test_handle_event_writes_summary_with_injected_clients():
     assert response["statusCode"] == 200
     response_body = json.loads(response["body"])
     assert response_body["s3_path"] == f"s3://report-bucket/{SUMMARY_KEY}"
-    assert len(response_body["output-keys"]) == 1
-    assert response_body["run-output-keys"] == response_body["output-keys"]
+    assert response_body["log-files-found"] == 1
+    assert response_body["log-files-claimed"] == 1
+    assert response_body["log-files-processed"] == 1
+    assert response_body["log-files-skipped"] == 0
+    assert response_body["log-files-failed"] == 0
     assert s3.puts[-1]["Key"] == SUMMARY_KEY
     assert s3.puts[-1]["ContentType"] == "application/json"
     public_summary = json.loads(s3.puts[-1]["Body"])
