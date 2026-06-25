@@ -26,7 +26,7 @@ If you just need to get oriented:
 | --- | --- |
 | `frontend/` | Astro static site with React components. Build output goes to `frontend/dist`. |
 | `lambdas/` | Lambda source, packaging contract, and runtime notes for `log_processor` and `cost_explorer`. |
-| `infra/` | Terragrunt live stacks and shared Terraform modules for frontend, data, security, OIDC, and artifact storage. |
+| `infra/` | Terragrunt live stacks and Terraform modules for frontend, data, security, published OIDC role wiring, and artifact storage. |
 
 ## Common Commands
 

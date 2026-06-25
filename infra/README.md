@@ -13,6 +13,12 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 `dev` owns `dev.chrispsheehan.com`. `prod` owns
 `chrispsheehan.com`.
 
+## OIDC Stacks
+
+The `aws/oidc` live stacks consume the published
+`chrispsheehan/github-oidc-role/aws` module directly rather than a repo-local
+vendored copy.
+
 ## Frontend Module
 
 `infra/modules/aws/frontend` owns:
