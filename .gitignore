@@ -9,6 +9,7 @@ docker/
 
 # ignore generated files
 infra/live/*.tf
+terragrunt.tfplan
 dist
 .astro/
 node_modules/
