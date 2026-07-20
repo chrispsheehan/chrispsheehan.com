@@ -64,9 +64,68 @@ and `lambdas/<version>/*.zip` artifacts later.
 ```sh
 terraform fmt -recursive
 terragrunt hclfmt
+just tg dev aws/code_bucket apply
 just tg dev aws/frontend plan
 just tg-all dev plan
 ```
 
 Plans require AWS credentials, access to the configured remote state bucket, and
 Route53/CloudFront permissions.
+
+## Terragrunt Graph Helpers
+
+Use these commands when debugging stack ordering or local Terragrunt graph
+output.
+
+Terragrunt derives account-scoped names from `AWS_ACCOUNT_ID`. The repo-root
+`just tg`, `just tg-all`, and `just tg-graph` recipes resolve it with
+`aws sts get-caller-identity`. Set it yourself only when running Terragrunt
+directly or using non-root justfiles:
+
+```sh
+export AWS_ACCOUNT_ID=<your AWS account id>
+```
+
+If you only need the raw Terragrunt graph output:
+
+```sh
+just tg-graph dev > graph.txt
+```
+
+That runs:
+
+```sh
+cd infra/live/dev/aws
+terragrunt run-all graph-dependencies \
+  --terragrunt-non-interactive \
+  --terragrunt-include-external-dependencies
+```
+
+For saved-plan runs:
+
+```sh
+just tg-all dev plan
+just tg-all dev show
+```
+
+That writes one `terragrunt.tfplan` file and one `terragrunt.plan.json` file
+per live stack directory under `infra/live/<env>/**`.
+
+To list the modules that produced `terragrunt.plan.json` for one environment:
+
+```sh
+just --justfile scripts/ci/justfile plan-json-files-list-modules dev
+```
+
+To build the per-module `has_changes` summary from that list:
+
+```sh
+MODULE_PATHS_JSON="$(just --justfile scripts/ci/justfile plan-json-files-list-modules dev)" \
+just --justfile scripts/ci/justfile plan-json-files-to-change-summary dev
+```
+
+To apply that same saved plan later, restore the plan artifacts and run with:
+
+```sh
+TG_USE_SAVED_PLAN=true terragrunt run-all apply --terragrunt-non-interactive
+```

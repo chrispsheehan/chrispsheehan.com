@@ -1,15 +1,20 @@
-name: Destroy
+name: Infra Bootstrap
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Select environment"
+        description: environment reference i.e. 'prod' or 'dev'
         required: true
         type: choice
         options:
           - dev
           - prod
+      infra_version:
+        description: "Version of infrastructure (terraform) to be applied"
+        required: true
+        default: main
+        type: string
 
 concurrency:
   group: infra-mutate-${{ inputs.environment }}
@@ -24,15 +29,18 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_OIDC_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.PROJECT_NAME }}-${{ inputs.environment }}-github-oidc-role
   AWS_REGION: ${{ vars.AWS_REGION }}
+  TF_VAR_bootstrap: "true"
   TF_VERSION: 1.12.2
   TG_VERSION: 0.72.6
 
 jobs:
-  destroy:
-    name: Destroy Infra
+  bootstrap_infra:
+    name: Bootstrap Infra
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.infra_version }}
 
       - uses: aws-actions/configure-aws-credentials@v6
         with:
@@ -48,18 +56,20 @@ jobs:
           tg_version: ${{ env.TG_VERSION }}
           tf_path: terraform
 
-      - name: Destroy all infra
+      - name: Apply all bootstrap infra
         working-directory: infra/live/${{ inputs.environment }}
         shell: bash
-        run: terragrunt run-all destroy --terragrunt-non-interactive --terragrunt-exclude-dir aws/oidc
+        run: terragrunt run-all apply --terragrunt-non-interactive
 
-      - name: Write destroy summary
+      - name: Write bootstrap summary
         shell: bash
         run: |
           {
-            echo "## Destroy Summary"
+            echo "## Infra Bootstrap Summary"
             echo
             echo "- \`environment\`: \`${{ inputs.environment }}\`"
-            echo "- command: \`terragrunt run-all destroy --terragrunt-non-interactive --terragrunt-exclude-dir aws/oidc\`"
-            echo "- retained stack: \`aws/oidc\`"
+            echo "- \`infra_version\`: \`${{ inputs.infra_version }}\`"
+            echo "- first command: \`terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-dir aws/code_bucket\`"
+            echo "- second command: \`terragrunt run-all apply --terragrunt-non-interactive\`"
+            echo "- reason: \`aws/code_bucket\` publishes the shared bootstrap Lambda zip used by `log_processor` and `cost_explorer`."
           } >> "$GITHUB_STEP_SUMMARY"

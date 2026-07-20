@@ -1,0 +1,156 @@
+name: Infra Plan
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: environment reference i.e. 'prod' or 'dev'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      infra_version:
+        description: "Version of infrastructure (terraform) to be planned"
+        required: true
+        default: main
+        type: string
+
+concurrency:
+  group: infra-plan-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
+env:
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  AWS_OIDC_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.PROJECT_NAME }}-${{ inputs.environment }}-github-oidc-role
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  TF_VAR_bootstrap: "true"
+  TF_VERSION: 1.12.2
+  TG_VERSION: 0.72.6
+
+jobs:
+  plan:
+    name: Plan Infra
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.infra_version }}
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tf_path: terraform
+
+      - name: Remove stale saved plan artifacts
+        uses: ./.github/actions/just
+        with:
+          justfile_path: scripts/ci/justfile
+          just_action: plan-json-files-clean ${{ inputs.environment }}
+
+      - name: Plan all infra
+        working-directory: infra/live/${{ inputs.environment }}
+        shell: bash
+        run: terragrunt run-all plan --terragrunt-non-interactive
+
+      - name: Render saved plan JSON files
+        working-directory: infra/live/${{ inputs.environment }}
+        shell: bash
+        run: terragrunt run-all show --terragrunt-non-interactive
+
+      - name: List changed-plan modules
+        id: changed_module_paths
+        uses: ./.github/actions/just
+        with:
+          justfile_path: scripts/ci/justfile
+          just_action: plan-json-files-list-modules ${{ inputs.environment }}
+
+      - name: Summarize changed modules
+        id: changed_modules
+        uses: ./.github/actions/just
+        env:
+          MODULE_PATHS_JSON: ${{ steps.changed_module_paths.outputs.just_outputs }}
+        with:
+          justfile_path: scripts/ci/justfile
+          just_action: plan-json-files-to-change-summary ${{ inputs.environment }}
+
+      - name: Build changed module path list
+        id: changed_module_paths_only
+        env:
+          CHANGED_MODULES_JSON: ${{ steps.changed_modules.outputs.just_outputs }}
+        shell: bash
+        run: |
+          echo "changed_module_paths=$(jq -c '[.[] | select(.has_changes == true) | .module]' <<<"$CHANGED_MODULES_JSON")" >> "$GITHUB_OUTPUT"
+
+      - name: Write plan metadata from workflow inputs
+        env:
+          CHANGED_MODULES_JSON: ${{ steps.changed_modules.outputs.just_outputs }}
+          CHANGED_MODULE_PATHS_JSON: ${{ steps.changed_module_paths_only.outputs.changed_module_paths }}
+        shell: bash
+        run: |
+          cat > plan-metadata.json <<EOF
+          {
+            "infra_version": "${{ inputs.infra_version }}",
+            "environment": "${{ inputs.environment }}",
+            "changed_modules": ${CHANGED_MODULES_JSON},
+            "changed_module_paths": ${CHANGED_MODULE_PATHS_JSON}
+          }
+          EOF
+
+      - name: Upload plan metadata artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: infra-plan-metadata
+          path: plan-metadata.json
+          retention-days: 14
+
+      - name: Upload plan files artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: infra-plan-files
+          path: |
+            infra/live/${{ inputs.environment }}/**/terragrunt.tfplan
+            infra/live/${{ inputs.environment }}/**/terragrunt.plan.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Write plan summary
+        env:
+          CHANGED_MODULES_JSON: ${{ steps.changed_modules.outputs.just_outputs }}
+          PLAN_ARTIFACT_RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          changed_modules_lines="$(jq -r '
+            if map(select(.has_changes == true)) | length == 0 then
+              "- none"
+            else
+              .[] | select(.has_changes == true) | "- `\(.module)`"
+            end
+          ' <<<"$CHANGED_MODULES_JSON")"
+
+          {
+            echo "## Infra Plan Summary"
+            echo
+            echo "- \`environment\`: \`${{ inputs.environment }}\`"
+            echo "- \`infra_version\`: \`${{ inputs.infra_version }}\`"
+            echo "- \`plan_artifact_run_id\`: \`$PLAN_ARTIFACT_RUN_ID\`"
+            echo "- \`modules_with_changes\`: \`$(jq -r '[.[] | select(.has_changes == true)] | length' <<<"$CHANGED_MODULES_JSON")\`"
+            echo
+            echo "Changed modules:"
+            echo
+            printf '%s\n' "$changed_modules_lines"
+          } >> "$GITHUB_STEP_SUMMARY"

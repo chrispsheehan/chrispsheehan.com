@@ -35,6 +35,8 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_OIDC_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.PROJECT_NAME }}-${{ inputs.environment }}-github-oidc-role
   AWS_REGION: ${{ vars.AWS_REGION }}
+  TF_VERSION: 1.12.2
+  TG_VERSION: 0.72.6
 
 jobs:
   bucket:
@@ -50,21 +52,45 @@ jobs:
           role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Get build artifact bucket
-        id: deploy_bucket
-        uses: ./.github/actions/terragrunt
+      - uses: hashicorp/setup-terraform@v4
         with:
-          tg_directory: infra/live/${{ inputs.environment }}/aws/code_bucket
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tf_path: terraform
+
+      - name: Read Lambda artifact dir
+        id: lambda_artifact_dir
+        uses: ./.github/actions/just
+        with:
+          justfile_path: scripts/ci/justfile
+          just_action: code-bucket-get-lambda-artifact-dir
+
+      - name: Read AppSpec artifact dir
+        id: appspec_artifact_dir
+        uses: ./.github/actions/just
+        with:
+          justfile_path: scripts/ci/justfile
+          just_action: code-bucket-get-appspec-artifact-dir
+
+      - name: Apply build artifact bucket
+        env:
+          TF_VAR_lambda_artifact_dir: ${{ steps.lambda_artifact_dir.outputs.just_outputs }}
+          TF_VAR_appspec_artifact_dir: ${{ steps.appspec_artifact_dir.outputs.just_outputs }}
+        working-directory: infra/live/${{ inputs.environment }}/aws/code_bucket
+        shell: bash
+        run: terragrunt apply --terragrunt-non-interactive -auto-approve
 
       - name: Get bucket name
         id: get_bucket_name
-        env:
-          TG_OUTPUTS: ${{ steps.deploy_bucket.outputs.tg_outputs }}
+        working-directory: infra/live/${{ inputs.environment }}/aws/code_bucket
+        shell: bash
         run: |
-          bucket=$(echo "$TG_OUTPUTS" | jq -er '.bucket.value // empty' || true)
+          bucket="$(terragrunt output -raw bucket || true)"
           if [[ -z "$bucket" ]]; then
             echo "::error title=Missing code bucket output::infra/live/${{ inputs.environment }}/aws/code_bucket did not expose Terraform output 'bucket'. Apply that stack before publishing build artifacts."
-            echo "$TG_OUTPUTS" | jq .
             exit 1
           fi
           echo "bucket=$bucket" >> "$GITHUB_OUTPUT"

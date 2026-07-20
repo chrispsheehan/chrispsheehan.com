@@ -1,8 +1,8 @@
 # chrispsheehan.com
 
 [![Release](https://img.shields.io/github/v/release/chrispsheehan/chrispsheehan.com?display_name=tag&label=Release)](https://github.com/chrispsheehan/chrispsheehan.com/releases)
-[![Infra Plan](https://img.shields.io/github/actions/workflow/status/chrispsheehan/chrispsheehan.com/prod_infra_plan.yml?label=Infra%20Plan)](https://github.com/chrispsheehan/chrispsheehan.com/actions/workflows/prod_infra_plan.yml)
-[![Infra Apply](https://img.shields.io/github/actions/workflow/status/chrispsheehan/chrispsheehan.com/prod_infra_apply_from_plan.yml?label=Infra%20Apply)](https://github.com/chrispsheehan/chrispsheehan.com/actions/workflows/prod_infra_apply_from_plan.yml)
+[![Infra Plan](https://img.shields.io/github/actions/workflow/status/chrispsheehan/chrispsheehan.com/infra_plan.yml?label=Infra%20Plan)](https://github.com/chrispsheehan/chrispsheehan.com/actions/workflows/infra_plan.yml)
+[![Infra Apply](https://img.shields.io/github/actions/workflow/status/chrispsheehan/chrispsheehan.com/infra_apply.yml?label=Infra%20Apply)](https://github.com/chrispsheehan/chrispsheehan.com/actions/workflows/infra_apply.yml)
 [![Code Deploy](https://img.shields.io/github/actions/workflow/status/chrispsheehan/chrispsheehan.com/prod_code_deploy.yml?label=Code%20Deploy)](https://github.com/chrispsheehan/chrispsheehan.com/actions/workflows/prod_code_deploy.yml)
 
 CloudFront-backed static frontend for [`chrispsheehan.com`](https://chrispsheehan.com), scaffolded from the [`aws-terragrunt-starter`](https://github.com/chrispsheehan/aws-terragrunt-starter)
@@ -84,8 +84,12 @@ Workflows assume roles named:
 Development deploys target `dev.chrispsheehan.com` and build from the current
 commit.
 
-- `Dev Infra Plan` and `Dev Infra Apply No Plan` create or update the AWS
-  infrastructure.
+- `Infra Bootstrap` is the first-time environment bring-up path for `dev` and
+  `prod`. It applies `aws/code_bucket` first so the shared bootstrap Lambda zip
+  exists before the Lambda stacks are created.
+- `Infra Plan` writes saved Terragrunt plans for the selected environment.
+- `Infra Apply From Plan` reuses a prior plan run and applies only modules
+  whose saved plan JSON reported changes.
 - `Dev Code Deploy` builds `frontend.zip`, `log_processor.zip`, and
   `cost_explorer.zip`, uploads them to the dev code bucket, syncs the frontend
   artifact to the S3 origin bucket, refreshes CloudFront in a separate CI job,
