@@ -56,11 +56,6 @@ jobs:
           tg_version: ${{ env.TG_VERSION }}
           tf_path: terraform
 
-      - name: Apply code bucket infra
-        working-directory: infra/live/${{ inputs.environment }}
-        shell: bash
-        run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-dir aws/code_bucket
-
       - name: Apply all bootstrap infra
         working-directory: infra/live/${{ inputs.environment }}
         shell: bash
