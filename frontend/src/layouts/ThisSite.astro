@@ -56,32 +56,6 @@ const { githubRepo } = Astro.props;
             />
           </a>
           <a
-            href={`https://github.com/${githubRepo}/actions/workflows/prod_infra_plan.yml`}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="github-card-link github-card-link--badge"
-            aria-label="Open infra plan workflow"
-          >
-            <img
-              class="pipeline-badge"
-              src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_infra_plan.yml?label=Infra%20Plan`}
-              alt="Infra plan workflow status"
-            />
-          </a>
-          <a
-            href={`https://github.com/${githubRepo}/actions/workflows/prod_infra_apply_from_plan.yml`}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="github-card-link github-card-link--badge"
-            aria-label="Open infra apply workflow"
-          >
-            <img
-              class="pipeline-badge"
-              src={`https://img.shields.io/github/actions/workflow/status/${githubRepo}/prod_infra_apply_from_plan.yml?label=Infra%20Apply`}
-              alt="Infra apply workflow status"
-            />
-          </a>
-          <a
             href={`https://github.com/${githubRepo}/actions/workflows/prod_code_deploy.yml`}
             target="_blank"
             rel="noopener noreferrer"
