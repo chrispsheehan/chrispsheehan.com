@@ -37,6 +37,8 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_OIDC_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.PROJECT_NAME }}-${{ inputs.environment }}-github-oidc-role
   AWS_REGION: ${{ vars.AWS_REGION }}
+  TF_VERSION: 1.12.2
+  TG_VERSION: 0.72.6
 
 jobs:
   summary:
@@ -80,21 +82,30 @@ jobs:
           role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Get frontend infra
-        uses: ./.github/actions/terragrunt
-        id: get-infra
+      - uses: hashicorp/setup-terraform@v4
         with:
-          tg_directory: infra/live/${{ inputs.environment }}/aws/frontend
-          tg_action: init
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tf_path: terraform
+
+      - name: Get frontend infra
+        id: get-infra
+        working-directory: infra/live/${{ inputs.environment }}/aws/frontend
+        shell: bash
+        run: |
+          echo "website_bucket=$(terragrunt output -raw bucket_name)" >> "$GITHUB_OUTPUT"
+          echo "cloudfront_distribution_id=$(terragrunt output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
+          echo "website_url=$(terragrunt output -raw website_url)" >> "$GITHUB_OUTPUT"
 
       - name: Get frontend outputs
         id: get_frontend_outputs
-        env:
-          TG_OUTPUTS: ${{ steps.get-infra.outputs.tg_outputs }}
         run: |
-          echo "website_bucket=$(echo "$TG_OUTPUTS" | jq -r '.bucket_name.value')" >> "$GITHUB_OUTPUT"
-          echo "cloudfront_distribution_id=$(echo "$TG_OUTPUTS" | jq -r '.cloudfront_distribution_id.value')" >> "$GITHUB_OUTPUT"
-          echo "website_url=$(echo "$TG_OUTPUTS" | jq -r '.website_url.value')" >> "$GITHUB_OUTPUT"
+          echo "website_bucket=${{ steps.get-infra.outputs.website_bucket }}" >> "$GITHUB_OUTPUT"
+          echo "cloudfront_distribution_id=${{ steps.get-infra.outputs.cloudfront_distribution_id }}" >> "$GITHUB_OUTPUT"
+          echo "website_url=${{ steps.get-infra.outputs.website_url }}" >> "$GITHUB_OUTPUT"
 
       - name: Deploy frontend
         uses: ./.github/actions/just
@@ -127,6 +138,15 @@ jobs:
           role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tf_path: terraform
+
       - name: Set Lambda deploy paths
         id: lambda_paths
         shell: bash
@@ -138,19 +158,18 @@ jobs:
           echo "lambda_appspec_key=$lambda_appspec_key" >> $GITHUB_OUTPUT
 
       - name: Get log processor infra
-        uses: ./.github/actions/terragrunt
         id: get-infra
-        with:
-          tg_directory: infra/live/${{ inputs.environment }}/aws/log_processor
-          tg_action: init
+        working-directory: infra/live/${{ inputs.environment }}/aws/log_processor
+        shell: bash
+        run: |
+          echo "lambda_function_name=$(terragrunt output -raw lambda_function_name)" >> "$GITHUB_OUTPUT"
+          echo "lambda_alias_name=$(terragrunt output -raw lambda_alias_name)" >> "$GITHUB_OUTPUT"
 
       - name: Get infra detail
         id: get_infra_detail
-        env:
-          TG_OUTPUTS: ${{ steps.get-infra.outputs.tg_outputs  }}
         run: |
-          echo "lambda_function_name=$(echo $TG_OUTPUTS | jq -r '.lambda_function_name.value')" >> $GITHUB_OUTPUT
-          echo "lambda_alias_name=$(echo $TG_OUTPUTS | jq -r '.lambda_alias_name.value')" >> $GITHUB_OUTPUT
+          echo "lambda_function_name=${{ steps.get-infra.outputs.lambda_function_name }}" >> $GITHUB_OUTPUT
+          echo "lambda_alias_name=${{ steps.get-infra.outputs.lambda_alias_name }}" >> $GITHUB_OUTPUT
 
       - name: Publish new lambda version
         id: publish
@@ -202,6 +221,15 @@ jobs:
           role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tf_path: terraform
+
       - name: Set Lambda deploy paths
         id: lambda_paths
         shell: bash
@@ -213,19 +241,18 @@ jobs:
           echo "lambda_appspec_key=$lambda_appspec_key" >> $GITHUB_OUTPUT
 
       - name: Get cost explorer infra
-        uses: ./.github/actions/terragrunt
         id: get-infra
-        with:
-          tg_directory: infra/live/${{ inputs.environment }}/aws/cost_explorer
-          tg_action: init
+        working-directory: infra/live/${{ inputs.environment }}/aws/cost_explorer
+        shell: bash
+        run: |
+          echo "lambda_function_name=$(terragrunt output -raw lambda_function_name)" >> "$GITHUB_OUTPUT"
+          echo "lambda_alias_name=$(terragrunt output -raw lambda_alias_name)" >> "$GITHUB_OUTPUT"
 
       - name: Get infra detail
         id: get_infra_detail
-        env:
-          TG_OUTPUTS: ${{ steps.get-infra.outputs.tg_outputs  }}
         run: |
-          echo "lambda_function_name=$(echo $TG_OUTPUTS | jq -r '.lambda_function_name.value')" >> $GITHUB_OUTPUT
-          echo "lambda_alias_name=$(echo $TG_OUTPUTS | jq -r '.lambda_alias_name.value')" >> $GITHUB_OUTPUT
+          echo "lambda_function_name=${{ steps.get-infra.outputs.lambda_function_name }}" >> $GITHUB_OUTPUT
+          echo "lambda_alias_name=${{ steps.get-infra.outputs.lambda_alias_name }}" >> $GITHUB_OUTPUT
 
       - name: Publish new lambda version
         id: publish

@@ -1,0 +1,190 @@
+name: Infra Apply From Plan
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: environment reference i.e. 'prod' or 'dev'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      plan_artifact_run_id:
+        description: "Workflow run ID used to recover plan metadata"
+        required: true
+        type: string
+
+concurrency:
+  group: infra-mutate-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
+env:
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  TARGET_PLAN_ARTIFACT_RUN_ID: ${{ inputs.plan_artifact_run_id }}
+  AWS_OIDC_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.PROJECT_NAME }}-${{ inputs.environment }}-github-oidc-role
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  TF_VAR_bootstrap: "true"
+  TF_VERSION: 1.12.2
+  TG_VERSION: 0.72.6
+
+jobs:
+  apply:
+    name: Apply Infra From Saved Plans
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download plan metadata artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: infra-plan-metadata
+          github-token: ${{ github.token }}
+          run-id: ${{ env.TARGET_PLAN_ARTIFACT_RUN_ID }}
+          path: .
+
+      - name: Check plan metadata artifact
+        shell: bash
+        run: |
+          if [ ! -f plan-metadata.json ]; then
+            echo "::error title=Missing plan metadata artifact::Expected artifact 'infra-plan-metadata' containing 'plan-metadata.json' from workflow run '${{ env.TARGET_PLAN_ARTIFACT_RUN_ID }}', but it was not downloaded."
+            exit 1
+          fi
+
+      - name: Read plan metadata
+        id: metadata
+        shell: bash
+        run: |
+          echo "infra_version=$(jq -r '.infra_version' plan-metadata.json)" >> "$GITHUB_OUTPUT"
+          echo "changed_modules=$(jq -c '.changed_modules // []' plan-metadata.json)" >> "$GITHUB_OUTPUT"
+          echo "changed_module_paths=$(jq -c '.changed_module_paths // []' plan-metadata.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Exit early when no saved changes were recorded
+        id: change_check
+        shell: bash
+        env:
+          CHANGED_MODULE_PATHS_JSON: ${{ steps.metadata.outputs.changed_module_paths }}
+        run: |
+          set -euo pipefail
+
+          changed_count="$(jq 'length' <<<"$CHANGED_MODULE_PATHS_JSON")"
+
+          if [[ "$changed_count" == "0" ]]; then
+            echo "::warning title=No applicable saved plan changes::The saved plan metadata contains no changed modules. Skipping apply."
+            echo "should_apply=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Apply From Plan Summary"
+              echo
+              echo "- \`environment\`: \`${{ inputs.environment }}\`"
+              echo "- \`infra_version\`: \`${{ steps.metadata.outputs.infra_version }}\`"
+              echo "- \`plan_artifact_run_id\`: \`${{ env.TARGET_PLAN_ARTIFACT_RUN_ID }}\`"
+              echo "- result: no saved changes detected; apply skipped"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "should_apply=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v6
+        if: steps.change_check.outputs.should_apply == 'true'
+        with:
+          ref: ${{ steps.metadata.outputs.infra_version }}
+
+      - name: Download plan files artifact
+        if: steps.change_check.outputs.should_apply == 'true'
+        uses: actions/download-artifact@v7
+        with:
+          name: infra-plan-files
+          github-token: ${{ github.token }}
+          run-id: ${{ env.TARGET_PLAN_ARTIFACT_RUN_ID }}
+          path: infra/live/${{ inputs.environment }}
+
+      - name: Check restored plan files
+        if: steps.change_check.outputs.should_apply == 'true'
+        shell: bash
+        run: |
+          plan_files="$(find "infra/live/${{ inputs.environment }}" -name terragrunt.tfplan -print | sort)"
+
+          if [[ -z "$plan_files" ]]; then
+            echo "::error title=Missing saved plan files::Expected artifact 'infra-plan-files' containing terragrunt.tfplan files from workflow run '${{ env.TARGET_PLAN_ARTIFACT_RUN_ID }}', but none were restored."
+            exit 1
+          fi
+
+          printf '%s\n' "$plan_files"
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        if: steps.change_check.outputs.should_apply == 'true'
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v4
+        if: steps.change_check.outputs.should_apply == 'true'
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - uses: gruntwork-io/terragrunt-action@v3
+        if: steps.change_check.outputs.should_apply == 'true'
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tf_path: terraform
+
+      - name: Build terragrunt include-dir args
+        id: include_dirs
+        if: steps.change_check.outputs.should_apply == 'true'
+        shell: bash
+        env:
+          CHANGED_MODULE_PATHS_JSON: ${{ steps.metadata.outputs.changed_module_paths }}
+        run: |
+          set -euo pipefail
+
+          include_dir_args="$(jq -r '
+            [.[] | "--terragrunt-include-dir", .]
+            | @sh
+          ' <<<"$CHANGED_MODULE_PATHS_JSON")"
+
+          echo "include_dir_args=$include_dir_args" >> "$GITHUB_OUTPUT"
+
+      - name: Apply changed saved plans
+        if: steps.change_check.outputs.should_apply == 'true'
+        working-directory: infra/live/${{ inputs.environment }}
+        shell: bash
+        env:
+          INCLUDE_DIR_ARGS: ${{ steps.include_dirs.outputs.include_dir_args }}
+          TG_USE_SAVED_PLAN: "true"
+        run: |
+          set -euo pipefail
+          eval "terragrunt run-all apply --terragrunt-non-interactive ${INCLUDE_DIR_ARGS}"
+
+      - name: Write apply summary
+        if: steps.change_check.outputs.should_apply == 'true'
+        env:
+          CHANGED_MODULES_JSON: ${{ steps.metadata.outputs.changed_modules }}
+          CHANGED_MODULE_PATHS_JSON: ${{ steps.metadata.outputs.changed_module_paths }}
+        shell: bash
+        run: |
+          {
+            echo "## Apply From Plan Summary"
+            echo
+            echo "- \`environment\`: \`${{ inputs.environment }}\`"
+            echo "- \`infra_version\`: \`${{ steps.metadata.outputs.infra_version }}\`"
+            echo "- \`plan_artifact_run_id\`: \`${{ env.TARGET_PLAN_ARTIFACT_RUN_ID }}\`"
+            echo "- command: \`TG_USE_SAVED_PLAN=true terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-dir ...\`"
+            echo
+            echo 'Changed module paths used for include-dir selection:'
+            echo
+            echo '```json'
+            jq -c . <<<"$CHANGED_MODULE_PATHS_JSON"
+            echo '```'
+            echo
+            echo 'Full saved plan summary:'
+            echo
+            echo '```json'
+            jq -c . <<<"$CHANGED_MODULES_JSON"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

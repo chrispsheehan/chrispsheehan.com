@@ -7,25 +7,23 @@ workflows, or workflow-owned `just` behavior.
 
 | Workflow | Purpose |
 | --- | --- |
-| `pull_request.yml` | Runs change-filtered PR validation for title/version preview, wrapper sync, workflow linting, repo-local action tests, Terraform/Terragrunt formatting, Terragrunt wave shape, TFLint, frontend builds, and lambda builds. |
+| `pull_request.yml` | Runs change-filtered PR validation for title/version preview, wrapper sync, workflow linting, repo-local action tests, Terraform/Terragrunt formatting, TFLint, frontend builds, and lambda builds. |
 | `release.yml` | Tags versioned releases from `main`, publishes frontend and lambda artifacts to the CI code bucket, and creates GitHub releases. |
-| `dev_infra_plan.yml` | Plans the ordered dev infra graph. |
-| `dev_infra_apply_no_plan.yml` | Applies dev infrastructure using the current commit as the infra ref. |
-| `dev_infra_apply_from_plan.yml` | Applies dev infra from a prior saved-plan run using `plan_artifact_run_id`. |
+| `infra_bootstrap.yml` | Bootstraps the selected environment by applying `aws/code_bucket` first, then the full environment. |
+| `infra_plan.yml` | Plans the selected environment with `terragrunt run-all` and saves reusable plan artifacts. |
+| `infra_apply.yml` | Applies a prior saved-plan run for the selected environment using `plan_artifact_run_id`. |
 | `dev_code_deploy.yml` | Builds fresh frontend and lambda artifacts and deploys to dev. |
-| `prod_infra_plan.yml` | Plans the ordered prod infra graph for the requested infra ref. |
-| `prod_infra_apply_no_plan.yml` | Applies prod infrastructure using the pinned infra ref. |
-| `prod_infra_apply_from_plan.yml` | Applies prod infra from a prior saved-plan run. |
 | `prod_code_deploy.yml` | Deploys existing frontend and lambda artifacts to prod. |
-| `destroy.yml` | Tears down non-shared infrastructure through the Terragrunt graph in reverse wave order. |
+| `destroy.yml` | Tears down infrastructure by running `terragrunt run-all destroy`, excluding `aws/oidc`. |
 
 ## Build And Deploy
 
 `shared_build.yml` builds and publishes `frontend.zip` under
 `frontend/<version>/` and `log_processor.zip` under `lambdas/<version>/` in
 the selected environment code bucket.
-The selected environment's `aws/code_bucket` stack must already have a real
-Terraform output named `bucket`; otherwise the build fails before upload.
+The selected environment's `aws/code_bucket` stack is applied before build
+upload so the bucket and artifact-prefix inputs are current when artifacts are
+published.
 
 On the first release, `release.yml` has no prior tag to diff against, so release
 notes are generated from the full history up to the new tag.
@@ -33,8 +31,9 @@ notes are generated from the full history up to the new tag.
 `shared_build_get.yml` resolves an existing frontend artifact from the selected
 environment code bucket. Prod deploys use `environment: ci` so production
 promotes frontend artifacts already present in the shared CI artifact bucket.
-The Lambda artifact version is passed separately to
-`shared_code_deploy.yml`.
+It also validates that the requested `log_processor.zip` and
+`cost_explorer.zip` artifacts exist for the selected Lambda version before the
+deploy wrapper continues.
 
 `shared_code_deploy.yml` rolls out frontend code and the `log_processor`
 Lambda:
@@ -52,40 +51,36 @@ Lambda:
 - starts the CodeDeploy deployment and prunes old versions
 - runs a separate Lambda invoke job after the Lambda deploy completes
 
-## Infra Waves
+## Shared Infra Wrappers
 
-`shared_get_modules.yml` renders the Terragrunt graph and exposes static wave
-outputs consumed by shared plan/apply/destroy wrappers.
+The infra plan/apply/destroy wrappers install Terraform and Terragrunt first,
+then execute Terragrunt across the whole environment.
 
-The current graph is sized for four static wave jobs:
+- They follow the same Terragrunt setup pattern as other AWS workflows.
+- `infra_bootstrap.yml` first applies `aws/code_bucket`, because that stack
+  publishes the shared bootstrap Lambda zip consumed by `log_processor` and
+  `cost_explorer`, and then runs the full bootstrap apply.
+- `infra_plan.yml` runs `terragrunt run-all plan`, then
+  `terragrunt run-all show`.
+- `infra_apply.yml` downloads the saved plan metadata, checks out the planned
+  infra ref, and then runs `terragrunt run-all apply`.
+- `destroy.yml` runs `terragrunt run-all destroy`, excluding `aws/oidc`.
 
-- wave 0: roots such as `oidc`
-- wave 1: dependents such as `frontend` and `code_bucket`
-- wave 2: deeper dependents such as `log_processor`
-- wave 3: deepest dependents when an environment adds another dependency layer
+Shared infra wrappers must forward permissions required by the nested reusable
+call chain:
 
-If the live graph grows deeper, update these workflows together:
-
-- `shared_infra_plan.yml`
-- `shared_infra_apply_no_plan.yml`
-- `shared_infra_apply_from_plan.yml`
-- `destroy.yml`
-
-Then run:
-
-```sh
-just tg-graph-waves prod
-```
+- `id-token: write` everywhere AWS OIDC is used
+- `contents: read` for checkout
 
 ## Saved Plans
 
-`shared_infra_plan.yml` writes:
+`infra_plan.yml` writes:
 
 - run-level artifact: `infra-plan-metadata`
-- per-stack artifact: `terragrunt-plan-<environment>-<module>`
+- run-level artifact: `infra-plan-files`
 
-`shared_infra_apply_from_plan.yml` downloads those artifacts and applies only
-modules whose saved plan metadata reported changes.
+`infra_apply.yml` downloads those artifacts and applies only modules whose
+saved plan metadata reported changes.
 
 Saved plans are time-limited by GitHub artifact retention.
 
@@ -96,7 +91,6 @@ references point at local paths instead of external action tags.
 
 - [get-changes](../actions/get-changes/README.md)
 - [just](../actions/just/README.md)
-- [terragrunt](../actions/terragrunt/README.md)
 
 When a repo-local action needs AWS, configure credentials in the workflow job
 before calling the action. The local action should reuse that ambient AWS

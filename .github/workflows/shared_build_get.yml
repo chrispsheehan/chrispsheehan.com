@@ -6,6 +6,9 @@ on:
       environment:
         required: true
         type: string
+      lambda_version:
+        required: true
+        type: string
       frontend_version:
         required: true
         type: string
@@ -13,6 +16,9 @@ on:
       code_bucket:
         description: "Bucket containing build artifacts"
         value: ${{ jobs.bucket.outputs.code_bucket_name }}
+      lambda_version:
+        description: "Resolved lambda version"
+        value: ${{ inputs.lambda_version }}
       frontend_version:
         description: "Resolved frontend version"
         value: ${{ inputs.frontend_version }}
@@ -25,6 +31,8 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_OIDC_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.PROJECT_NAME }}-${{ inputs.environment }}-github-oidc-role
   AWS_REGION: ${{ vars.AWS_REGION }}
+  TF_VERSION: 1.12.2
+  TG_VERSION: 0.72.6
 
 jobs:
   bucket:
@@ -42,22 +50,23 @@ jobs:
           role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Get build artifact bucket
-        id: deploy_bucket
-        uses: ./.github/actions/terragrunt
+      - uses: hashicorp/setup-terraform@v4
         with:
-          tg_directory: infra/live/${{ inputs.environment }}/aws/code_bucket
-          tg_action: init
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tf_path: terraform
 
       - name: Get bucket name
         id: get_bucket_name
-        env:
-          TG_OUTPUTS: ${{ steps.deploy_bucket.outputs.tg_outputs }}
+        working-directory: infra/live/${{ inputs.environment }}/aws/code_bucket
+        shell: bash
         run: |
-          bucket=$(echo "$TG_OUTPUTS" | jq -er '.bucket.value // empty' || true)
+          bucket="$(terragrunt output -raw bucket || true)"
           if [[ -z "$bucket" ]]; then
             echo "::error title=Missing code bucket output::infra/live/${{ inputs.environment }}/aws/code_bucket did not expose Terraform output 'bucket'. Apply that stack before publishing build artifacts."
-            echo "$TG_OUTPUTS" | jq .
             exit 1
           fi
           echo "bucket=$bucket" >> "$GITHUB_OUTPUT"
@@ -70,3 +79,23 @@ jobs:
         with:
           justfile_path: scripts/ci/justfile
           just_action: frontend-check-version
+
+      - name: Check log processor artifact exists
+        uses: ./.github/actions/just
+        env:
+          BUCKET_NAME: ${{ steps.get_bucket_name.outputs.bucket }}
+          VERSION: ${{ inputs.lambda_version }}
+          LAMBDA_ARTIFACT_NAME: log_processor
+        with:
+          justfile_path: scripts/ci/justfile
+          just_action: lambda-check-deploy-artifacts
+
+      - name: Check cost explorer artifact exists
+        uses: ./.github/actions/just
+        env:
+          BUCKET_NAME: ${{ steps.get_bucket_name.outputs.bucket }}
+          VERSION: ${{ inputs.lambda_version }}
+          LAMBDA_ARTIFACT_NAME: cost_explorer
+        with:
+          justfile_path: scripts/ci/justfile
+          just_action: lambda-check-deploy-artifacts

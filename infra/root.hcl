@@ -16,16 +16,17 @@ locals {
   project_name = element(split("/", local.github_repo), 1)
   project_slug = replace(local.project_name, ".", "-")
 
-  aws_region         = local.global_vars.inputs.aws_region
-  base_reference     = "${local.aws_account_id}-${local.aws_region}-${local.project_slug}"
-  deploy_role_name   = "${local.project_name}-${local.environment}-github-oidc-role"
-  deploy_role_arn    = "arn:aws:iam::${local.aws_account_id}:role/${local.deploy_role_name}"
-  state_bucket       = "${local.base_reference}-tfstate"
-  state_key          = "${local.environment}/${local.provider}/${local.module}/terraform.tfstate"
-  state_locking_mode = "s3"
+  aws_region       = local.global_vars.inputs.aws_region
+  base_reference   = "${local.aws_account_id}-${local.aws_region}-${local.project_slug}"
+  deploy_role_name = "${local.project_name}-${local.environment}-github-oidc-role"
+  deploy_role_arn  = "arn:aws:iam::${local.aws_account_id}:role/${local.deploy_role_name}"
+  state_bucket     = "${local.base_reference}-tfstate"
+  state_key        = "${local.environment}/${local.provider}/${local.module}/terraform.tfstate"
   # separate shared artifact resources when dev, otherwise ci
-  artifact_base = local.environment == "dev" ? "${local.base_reference}-${local.environment}" : "${local.base_reference}-ci"
-  code_bucket   = "${local.artifact_base}-code"
+  artifact_base   = local.environment == "dev" ? "${local.base_reference}-${local.environment}" : "${local.base_reference}-ci"
+  code_bucket     = "${local.artifact_base}-code"
+  use_saved_plan  = get_env("TG_USE_SAVED_PLAN", "false") == "true"
+  saved_plan_path = "${get_terragrunt_dir()}/terragrunt.tfplan"
 }
 
 terraform {
@@ -33,6 +34,35 @@ terraform {
     commands = ["init"]
     execute = [
       "bash", "-c", "echo STATE:${local.state_bucket}/${local.state_key} LOCKFILE:${local.state_key}.tflock"
+    ]
+  }
+
+  extra_arguments "saved_plan_output" {
+    commands = ["plan"]
+    arguments = [
+      "-out=${local.saved_plan_path}"
+    ]
+  }
+
+  extra_arguments "saved_plan_show_json" {
+    commands = ["show"]
+    arguments = [
+      "-json",
+      local.saved_plan_path
+    ]
+  }
+
+  extra_arguments "apply_saved_plan" {
+    commands  = ["apply"]
+    arguments = local.use_saved_plan ? [local.saved_plan_path] : []
+  }
+
+  after_hook "write_show_json_file" {
+    commands = ["show"]
+    execute = [
+      "bash",
+      "-lc",
+      "terraform show -json \"${local.saved_plan_path}\" > \"${get_terragrunt_dir()}/terragrunt.plan.json\""
     ]
   }
 }
@@ -102,7 +132,6 @@ inputs = merge(
     deploy_role_name             = local.deploy_role_name
     deploy_role_arn              = local.deploy_role_arn
     state_bucket                 = local.state_bucket
-    state_locking_mode           = local.state_locking_mode
     code_bucket                  = local.code_bucket
   }
 )

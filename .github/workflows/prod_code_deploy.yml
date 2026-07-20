@@ -23,6 +23,7 @@ jobs:
     uses: ./.github/workflows/shared_build_get.yml
     with:
       environment: ci
+      lambda_version: ${{ inputs.lambda_version }}
       frontend_version: ${{ inputs.frontend_version }}
 
   deploy:
@@ -33,5 +34,5 @@ jobs:
     with:
       environment: prod
       frontend_version: ${{ needs.get_build.outputs.frontend_version }}
-      lambda_version: ${{ inputs.lambda_version }}
+      lambda_version: ${{ needs.get_build.outputs.lambda_version }}
       code_bucket: ${{ needs.get_build.outputs.code_bucket }}
