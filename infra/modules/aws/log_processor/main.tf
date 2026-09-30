@@ -28,7 +28,7 @@ resource "aws_lambda_function" "log_processor" {
   role                           = aws_iam_role.iam_for_lambda.arn
   handler                        = local.lambda_handler
   runtime                        = local.lambda_runtime
-  timeout                        = 300
+  timeout                        = var.timeout_seconds
   reserved_concurrent_executions = 1
 
   s3_bucket = var.code_bucket

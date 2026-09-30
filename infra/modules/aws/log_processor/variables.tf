@@ -105,6 +105,17 @@ variable "database_read_workers" {
   }
 }
 
+variable "timeout_seconds" {
+  type        = number
+  description = "Maximum runtime in seconds for the log processor Lambda."
+  default     = 300
+
+  validation {
+    condition     = var.timeout_seconds >= 1 && var.timeout_seconds <= 900 && floor(var.timeout_seconds) == var.timeout_seconds
+    error_message = "timeout_seconds must be an integer from 1 through 900."
+  }
+}
+
 variable "log_retention_days" {
   type    = number
   default = 1

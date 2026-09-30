@@ -48,5 +48,9 @@ CloudFront log files per invocation. Leave it unset for unbounded processing.
 concurrent S3 reads used to rebuild the visit summary. It defaults to `8` and
 must be a positive integer.
 
+`timeout_seconds` sets the Lambda timeout. It defaults to `300` seconds and
+must be an integer from `1` through AWS Lambda's 900-second maximum. Production
+sets it to `900` seconds to allow the summary rebuild to finish.
+
 For bootstrap-friendly plan and validate flows, keep Terragrunt dependency
 mocks in the live stack rather than reading sibling state inside this module.
