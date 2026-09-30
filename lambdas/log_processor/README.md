@@ -56,6 +56,8 @@ intentionally real.
 - `S3_LOGS_BUCKET`: S3 bucket containing CloudFront `.gz` log objects
 - `S3_LOGS_PREFIX`: prefix to scan for CloudFront log objects
 - `S3_LOGS_MAX_FILES`: optional cap on claimed source log files per run
+- `DATABASE_READ_WORKERS`: maximum concurrent S3 reads during visit summary
+  generation; defaults to `8`
 - `LOG_LEVEL`: optional Python log level; defaults to `INFO`
 
 ## Output Shape

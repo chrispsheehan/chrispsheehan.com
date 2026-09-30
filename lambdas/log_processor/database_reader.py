@@ -4,6 +4,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 import json
 import logging
+import os
 from typing import Any
 
 try:
@@ -16,7 +17,19 @@ logger = logging.getLogger(__name__)
 # Summary generation reads one S3 object per processed CloudFront log file.
 # Keep a small bounded pool so network latency does not make large historical
 # databases exceed the Lambda timeout, without loading the database into memory.
-DATABASE_READ_WORKERS = 8
+DEFAULT_DATABASE_READ_WORKERS = 8
+DATABASE_READ_WORKERS_ENV = "DATABASE_READ_WORKERS"
+
+
+def database_read_workers() -> int:
+    value = os.environ.get(DATABASE_READ_WORKERS_ENV, str(DEFAULT_DATABASE_READ_WORKERS))
+    try:
+        workers = int(value)
+    except ValueError as exc:
+        raise ValueError(f"{DATABASE_READ_WORKERS_ENV} must be a positive integer") from exc
+    if workers < 1:
+        raise ValueError(f"{DATABASE_READ_WORKERS_ENV} must be a positive integer")
+    return workers
 
 
 def build_visitor_tracker_from_database(
@@ -26,7 +39,7 @@ def build_visitor_tracker_from_database(
     visitor_tracker: dict[str, set[str]] = defaultdict(set)
     output_keys = list_request_record_keys(s3_client, bucket_name)
 
-    with ThreadPoolExecutor(max_workers=DATABASE_READ_WORKERS) as executor:
+    with ThreadPoolExecutor(max_workers=database_read_workers()) as executor:
         records_by_key = executor.map(
             lambda key: (key, read_request_records(s3_client, bucket_name, key)),
             output_keys,

@@ -94,6 +94,17 @@ variable "logs_processor_max_files" {
   }
 }
 
+variable "database_read_workers" {
+  type        = number
+  description = "Maximum concurrent S3 reads while rebuilding the visit summary."
+  default     = 8
+
+  validation {
+    condition     = var.database_read_workers >= 1 && floor(var.database_read_workers) == var.database_read_workers
+    error_message = "database_read_workers must be a positive integer."
+  }
+}
+
 variable "log_retention_days" {
   type    = number
   default = 1
