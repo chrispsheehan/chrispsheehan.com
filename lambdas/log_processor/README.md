@@ -72,7 +72,9 @@ host, URI, status, referrer, user agent, edge result type, request id, and
 source S3 key.
 
 The summary counts unique viewer IPs per day by reading all JSONL request
-record files under `data/log-processor/requests/`. The public
+record files under `data/log-processor/requests/`. Those S3 reads run through
+a bounded worker pool so summary generation does not wait for each network
+request serially. The public
 `data/log-processor/data.json` file contains only the visit summary and
 processing counts. Lambda direct invocation responses include the summary S3
 path plus current-invocation file counters for found, claimed, processed,
