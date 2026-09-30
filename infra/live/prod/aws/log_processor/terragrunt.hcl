@@ -65,4 +65,6 @@ inputs = {
   logs_bucket_name          = dependency.frontend.outputs.cloudfront_logs_bucket_name
   logs_bucket_arn           = dependency.frontend.outputs.cloudfront_logs_bucket_arn
   logs_bucket_prefix        = dependency.frontend.outputs.cloudfront_logs_prefix
+  database_read_workers     = 8
+  timeout_seconds           = 900
 }

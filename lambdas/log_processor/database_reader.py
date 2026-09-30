@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 import json
 import logging
+import os
 from typing import Any
 
 try:
@@ -12,6 +14,23 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Summary generation reads one S3 object per processed CloudFront log file.
+# Keep a small bounded pool so network latency does not make large historical
+# databases exceed the Lambda timeout, without loading the database into memory.
+DEFAULT_DATABASE_READ_WORKERS = 8
+DATABASE_READ_WORKERS_ENV = "DATABASE_READ_WORKERS"
+
+
+def database_read_workers() -> int:
+    value = os.environ.get(DATABASE_READ_WORKERS_ENV, str(DEFAULT_DATABASE_READ_WORKERS))
+    try:
+        workers = int(value)
+    except ValueError as exc:
+        raise ValueError(f"{DATABASE_READ_WORKERS_ENV} must be a positive integer") from exc
+    if workers < 1:
+        raise ValueError(f"{DATABASE_READ_WORKERS_ENV} must be a positive integer")
+    return workers
+
 
 def build_visitor_tracker_from_database(
     s3_client: Any,
@@ -20,14 +39,19 @@ def build_visitor_tracker_from_database(
     visitor_tracker: dict[str, set[str]] = defaultdict(set)
     output_keys = list_request_record_keys(s3_client, bucket_name)
 
-    for key in output_keys:
-        for record in read_request_records(s3_client, bucket_name, key):
-            date = record.get("date")
-            viewer_ip = record.get("viewer_ip")
-            if not date or not viewer_ip:
-                logger.warning("Skipping request record missing date or viewer_ip key=%s", key)
-                continue
-            visitor_tracker[date].add(viewer_ip)
+    with ThreadPoolExecutor(max_workers=database_read_workers()) as executor:
+        records_by_key = executor.map(
+            lambda key: (key, read_request_records(s3_client, bucket_name, key)),
+            output_keys,
+        )
+        for key, records in records_by_key:
+            for record in records:
+                date = record.get("date")
+                viewer_ip = record.get("viewer_ip")
+                if not date or not viewer_ip:
+                    logger.warning("Skipping request record missing date or viewer_ip key=%s", key)
+                    continue
+                visitor_tracker[date].add(viewer_ip)
 
     return visitor_tracker, output_keys
 

@@ -44,5 +44,13 @@ CloudWatch logs.
 `logs_processor_max_files` optionally sets `S3_LOGS_MAX_FILES` to cap claimed
 CloudFront log files per invocation. Leave it unset for unbounded processing.
 
+`database_read_workers` sets `DATABASE_READ_WORKERS`, the maximum number of
+concurrent S3 reads used to rebuild the visit summary. It defaults to `8` and
+must be a positive integer.
+
+`timeout_seconds` sets the Lambda timeout. It defaults to `300` seconds and
+must be an integer from `1` through AWS Lambda's 900-second maximum. Production
+sets it to `900` seconds to allow the summary rebuild to finish.
+
 For bootstrap-friendly plan and validate flows, keep Terragrunt dependency
 mocks in the live stack rather than reading sibling state inside this module.

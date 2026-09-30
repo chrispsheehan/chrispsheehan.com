@@ -94,6 +94,28 @@ variable "logs_processor_max_files" {
   }
 }
 
+variable "database_read_workers" {
+  type        = number
+  description = "Maximum concurrent S3 reads while rebuilding the visit summary."
+  default     = 8
+
+  validation {
+    condition     = var.database_read_workers >= 1 && floor(var.database_read_workers) == var.database_read_workers
+    error_message = "database_read_workers must be a positive integer."
+  }
+}
+
+variable "timeout_seconds" {
+  type        = number
+  description = "Maximum runtime in seconds for the log processor Lambda."
+  default     = 300
+
+  validation {
+    condition     = var.timeout_seconds >= 1 && var.timeout_seconds <= 900 && floor(var.timeout_seconds) == var.timeout_seconds
+    error_message = "timeout_seconds must be an integer from 1 through 900."
+  }
+}
+
 variable "log_retention_days" {
   type    = number
   default = 1
