@@ -20,7 +20,7 @@ permissions:
 jobs:
   get-current-tag:
     name: Current Tag
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       current_tag: ${{ steps.get_tag.outputs.CURRENT_TAG }}
     steps:
@@ -36,7 +36,7 @@ jobs:
 
   get-next-tag:
     name: Next Tag
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       tag: ${{ steps.get_next_version.outputs.version }}
       create-new-tag: ${{ steps.get_next_version.outputs.createNewTag }}
@@ -62,7 +62,7 @@ jobs:
     name: Tag
     needs: get-next-tag
     if: ${{ needs.get-next-tag.outputs.create-new-tag == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       TAG: ${{ needs.get-next-tag.outputs.tag }}
     steps:
@@ -81,7 +81,7 @@ jobs:
       - create-tag
       - get-current-tag
     if: ${{ needs.get-next-tag.outputs.create-new-release == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       commits: ${{ steps.commits.outputs.COMMITS }}
     env:
@@ -121,7 +121,7 @@ jobs:
 
   release:
     name: Publish
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - get-next-tag
       - create-tag
@@ -144,7 +144,7 @@ jobs:
 
   deploy-prod:
     name: Dispatch Prod Deploy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - get-next-tag
       - release

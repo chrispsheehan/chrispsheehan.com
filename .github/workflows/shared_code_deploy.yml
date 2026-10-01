@@ -43,7 +43,7 @@ env:
 jobs:
   summary:
     name: Summary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Write deploy summary
         shell: bash
@@ -69,7 +69,7 @@ jobs:
 
   frontend:
     name: Frontend
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - summary
     outputs:
@@ -127,7 +127,7 @@ jobs:
   lambda-log-processor:
     name: Log Processor Lambda
     needs: summary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       lambda_function_name: ${{ steps.get_infra_detail.outputs.lambda_function_name }}
     steps:
@@ -210,7 +210,7 @@ jobs:
   lambda-cost-explorer:
     name: Cost Explorer Lambda
     needs: summary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       lambda_function_name: ${{ steps.get_infra_detail.outputs.lambda_function_name }}
     steps:
@@ -292,7 +292,7 @@ jobs:
 
   refresh-frontend:
     name: Refresh Frontend
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - frontend
       - summary
@@ -313,7 +313,7 @@ jobs:
 
   invoke-log-processor:
     name: Invoke Log Processor
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - lambda-log-processor
     steps:
@@ -333,7 +333,7 @@ jobs:
 
   invoke-cost-explorer:
     name: Invoke Cost Explorer
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - lambda-cost-explorer
     steps:
