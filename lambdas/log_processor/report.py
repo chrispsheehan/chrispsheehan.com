@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import logging
 from typing import Any, Callable
 
 try:
-    from .cloudfront_logs import list_log_objects, parse_log_object
+    from .aggregate_state import AggregateState, update_aggregate_state
+    from .cloudfront_logs import LogObject, list_log_objects, parse_log_object
     from .config import LogProcessorConfig
-    from .database_reader import build_visitor_tracker_from_database
     from .ledger import claim_log_object, mark_complete, mark_failed
     from .output_writer import write_records
     from .state import ProcessingState, read_processing_state, write_processing_state
 except ImportError:
-    from cloudfront_logs import list_log_objects, parse_log_object
+    from aggregate_state import AggregateState, update_aggregate_state
+    from cloudfront_logs import LogObject, list_log_objects, parse_log_object
     from config import LogProcessorConfig
-    from database_reader import build_visitor_tracker_from_database
     from ledger import claim_log_object, mark_complete, mark_failed
     from output_writer import write_records
     from state import ProcessingState, read_processing_state, write_processing_state
@@ -26,6 +26,8 @@ def process_logs(
     config: LogProcessorConfig,
     s3_client: Any,
     *,
+    log_objects: list[LogObject] | None = None,
+    use_cursor: bool = True,
     report_error: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
     logger.info(
@@ -33,37 +35,52 @@ def process_logs(
         config.logs_bucket_name,
         config.logs_prefix,
     )
-    processing_state = read_processing_state(s3_client, config.database_bucket_name)
-    logger.info(
-        "Loaded log processor state database_bucket=%s source_cursor_key=%s",
-        config.database_bucket_name,
-        processing_state.source_cursor_key,
+    processing_state = (
+        read_processing_state(s3_client, config.database_bucket_name)
+        if log_objects is None and use_cursor
+        else ProcessingState()
     )
-    log_objects = list_log_objects(
-        s3_client,
-        config.logs_bucket_name,
-        config.logs_prefix,
-        start_after=processing_state.source_cursor_key,
-    )
+    apply_max_files = log_objects is None
+    effective_max_files = config.max_files if apply_max_files else None
+    if log_objects is None:
+        logger.info(
+            "Loaded log processor state database_bucket=%s source_cursor_key=%s use_cursor=%s",
+            config.database_bucket_name,
+            processing_state.source_cursor_key,
+            use_cursor,
+        )
+        log_objects = list_log_objects(
+            s3_client,
+            config.logs_bucket_name,
+            config.logs_prefix,
+            start_after=processing_state.source_cursor_key if use_cursor else None,
+            modified_since=None if use_cursor else datetime.now(timezone.utc) - timedelta(hours=48),
+        )
+    else:
+        log_objects = sorted(log_objects, key=lambda item: item.key)
     claimed_files = 0
     processed_files = 0
     skipped_files = 0
     failed_files = 0
     run_output_keys: list[str] = []
-    source_cursor_key = processing_state.source_cursor_key
-    cursor_blocked = False
+    cursor_outcomes: list[tuple[str, bool]] = []
+    staged_files: list[
+        tuple[LogObject, Any, dict[str, list[dict[str, Any]]], list[str], int]
+    ] = []
+    new_records_by_date: dict[str, list[dict[str, Any]]] = {}
+    failed_source_keys: list[str] = []
 
     logger.info(
         "Found %s CloudFront log object(s) max_claimed_files=%s",
         len(log_objects),
-        config.max_files,
+        effective_max_files,
     )
 
     for index, log_object in enumerate(log_objects, start=1):
-        if config.max_files is not None and claimed_files >= config.max_files:
+        if effective_max_files is not None and claimed_files >= effective_max_files:
             logger.info(
                 "Reached max claimed file limit limit=%s claimed=%s remaining=%s",
-                config.max_files,
+                effective_max_files,
                 claimed_files,
                 len(log_objects) - index + 1,
             )
@@ -92,13 +109,12 @@ def process_logs(
                 log_object.key,
                 skipped_files,
             )
-            if not cursor_blocked:
-                source_cursor_key = log_object.key
+            cursor_outcomes.append((log_object.key, True))
             continue
 
         if decision.status == "busy":
             skipped_files += 1
-            cursor_blocked = True
+            cursor_outcomes.append((log_object.key, False))
             logger.info(
                 "Skipping busy log file %s/%s key=%s skipped=%s",
                 index,
@@ -136,32 +152,15 @@ def process_logs(
                 records_by_date,
             )
             record_count = sum(len(records) for records in records_by_date.values())
-            mark_complete(
-                s3_client,
-                config.database_bucket_name,
-                claim,
-                record_count,
-                object_output_keys,
+            staged_files.append(
+                (log_object, claim, records_by_date, object_output_keys, record_count)
             )
-
-            processed_files += 1
-            if not cursor_blocked:
-                source_cursor_key = log_object.key
-            run_output_keys.extend(object_output_keys)
-            logger.info(
-                "Completed log file %s/%s key=%s records=%s output_keys=%s processed=%s failed=%s skipped=%s",
-                index,
-                len(log_objects),
-                log_object.key,
-                record_count,
-                len(object_output_keys),
-                processed_files,
-                failed_files,
-                skipped_files,
-            )
+            for date, records in records_by_date.items():
+                new_records_by_date.setdefault(date, []).extend(records)
         except Exception as exc:
             failed_files += 1
-            cursor_blocked = True
+            cursor_outcomes.append((log_object.key, False))
+            failed_source_keys.append(log_object.key)
             mark_failed(
                 s3_client,
                 config.database_bucket_name,
@@ -173,7 +172,44 @@ def process_logs(
             if report_error is not None:
                 report_error(message)
 
-    if source_cursor_key != processing_state.source_cursor_key:
+    aggregate_state = update_aggregate_state(
+        s3_client,
+        config.database_bucket_name,
+        new_records_by_date,
+    )
+
+    for log_object, claim, _records_by_date, object_output_keys, record_count in staged_files:
+        mark_complete(
+            s3_client,
+            config.database_bucket_name,
+            claim,
+            record_count,
+            object_output_keys,
+        )
+        cursor_outcomes.append((log_object.key, True))
+        processed_files += 1
+        run_output_keys.extend(object_output_keys)
+        logger.info(
+            "Completed log file key=%s records=%s output_keys=%s processed=%s failed=%s skipped=%s",
+            log_object.key,
+            record_count,
+            len(object_output_keys),
+            processed_files,
+            failed_files,
+            skipped_files,
+        )
+
+    source_cursor_key = processing_state.source_cursor_key
+    if use_cursor:
+        outcomes_by_key = dict(cursor_outcomes)
+        for log_object in log_objects:
+            if log_object.key not in outcomes_by_key:
+                break
+            if not outcomes_by_key[log_object.key]:
+                break
+            source_cursor_key = log_object.key
+
+    if use_cursor and source_cursor_key != processing_state.source_cursor_key:
         write_processing_state(
             s3_client,
             config.database_bucket_name,
@@ -185,25 +221,17 @@ def process_logs(
             source_cursor_key,
         )
 
-    logger.info(
-        "Aggregating visit summary from database bucket=%s prefix=data/log-processor/requests/",
-        config.database_bucket_name,
-    )
-    visitor_tracker, database_output_keys = build_visitor_tracker_from_database(
-        s3_client,
-        config.database_bucket_name,
-    )
-
-    summary = build_summary(
-        visitor_tracker,
+    summary = build_summary_from_aggregate_state(
+        aggregate_state,
         log_files_found=len(log_objects),
-        log_files_limit=config.max_files,
+        log_files_limit=effective_max_files,
         log_files_claimed=claimed_files,
         log_files_processed=processed_files,
         log_files_skipped=skipped_files,
         log_files_failed=failed_files,
-        output_keys=database_output_keys,
+        output_keys=[],
         run_output_keys=run_output_keys,
+        failed_source_keys=failed_source_keys,
     )
     logger.info(
         "Finished log processor run found=%s claimed=%s processed=%s skipped=%s failed=%s run_output_keys=%s database_output_keys=%s total_visits=%s daily_visits=%s last_date=%s",
@@ -219,6 +247,39 @@ def process_logs(
         summary["last-date"],
     )
     return summary
+
+
+def build_summary_from_aggregate_state(
+    state: AggregateState,
+    *,
+    log_files_found: int,
+    log_files_limit: int | None,
+    log_files_claimed: int,
+    log_files_processed: int,
+    log_files_skipped: int,
+    log_files_failed: int,
+    output_keys: list[str],
+    run_output_keys: list[str],
+    failed_source_keys: list[str],
+) -> dict[str, Any]:
+    daily_counts = state.daily_visits
+    sorted_dates = sorted(daily_counts)
+    return {
+        "daily-visits": daily_counts[sorted_dates[-1]] if sorted_dates else 0,
+        "total-visits": sum(daily_counts.values()),
+        "range": len(sorted_dates),
+        "last-date": sorted_dates[-1] if sorted_dates else None,
+        "generated-at": datetime.now(timezone.utc).date().isoformat(),
+        "log-files-found": log_files_found,
+        "log-files-limit": log_files_limit,
+        "log-files-claimed": log_files_claimed,
+        "log-files-processed": log_files_processed,
+        "log-files-skipped": log_files_skipped,
+        "log-files-failed": log_files_failed,
+        "output-keys": output_keys,
+        "run-output-keys": run_output_keys,
+        "failed-source-keys": failed_source_keys,
+    }
 
 
 def build_summary(

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime
 import gzip
 from io import TextIOWrapper
 import re
@@ -29,6 +30,7 @@ def list_log_objects(
     prefix: str,
     *,
     start_after: str | None = None,
+    modified_since: datetime | None = None,
 ) -> list[LogObject]:
     paginator = s3_client.get_paginator("list_objects_v2")
     paginate_kwargs = {
@@ -44,6 +46,8 @@ def list_log_objects(
         for obj in page.get("Contents", []):
             key = obj["Key"]
             if not key.endswith(".gz"):
+                continue
+            if modified_since is not None and obj["LastModified"] < modified_since:
                 continue
 
             objects.append(
@@ -110,3 +114,14 @@ def parse_log_object(
         body.close()
 
     return records_by_date
+
+
+def log_object_from_s3_record(record: dict[str, Any]) -> tuple[str, LogObject]:
+    bucket_name = record["s3"]["bucket"]["name"]
+    object_data = record["s3"]["object"]
+    return bucket_name, LogObject(
+        key=unquote(object_data["key"].replace("+", " ")),
+        etag=object_data["eTag"],
+        last_modified=record.get("eventTime", ""),
+        size=int(object_data.get("size", 0)),
+    )

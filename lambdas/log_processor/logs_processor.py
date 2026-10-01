@@ -12,12 +12,14 @@ from botocore.exceptions import ClientError
 
 try:
     from .aws_clients import create_s3_client
+    from .cloudfront_logs import LogObject
     from .config import LogProcessorConfig, load_config
     from .logging_config import configure_logging
     from .output_writer import OUTPUT_PREFIX, public_summary
     from .report import process_logs
 except ImportError:
     from aws_clients import create_s3_client
+    from cloudfront_logs import LogObject
     from config import LogProcessorConfig, load_config
     from logging_config import configure_logging
     from output_writer import OUTPUT_PREFIX, public_summary
@@ -35,6 +37,63 @@ class NoWriteS3Client:
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._wrapped, name)
+
+
+class LocalS3SourceClient:
+    def __init__(self, wrapped: Any, source_dir: Path, source_bucket_name: str) -> None:
+        self._wrapped = wrapped
+        self._source_dir = source_dir
+        self._source_bucket_name = source_bucket_name
+
+    def get_paginator(self, name: str) -> Any:
+        wrapped_paginator = self._wrapped.get_paginator(name)
+        if name != "list_objects_v2":
+            return wrapped_paginator
+        return LocalS3SourcePaginator(wrapped_paginator, self._source_dir, self._source_bucket_name)
+
+    def get_object(self, *, Bucket: str, Key: str) -> dict[str, Any]:
+        if Bucket != self._source_bucket_name:
+            return self._wrapped.get_object(Bucket=Bucket, Key=Key)
+
+        target = local_s3_target(self._source_dir, Key, "source")
+        if not target.is_file():
+            raise s3_client_error("404", "Local source object not found")
+        return {"Body": target.open("rb")}
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._wrapped, name)
+
+
+class LocalS3SourcePaginator:
+    def __init__(self, wrapped: Any, source_dir: Path, source_bucket_name: str) -> None:
+        self._wrapped = wrapped
+        self._source_dir = source_dir
+        self._source_bucket_name = source_bucket_name
+
+    def paginate(self, **kwargs: Any) -> Any:
+        if kwargs.get("Bucket") != self._source_bucket_name:
+            return self._wrapped.paginate(**kwargs)
+
+        prefix = kwargs.get("Prefix", "")
+        start_after = kwargs.get("StartAfter")
+        root = self._source_dir.resolve()
+        contents = []
+        if root.is_dir():
+            for path in sorted(item for item in root.rglob("*.gz") if item.is_file()):
+                key = path.relative_to(root).as_posix()
+                if not key.startswith(prefix) or (start_after and key <= start_after):
+                    continue
+                stat = path.stat()
+                contents.append(
+                    {
+                        "Key": key,
+                        "ETag": f'"{local_etag(path)}"',
+                        "LastModified": datetime.fromtimestamp(stat.st_mtime, timezone.utc),
+                        "Size": stat.st_size,
+                    }
+                )
+
+        return [{"Contents": contents}]
 
 
 class LocalS3OutputClient(NoWriteS3Client):
@@ -75,7 +134,7 @@ class LocalS3OutputClient(NoWriteS3Client):
 
         target = self._local_target(Key)
         if not target.is_file():
-            return self._wrapped.get_object(Bucket=Bucket, Key=Key)
+            raise s3_client_error("404", "Local database object not found")
 
         return {"Body": target.open("rb")}
 
@@ -95,11 +154,7 @@ class LocalS3OutputClient(NoWriteS3Client):
         }
 
     def _local_target(self, key: str) -> Path:
-        root = self._output_dir.resolve()
-        target = (root / key).resolve()
-        if root not in target.parents and target != root:
-            raise ValueError(f"Refusing to access S3 key outside local output dir: {key}")
-        return target
+        return local_s3_target(self._output_dir, key, "output")
 
 
 class LocalS3OutputPaginator:
@@ -139,6 +194,14 @@ def local_etag(path: Path) -> str:
     return md5(path.read_bytes()).hexdigest()
 
 
+def local_s3_target(root_dir: Path, key: str, directory_kind: str) -> Path:
+    root = root_dir.resolve()
+    target = (root / key).resolve()
+    if root not in target.parents and target != root:
+        raise ValueError(f"Refusing to access S3 key outside local {directory_kind} dir: {key}")
+    return target
+
+
 def s3_client_error(code: str, message: str) -> ClientError:
     return ClientError(
         {"Error": {"Code": code, "Message": message}, "ResponseMetadata": {"HTTPStatusCode": 412}},
@@ -152,6 +215,8 @@ def logs_report(
     config: LogProcessorConfig | None = None,
     s3_client: Any | None = None,
     env: dict[str, str] | None = None,
+    log_objects: list[LogObject] | None = None,
+    use_cursor: bool = True,
 ) -> dict[str, Any]:
     config = config or load_config(database_bucket_name=database_bucket_name, env=env)
     configure_logging(config.log_level)
@@ -167,7 +232,12 @@ def logs_report(
 
     s3_client = s3_client or create_s3_client()
 
-    return process_logs(config, s3_client)
+    return process_logs(
+        config,
+        s3_client,
+        log_objects=log_objects,
+        use_cursor=use_cursor,
+    )
 
 
 def _main() -> None:
@@ -191,15 +261,27 @@ def _main() -> None:
         type=Path,
         help="Write database bucket put_object payloads to this local directory instead of S3.",
     )
+    parser.add_argument(
+        "--local-s3-source-dir",
+        type=Path,
+        help="Read source log objects from this local directory instead of S3.",
+    )
     args = parser.parse_args()
 
+    config = load_config(database_bucket_name=args.database_bucket_name)
     s3_client = create_s3_client()
+    if args.local_s3_source_dir is not None:
+        s3_client = LocalS3SourceClient(
+            s3_client,
+            args.local_s3_source_dir,
+            config.logs_bucket_name,
+        )
     if args.local_s3_output_dir is not None:
         s3_client = LocalS3OutputClient(s3_client, args.local_s3_output_dir, args.database_bucket_name)
     elif args.suppress_s3_writes:
         s3_client = NoWriteS3Client(s3_client)
 
-    report = logs_report(args.database_bucket_name, s3_client=s3_client)
+    report = logs_report(args.database_bucket_name, config=config, s3_client=s3_client)
     output = json.dumps(report, indent=2, sort_keys=True)
 
     print(output)

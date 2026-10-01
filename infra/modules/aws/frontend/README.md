@@ -43,9 +43,9 @@ The `/data/*` cache behavior serves objects from the module-managed reports buck
 static frontend.
 
 CloudFront standard logs are written to the module-managed logs bucket under
-`cloudfront-logs/`. The log processor source bucket is configured separately, so
-dev and prod can still read historical test logs from another site such as
-`chrispsheehan.com.logs`.
+`cloudfront-logs/`. Each deployed log processor reads its own environment's
+bucket. Historical production-log testing runs locally instead of granting dev
+access to the production logs bucket.
 
 ## Key Outputs
 

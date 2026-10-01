@@ -9,3 +9,11 @@ output "lambda_alias_name" {
 output "cloudwatch_log_group" {
   value = aws_cloudwatch_log_group.log_processor.name
 }
+
+output "queue_url" {
+  value = aws_sqs_queue.log_processor.id
+}
+
+output "dead_letter_queue_url" {
+  value = aws_sqs_queue.log_processor_dlq.id
+}

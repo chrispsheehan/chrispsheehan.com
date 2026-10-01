@@ -33,6 +33,74 @@ unit-test:
     .venv/bin/python -m pytest
 
 
+# Download one production-sized SQS batch and process it entirely in local temporary storage.
+log-processor-integration-test sample_size='25' source_bucket='chrispsheehan.com.logs':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJECT_DIR}}"
+
+    if ! [[ "{{sample_size}}" =~ ^[1-9][0-9]*$ ]]; then
+        echo "sample_size must be a positive integer"
+        exit 1
+    fi
+
+    just unit-test
+
+    LOG_PROCESSOR_TEST_DIR="$(mktemp -d /tmp/chrispsheehan-log-processor.XXXXXX)"
+    cleanup_log_processor_test() {
+        if [[ "$LOG_PROCESSOR_TEST_DIR" == /tmp/chrispsheehan-log-processor.* ]]; then
+            rm -rf -- "$LOG_PROCESSOR_TEST_DIR"
+        fi
+    }
+    trap cleanup_log_processor_test EXIT
+
+    SOURCE_DIR="$LOG_PROCESSOR_TEST_DIR/source"
+    DATABASE_DIR="$LOG_PROCESSOR_TEST_DIR/database"
+    SUMMARY_PATH="$LOG_PROCESSOR_TEST_DIR/summary.json"
+    MANIFEST_PATH="$LOG_PROCESSOR_TEST_DIR/source-keys.txt"
+    mkdir -p "$SOURCE_DIR" "$DATABASE_DIR"
+
+    aws s3api list-objects-v2 \
+        --bucket "{{source_bucket}}" \
+        --prefix "cloudfront-logs/" \
+        --page-size "{{sample_size}}" \
+        --max-items "{{sample_size}}" \
+        --query 'Contents[].Key' \
+        --output text | tr '\t' '\n' > "$MANIFEST_PATH"
+
+    DOWNLOADED=0
+    while IFS= read -r KEY; do
+        [[ -n "$KEY" && "$KEY" != "None" ]] || continue
+        TARGET="$SOURCE_DIR/$KEY"
+        mkdir -p "${TARGET%/*}"
+        aws s3api get-object \
+            --bucket "{{source_bucket}}" \
+            --key "$KEY" \
+            "$TARGET" >/dev/null
+        DOWNLOADED=$((DOWNLOADED + 1))
+    done < "$MANIFEST_PATH"
+
+    if [[ "$DOWNLOADED" -ne "{{sample_size}}" ]]; then
+        echo "Expected {{sample_size}} production logs, downloaded $DOWNLOADED"
+        exit 1
+    fi
+
+    REPORT_BUCKET=local-report \
+    S3_LOGS_BUCKET="{{source_bucket}}" \
+    S3_LOGS_PREFIX=cloudfront-logs/ \
+        .venv/bin/python -m lambdas.log_processor.logs_processor \
+            local-log-processor \
+            --local-s3-source-dir "$SOURCE_DIR" \
+            --local-s3-output-dir "$DATABASE_DIR" \
+            --summary-output "$SUMMARY_PATH"
+
+    jq -e --argjson expected "$DOWNLOADED" \
+        '."log-files-found" == $expected and ."log-files-processed" == $expected and ."log-files-failed" == 0' \
+        "$SUMMARY_PATH" >/dev/null
+
+    echo "Processed $DOWNLOADED production logs with temporary local state; cleanup complete on exit"
+
+
 # Stop Docker Compose services and wipe local persisted service data.
 docker-compose-wipe:
     #!/usr/bin/env bash
@@ -184,4 +252,3 @@ tg-graph env provider='aws':
       --terragrunt-non-interactive \
       --terragrunt-include-external-dependencies \
       --terragrunt-log-level error
-

@@ -98,10 +98,11 @@ commit.
 
 Production deploys target `chrispsheehan.com`.
 
-- A new GitHub release queues a separate production deploy using the release
-  tag for the frontend, `log_processor`, and `cost_explorer` artifacts.
-- Production validates those artifacts and then rolls them out. The workflow
-  remains manually dispatchable for redeployments and rollbacks.
+- A new GitHub release publishes versioned frontend, `log_processor`, and
+  `cost_explorer` artifacts but does not deploy them to production.
+- Manually dispatch `Prod Code Deploy` with a release tag after any required
+  infrastructure rollout. Production validates those artifacts and then rolls
+  them out; the same workflow supports redeployments and rollbacks.
 
 ## Further Reading
 

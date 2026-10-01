@@ -105,6 +105,45 @@ variable "database_read_workers" {
   }
 }
 
+variable "memory_size" {
+  type        = number
+  description = "Lambda memory in MB; additional memory also increases CPU and network allocation."
+  default     = 512
+
+  validation {
+    condition     = var.memory_size >= 128 && var.memory_size <= 10240 && floor(var.memory_size) == var.memory_size
+    error_message = "memory_size must be an integer from 128 through 10240."
+  }
+}
+
+variable "sqs_batch_size" {
+  type        = number
+  description = "Maximum number of S3 object notifications processed per Lambda invocation."
+  default     = 25
+
+  validation {
+    condition     = var.sqs_batch_size >= 1 && var.sqs_batch_size <= 10000 && floor(var.sqs_batch_size) == var.sqs_batch_size
+    error_message = "sqs_batch_size must be an integer from 1 through 10000."
+  }
+}
+
+variable "sqs_batch_window_seconds" {
+  type        = number
+  description = "Maximum time Lambda waits to collect an SQS batch."
+  default     = 60
+
+  validation {
+    condition     = var.sqs_batch_window_seconds >= 1 && var.sqs_batch_window_seconds <= 300 && floor(var.sqs_batch_window_seconds) == var.sqs_batch_window_seconds
+    error_message = "sqs_batch_window_seconds must be an integer from 1 through 300."
+  }
+}
+
+variable "sqs_consumer_enabled" {
+  type        = bool
+  description = "Whether the Lambda event source mapping consumes messages from the ingestion queue."
+  default     = true
+}
+
 variable "timeout_seconds" {
   type        = number
   description = "Maximum runtime in seconds for the log processor Lambda."

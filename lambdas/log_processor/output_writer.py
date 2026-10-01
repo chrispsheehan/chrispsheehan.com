@@ -7,7 +7,7 @@ from typing import Any
 OUTPUT_PREFIX = "data/log-processor"
 REQUESTS_PREFIX = f"{OUTPUT_PREFIX}/requests/"
 SUMMARY_KEY = f"{OUTPUT_PREFIX}/data.json"
-SUMMARY_METADATA_KEYS = {"output-keys", "run-output-keys"}
+SUMMARY_METADATA_KEYS = {"output-keys", "run-output-keys", "failed-source-keys"}
 
 
 def write_records(

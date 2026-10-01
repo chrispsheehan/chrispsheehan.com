@@ -8,12 +8,12 @@ workflows, or workflow-owned `just` behavior.
 | Workflow | Purpose |
 | --- | --- |
 | `pull_request.yml` | Runs change-filtered PR validation for title/version preview, wrapper sync, workflow linting, repo-local action tests, Terraform/Terragrunt formatting, TFLint, frontend builds, and lambda builds. |
-| `release.yml` | Tags versioned releases from `main`, publishes frontend and lambda artifacts to the CI code bucket, creates GitHub releases, and dispatches the new tag to the prod deploy workflow. |
+| `release.yml` | Tags versioned releases from `main`, publishes frontend and lambda artifacts to the CI code bucket, and creates GitHub releases. |
 | `infra_bootstrap.yml` | Bootstraps the selected environment by applying `aws/code_bucket` first, then the full environment. |
 | `infra_plan.yml` | Plans the selected environment with `terragrunt run-all` and saves reusable plan artifacts. |
 | `infra_apply.yml` | Applies a prior saved-plan run for the selected environment using `plan_artifact_run_id`. |
 | `dev_code_deploy.yml` | Builds fresh frontend and lambda artifacts and deploys to dev. |
-| `prod_code_deploy.yml` | Validates and deploys existing frontend and lambda artifacts to prod; release dispatches it automatically and it remains manually dispatchable. |
+| `prod_code_deploy.yml` | Manually validates and deploys existing frontend and lambda artifacts to prod. |
 | `destroy.yml` | Tears down infrastructure by running `terragrunt run-all destroy`, excluding `aws/oidc`. |
 
 ## Build And Deploy
@@ -28,11 +28,9 @@ published.
 On the first release, `release.yml` has no prior tag to diff against, so release
 notes are generated from the full history up to the new tag.
 
-After publishing a GitHub release, `release.yml` dispatches
-`prod_code_deploy.yml` as a separate workflow run from the new tag and passes
-that tag as both the frontend and Lambda artifact versions. The release run
-only verifies that the production workflow was queued; deployment status and
-retries remain isolated in the prod workflow run.
+Publishing a GitHub release does not deploy production. After any required
+infrastructure rollout is complete, manually dispatch `prod_code_deploy.yml`
+with the release tag as both the frontend and Lambda artifact versions.
 
 `shared_build_get.yml` resolves an existing frontend artifact from the selected
 environment code bucket. Prod deploys use `environment: ci` so production
