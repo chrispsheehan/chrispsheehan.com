@@ -98,8 +98,10 @@ commit.
 
 Production deploys target `chrispsheehan.com`.
 
-- Production rolls a selected frontend artifact and the selected
-  `log_processor` and `cost_explorer` Lambda artifacts.
+- A new GitHub release queues a separate production deploy using the release
+  tag for the frontend, `log_processor`, and `cost_explorer` artifacts.
+- Production validates those artifacts and then rolls them out. The workflow
+  remains manually dispatchable for redeployments and rollbacks.
 
 ## Further Reading
 

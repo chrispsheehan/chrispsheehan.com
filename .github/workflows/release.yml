@@ -141,3 +141,25 @@ jobs:
             ${{ needs.get-commits.outputs.commits }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-prod:
+    name: Dispatch Prod Deploy
+    runs-on: ubuntu-latest
+    needs:
+      - get-next-tag
+      - release
+    if: ${{ needs.get-next-tag.outputs.create-new-release == 'true' }}
+    permissions:
+      actions: write
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ needs.get-next-tag.outputs.tag }}
+    steps:
+      - name: Deploy release to prod
+        run: |
+          gh workflow run prod_code_deploy.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$TAG" \
+            --field frontend_version="$TAG" \
+            --field lambda_version="$TAG"
