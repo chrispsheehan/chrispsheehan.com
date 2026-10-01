@@ -5,10 +5,11 @@ from io import BytesIO
 import json
 
 from botocore.exceptions import ClientError
+import pytest
 
 from lambdas.log_processor.config import LogProcessorConfig
 from lambdas.log_processor.ledger import lock_key, object_id
-from lambdas.log_processor.logs_processor import LocalS3OutputClient, logs_report
+from lambdas.log_processor.logs_processor import LocalS3OutputClient, LocalS3SourceClient, logs_report
 from lambdas.log_processor.output_writer import SUMMARY_KEY
 from lambdas.log_processor.state import STATE_KEY
 from lambdas.log_processor.lambda_handler import handle_event
@@ -170,7 +171,7 @@ def test_logs_report_processes_claimed_logs_and_writes_jsonl():
     assert summary["log-files-processed"] == 1
     assert summary["log-files-skipped"] == 1
     assert summary["log-files-failed"] == 0
-    assert len(summary["output-keys"]) == 2
+    assert summary["output-keys"] == []
     assert len(summary["run-output-keys"]) == 2
 
     assert [put["ContentType"] for put in s3.puts if put["ContentType"] == "application/x-ndjson"] == [
@@ -232,7 +233,7 @@ def test_logs_report_builds_visit_summary_from_existing_database_files():
     assert summary["range"] == 2
     assert summary["last-date"] == "2026-01-02"
     assert summary["log-files-processed"] == 0
-    assert len(summary["output-keys"]) == 1
+    assert summary["output-keys"] == []
     assert summary["run-output-keys"] == []
 
 
@@ -322,6 +323,41 @@ def test_local_s3_output_client_writes_objects_under_key_path(tmp_path):
     assert response["Body"].read().decode("utf-8") == '{"viewer_ip":"203.0.113.10"}\n'
 
 
+def test_local_s3_output_client_does_not_read_missing_database_objects_from_aws(tmp_path):
+    client = LocalS3OutputClient(FakeS3([], {}), tmp_path, "database-bucket")
+
+    with pytest.raises(ClientError) as exc_info:
+        client.get_object(
+            Bucket="database-bucket",
+            Key="data/log-processor/state.json",
+        )
+
+    assert exc_info.value.response["Error"]["Code"] == "404"
+
+
+def test_local_s3_source_client_lists_and_reads_downloaded_logs(tmp_path):
+    source_path = tmp_path / "cloudfront" / "one.gz"
+    source_path.parent.mkdir(parents=True)
+    source_path.write_bytes(_gzip_body(_row("2026-01-01", "203.0.113.10", "req-1")))
+    client = LocalS3SourceClient(FakeS3([], {}), tmp_path, "logs-bucket")
+
+    pages = list(
+        client.get_paginator("list_objects_v2").paginate(
+            Bucket="logs-bucket",
+            Prefix="cloudfront/",
+        )
+    )
+
+    assert [item["Key"] for item in pages[0]["Contents"]] == ["cloudfront/one.gz"]
+    assert pages[0]["Contents"][0]["ETag"] == f'"{local_md5(source_path)}"'
+    response = client.get_object(Bucket="logs-bucket", Key="cloudfront/one.gz")
+    assert response["Body"].read() == source_path.read_bytes()
+
+
+def local_md5(path):
+    return md5(path.read_bytes()).hexdigest()
+
+
 def test_logs_report_logs_progress_for_each_file(caplog):
     objects = [
         _object("cloudfront/one.gz", "etag-1", 1),
@@ -339,5 +375,105 @@ def test_logs_report_logs_progress_for_each_file(caplog):
     messages = [record.getMessage() for record in caplog.records]
     assert any("Found 2 CloudFront log object(s)" in message for message in messages)
     assert any("Processing claimed log file 1/2 key=cloudfront/one.gz" in message for message in messages)
-    assert any("Completed log file 2/2 key=cloudfront/two.gz" in message for message in messages)
+    assert any("Completed log file key=cloudfront/two.gz" in message for message in messages)
     assert any("Finished log processor run found=2 claimed=2 processed=2" in message for message in messages)
+
+
+def _sqs_event(message_id, obj):
+    return {
+        "Records": [
+            {
+                "eventSource": "aws:sqs",
+                "messageId": message_id,
+                "body": json.dumps(
+                    {
+                        "Records": [
+                            {
+                                "eventTime": "2026-01-01T12:00:00Z",
+                                "s3": {
+                                    "bucket": {"name": "logs-bucket"},
+                                    "object": {
+                                        "key": obj["Key"],
+                                        "eTag": obj["ETag"].strip('"'),
+                                        "size": obj["Size"],
+                                    },
+                                },
+                            }
+                        ]
+                    }
+                ),
+            }
+        ]
+    }
+
+
+def test_handle_event_processes_sqs_batch_and_skips_redelivery():
+    obj = _object("cloudfront/one.gz", "etag-1", 1)
+    s3 = FakeS3(
+        [obj],
+        {obj["Key"]: _gzip_body(_row("2026-01-01", "203.0.113.10", "req-1"))},
+    )
+    env = {
+        "REPORT_BUCKET": "report-bucket",
+        "DATABASE_BUCKET": "database-bucket",
+        "S3_LOGS_BUCKET": "logs-bucket",
+        "S3_LOGS_PREFIX": "cloudfront/",
+    }
+
+    first = handle_event(_sqs_event("message-1", obj), None, s3_client=s3, env=env)
+    second = handle_event(_sqs_event("message-2", obj), None, s3_client=s3, env=env)
+
+    assert first == {"batchItemFailures": []}
+    assert second == {"batchItemFailures": []}
+    assert "data/log-processor/requests/_aggregates/state.json" in s3.report_bodies
+    complete_locks = [
+        json.loads(body)
+        for key, body in s3.report_bodies.items()
+        if key.startswith("data/log-processor/locks/")
+    ]
+    assert len(complete_locks) == 1
+    assert complete_locks[0]["status"] == "complete"
+
+
+def test_handle_event_returns_only_failed_sqs_message():
+    good = _object("cloudfront/good.gz", "etag-1", 1)
+    bad = _object("cloudfront/bad.gz", "etag-2", 2)
+    s3 = FakeS3(
+        [good, bad],
+        {good["Key"]: _gzip_body(_row("2026-01-01", "203.0.113.10", "req-1"))},
+    )
+    env = {
+        "REPORT_BUCKET": "report-bucket",
+        "DATABASE_BUCKET": "database-bucket",
+        "S3_LOGS_BUCKET": "logs-bucket",
+        "S3_LOGS_PREFIX": "cloudfront/",
+    }
+    event = {"Records": _sqs_event("good-message", good)["Records"] + _sqs_event("bad-message", bad)["Records"]}
+
+    response = handle_event(event, None, s3_client=s3, env=env)
+
+    assert response == {"batchItemFailures": [{"itemIdentifier": "bad-message"}]}
+
+
+def test_handle_event_isolates_malformed_sqs_message():
+    obj = _object("cloudfront/good.gz", "etag-1", 1)
+    s3 = FakeS3(
+        [obj],
+        {obj["Key"]: _gzip_body(_row("2026-01-01", "203.0.113.10", "req-1"))},
+    )
+    env = {
+        "REPORT_BUCKET": "report-bucket",
+        "DATABASE_BUCKET": "database-bucket",
+        "S3_LOGS_BUCKET": "logs-bucket",
+        "S3_LOGS_PREFIX": "cloudfront/",
+    }
+    malformed = {
+        "eventSource": "aws:sqs",
+        "messageId": "malformed-message",
+        "body": "not-json",
+    }
+    event = {"Records": _sqs_event("good-message", obj)["Records"] + [malformed]}
+
+    response = handle_event(event, None, s3_client=s3, env=env)
+
+    assert response == {"batchItemFailures": [{"itemIdentifier": "malformed-message"}]}

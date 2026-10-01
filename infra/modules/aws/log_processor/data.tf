@@ -11,6 +11,8 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 data "aws_iam_policy_document" "code_deploy_assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -169,5 +171,42 @@ data "aws_iam_policy_document" "lambda_report_bucket" {
       var.database_bucket_arn,
       var.logs_bucket_arn,
     ]
+  }
+}
+
+data "aws_iam_policy_document" "lambda_sqs" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "sqs:ChangeMessageVisibility",
+      "sqs:DeleteMessage",
+      "sqs:GetQueueAttributes",
+      "sqs:ReceiveMessage",
+    ]
+    resources = [aws_sqs_queue.log_processor.arn]
+  }
+}
+
+data "aws_iam_policy_document" "s3_to_sqs" {
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.log_processor.arn]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [var.logs_bucket_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
   }
 }

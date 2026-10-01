@@ -50,6 +50,18 @@ These instructions apply to the entire repository.
 - If credentials, network, permissions, or remote state block planning, say so
   and name the exact manual plan command.
 
+## Log Processor Checks
+
+- For changes under `lambdas/log_processor/`, `infra/modules/aws/log_processor/`,
+  or `infra/live/*/aws/log_processor/`, run
+  `just log-processor-integration-test`.
+- The integration recipe downloads 25 production CloudFront log files (one SQS
+  batch) and processes them using temporary local source and database storage.
+  It must never write test state to production or grant the dev stack access to
+  the production log bucket.
+- If production read credentials or network access are unavailable, run
+  `just unit-test` and report that the production-sample check remains pending.
+
 ## Edit Warnings
 
 - Before editing `scripts/ci/justfile` or `scripts/deploy/justfile`, warn the

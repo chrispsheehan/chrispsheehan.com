@@ -47,6 +47,12 @@ vendored copy.
 bucket, while public `/data/*` report artifacts are served from the
 frontend-managed reports bucket.
 
+The log processor receives filtered S3 new-object notifications through a
+standard SQS queue. It batches source files, records idempotent completion in
+the database bucket, and incrementally updates daily visitor aggregates. A
+dead-letter queue retains repeatedly failing notifications for 14 days, while
+the existing daily schedule reconciles the most recent 48 hours of deliveries.
+
 ## Security Module
 
 `infra/modules/aws/security` owns:
