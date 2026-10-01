@@ -37,7 +37,7 @@ env:
 jobs:
   bucket:
     name: Code Bucket
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       code_bucket_name: ${{ steps.get_bucket_name.outputs.bucket }}
     steps:

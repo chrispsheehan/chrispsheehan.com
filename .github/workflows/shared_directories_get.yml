@@ -9,7 +9,7 @@ on:
 jobs:
   directories:
     name: Directories
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       action_dirs: ${{ steps.action_dirs.outputs.just_outputs }}
     steps:

@@ -41,7 +41,7 @@ env:
 jobs:
   bucket:
     name: Code Bucket
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       code_bucket_name: ${{ steps.get_bucket_name.outputs.bucket }}
     steps:
@@ -98,7 +98,7 @@ jobs:
   frontend:
     name: Frontend
     needs: bucket
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
         with:
@@ -121,7 +121,7 @@ jobs:
   log-processor:
     name: Log Processor
     needs: bucket
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
 
@@ -144,7 +144,7 @@ jobs:
   cost-explorer:
     name: Cost Explorer
     needs: bucket
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
 
