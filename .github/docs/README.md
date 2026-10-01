@@ -110,3 +110,9 @@ session.
 - Code deploys use `deploy-<environment>`.
 - Mutating infra workflows share `infra-mutate-<environment>`, so only one
   apply or destroy can run at a time per environment.
+
+## Runner Image
+
+Workflow jobs pin `runs-on` to `ubuntu-24.04` so CI and deployments do not
+silently migrate when GitHub changes the operating system behind
+`ubuntu-latest`. Test a newer runner image explicitly before updating the pin.

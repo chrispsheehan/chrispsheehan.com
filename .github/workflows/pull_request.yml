@@ -26,7 +26,7 @@ env:
 jobs:
   check-pr-title:
     name: PR Title
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       PR_TITLE: ${{ github.event.pull_request.title || inputs.pr_title }}
       ALLOWED_PREFIXES: "feat: feat!: fix: fix!: chore: docs:"
@@ -45,7 +45,7 @@ jobs:
 
   check-agent-guidance-sync:
     name: Agent Docs Sync
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
 
@@ -63,7 +63,7 @@ jobs:
     needs:
       - check-pr-title
       - check-agent-guidance-sync
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pull-requests: read
       contents: read
@@ -124,7 +124,7 @@ jobs:
     needs:
       - check-pr-title
       - check-agent-guidance-sync
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
         with:
@@ -146,7 +146,7 @@ jobs:
 
   format-github:
     needs: check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ needs.check.outputs.github == 'true' }}
     name: GH Fmt
     timeout-minutes: 2
@@ -172,7 +172,7 @@ jobs:
       - format-github
       - setup
     if: ${{ always() && needs.check.result == 'success' && needs.check.outputs.actions == 'true' && (needs.format-github.result == 'success' || needs.format-github.result == 'skipped') && needs.setup.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -188,7 +188,7 @@ jobs:
 
   format-terragrunt:
     needs: check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ needs.check.outputs.terraform == 'true' || needs.check.outputs.terragrunt == 'true' }}
     name: TG Fmt
     timeout-minutes: 2
@@ -214,7 +214,7 @@ jobs:
 
   lint-terraform:
     needs: check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ needs.check.outputs.terraform == 'true' }}
     name: TF Lint
     timeout-minutes: 2
@@ -236,7 +236,7 @@ jobs:
     if: ${{ needs.check.outputs.frontend == 'true' }}
     needs:
       - check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
 
@@ -251,7 +251,7 @@ jobs:
     if: ${{ needs.check.outputs.lambdas == 'true' }}
     needs:
       - check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
 
@@ -274,7 +274,7 @@ jobs:
     if: ${{ needs.check.outputs.lambdas == 'true' }}
     needs:
       - check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
 
