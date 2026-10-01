@@ -10,6 +10,7 @@ locals {
     "logs:*",
     "route53:*",
     "s3:*",
+    "sqs:*",
     "codedeploy:*",
     "dynamodb:*",
     "ec2:*",
