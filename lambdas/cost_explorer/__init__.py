@@ -1,1 +1,0 @@
-"""Cost explorer Lambda package."""

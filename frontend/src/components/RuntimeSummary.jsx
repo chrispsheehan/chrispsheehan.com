@@ -1,36 +1,20 @@
 import React, { useEffect, useState } from "react";
 
-function formatUsd(value) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value ?? 0);
-}
-
 export default function RuntimeSummary() {
   const [visits, setVisits] = useState(null);
-  const [costs, setCosts] = useState(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     let active = true;
 
-    Promise.all([
-      fetch("/data/log-processor/data.json").then((res) => {
+    fetch("/data/log-processor/data.json")
+      .then((res) => {
         if (!res.ok) throw new Error("Visit data request failed");
         return res.json();
-      }),
-      fetch("/data/cost-explorer/data.json").then((res) => {
-        if (!res.ok) throw new Error("Cost data request failed");
-        return res.json();
-      }),
-    ])
-      .then(([visitData, costData]) => {
+      })
+      .then((visitData) => {
         if (!active) return;
         setVisits(visitData);
-        setCosts(costData);
       })
       .catch(() => {
         if (!active) return;
@@ -51,7 +35,7 @@ export default function RuntimeSummary() {
     );
   }
 
-  if (!visits || !costs) {
+  if (!visits) {
     return (
       <div className="runtime-summary" aria-live="polite">
         <p className="dashboard-card__eyebrow">Runtime</p>
@@ -77,18 +61,6 @@ export default function RuntimeSummary() {
           <span className="runtime-summary__meta">
             {visits["range"]}-day total {visits["total-visits"]}
           </span>
-        </a>
-        <a
-          href="/data/cost-explorer/data.json"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="runtime-summary__item"
-        >
-          <span className="runtime-summary__label">Cost</span>
-          <strong className="runtime-summary__value">
-            {formatUsd(costs["last-month-total"])}
-          </strong>
-          <span className="runtime-summary__meta">{costs["billing-month"]}</span>
         </a>
       </div>
     </div>

@@ -35,10 +35,10 @@ with the release tag as both the frontend and Lambda artifact versions.
 `shared_build_get.yml` resolves an existing frontend artifact from the selected
 environment code bucket. Prod deploys use `environment: ci` so production
 promotes frontend artifacts already present in the shared CI artifact bucket.
-It also validates that the requested `log_processor.zip` and
-`cost_explorer.zip` artifacts exist for the selected Lambda version before the
-deploy wrapper continues. The prod workflow can also be dispatched manually
-with a prior tag to redeploy or roll back.
+It also validates that the requested `log_processor.zip` artifact exists for
+the selected Lambda version before the deploy wrapper continues. The prod
+workflow can also be dispatched manually with a prior tag to redeploy or roll
+back.
 
 `shared_code_deploy.yml` rolls out frontend code and the `log_processor`
 Lambda:
@@ -63,8 +63,8 @@ then execute Terragrunt across the whole environment.
 
 - They follow the same Terragrunt setup pattern as other AWS workflows.
 - `infra_bootstrap.yml` first applies `aws/code_bucket`, because that stack
-  publishes the shared bootstrap Lambda zip consumed by `log_processor` and
-  `cost_explorer`, and then runs the full bootstrap apply.
+  publishes the shared bootstrap Lambda zip consumed by `log_processor`, and
+  then runs the full bootstrap apply.
 - `infra_plan.yml` runs `terragrunt run-all plan`, then
   `terragrunt run-all show`.
 - `infra_apply.yml` downloads the saved plan metadata, checks out the planned

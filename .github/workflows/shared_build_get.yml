@@ -89,13 +89,3 @@ jobs:
         with:
           justfile_path: scripts/ci/justfile
           just_action: lambda-check-deploy-artifacts
-
-      - name: Check cost explorer artifact exists
-        uses: ./.github/actions/just
-        env:
-          BUCKET_NAME: ${{ steps.get_bucket_name.outputs.bucket }}
-          VERSION: ${{ inputs.lambda_version }}
-          LAMBDA_ARTIFACT_NAME: cost_explorer
-        with:
-          justfile_path: scripts/ci/justfile
-          just_action: lambda-check-deploy-artifacts
