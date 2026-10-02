@@ -163,6 +163,11 @@ def test_logs_report_processes_claimed_logs_and_writes_jsonl():
     summary = logs_report("database-bucket", config=_config(), s3_client=s3)
 
     assert summary["daily-visits"] == 1
+    assert len(summary["daily-visitor-counts"]) == 30
+    assert summary["daily-visitor-counts"][-2:] == [
+        {"date": "2026-01-01", "visitors": 1},
+        {"date": "2026-01-02", "visitors": 1},
+    ]
     assert summary["total-visits"] == 2
     assert summary["range"] == 2
     assert summary["last-date"] == "2026-01-02"
@@ -290,6 +295,10 @@ def test_handle_event_writes_summary_with_injected_clients():
     assert "output-keys" not in public_summary
     assert "run-output-keys" not in public_summary
     assert public_summary["total-visits"] == 1
+    assert public_summary["daily-visitor-counts"][-1] == {
+        "date": "2026-01-01",
+        "visitors": 1,
+    }
 
 
 def test_local_s3_output_client_writes_objects_under_key_path(tmp_path):

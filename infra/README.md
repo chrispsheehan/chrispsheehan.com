@@ -7,11 +7,15 @@ Terragrunt live stacks are under `infra/live/<environment>/aws`.
 | Environment | Stacks |
 | --- | --- |
 | `ci` | `oidc`, `code_bucket` |
-| `dev` | `oidc`, `code_bucket`, `frontend`, `security`, `s3_database`, `log_processor`, `cost_explorer` |
-| `prod` | `oidc`, `frontend`, `security`, `s3_database`, `log_processor`, `cost_explorer` |
+| `dev` | `oidc`, `code_bucket`, `frontend`, `security`, `s3_database`, `log_processor` |
+| `prod` | `oidc`, `frontend`, `security`, `s3_database`, `log_processor`, `cost_explorer` retirement cleanup |
 
 `dev` owns `dev.chrispsheehan.com`. `prod` owns
 `chrispsheehan.com`.
+
+The temporary production `cost_explorer` stack is an empty retirement module.
+Apply its destruction plan, then remove that live directory and the matching
+module. Development state is already empty.
 
 ## OIDC Stacks
 

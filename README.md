@@ -25,7 +25,7 @@ If you just need to get oriented:
 | Path | Purpose |
 | --- | --- |
 | `frontend/` | Astro static site with React components. Build output goes to `frontend/dist`. |
-| `lambdas/` | Lambda source, packaging contract, and runtime notes for `log_processor` and `cost_explorer`. |
+| `lambdas/` | Lambda source, packaging contract, and runtime notes for `log_processor`. |
 | `infra/` | Terragrunt live stacks and Terraform modules for frontend, data, security, published OIDC role wiring, and artifact storage. |
 
 ## Common Commands
@@ -90,16 +90,15 @@ commit.
 - `Infra Plan` writes saved Terragrunt plans for the selected environment.
 - `Infra Apply From Plan` reuses a prior plan run and applies only modules
   whose saved plan JSON reported changes.
-- `Dev Code Deploy` builds `frontend.zip`, `log_processor.zip`, and
-  `cost_explorer.zip`, uploads them to the dev code bucket, syncs the frontend
-  artifact to the S3 origin bucket, refreshes CloudFront in a separate CI job,
-  rolls both Lambdas through CodeDeploy, and invokes each Lambda once in a
-  separate CI job.
+- `Dev Code Deploy` builds `frontend.zip` and `log_processor.zip`, uploads them
+  to the dev code bucket, syncs the frontend artifact to the S3 origin bucket,
+  refreshes CloudFront in a separate CI job, rolls the Lambda through
+  CodeDeploy, and invokes it once in a separate CI job.
 
 Production deploys target `chrispsheehan.com`.
 
-- A new GitHub release publishes versioned frontend, `log_processor`, and
-  `cost_explorer` artifacts but does not deploy them to production.
+- A new GitHub release publishes versioned frontend and `log_processor`
+  artifacts but does not deploy them to production.
 - Manually dispatch `Prod Code Deploy` with a release tag after any required
   infrastructure rollout. Production validates those artifacts and then rolls
   them out; the same workflow supports redeployments and rollbacks.

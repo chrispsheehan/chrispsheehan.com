@@ -71,5 +71,5 @@ jobs:
             echo "- \`infra_version\`: \`${{ inputs.infra_version }}\`"
             echo "- first command: \`terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-dir aws/code_bucket\`"
             echo "- second command: \`terragrunt run-all apply --terragrunt-non-interactive\`"
-            echo "- reason: \`aws/code_bucket\` publishes the shared bootstrap Lambda zip used by `log_processor` and `cost_explorer`."
+            echo "- reason: \`aws/code_bucket\` publishes the shared bootstrap Lambda zip used by \`log_processor\`."
           } >> "$GITHUB_STEP_SUMMARY"
