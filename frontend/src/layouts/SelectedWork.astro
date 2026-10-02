@@ -1,0 +1,390 @@
+---
+const projects = [
+  {
+    name: "AWS Terragrunt Starter",
+    label: "Featured platform",
+    href: "https://github.com/chrispsheehan/aws-terragrunt-starter",
+    problem:
+      "A production-shaped starting point for teams that need repeatable AWS environments without rebuilding the delivery model each time.",
+    result:
+      "Multi-environment Terragrunt, generated GitHub Actions, OIDC access, bootstrap-safe applies, and saved-plan promotion flows.",
+    tags: ["AWS", "Terragrunt", "GitHub Actions", "OIDC"],
+    featured: true,
+  },
+  {
+    name: "GitHub OIDC Role",
+    label: "Terraform module",
+    href: "https://github.com/chrispsheehan/terraform-aws-github-oidc-role",
+    problem:
+      "Short-lived, least-privilege AWS access for GitHub Actions without storing static cloud credentials.",
+    result:
+      "A tested module that bootstraps once, then supports managing its own role through the delivery workflow.",
+    tags: ["Terraform", "AWS IAM", "Security"],
+  },
+  {
+    name: "Performance Test Framework",
+    label: "Quality engineering",
+    href: "https://github.com/chrispsheehan/performance-test-framework",
+    problem:
+      "A repeatable way to exercise API performance locally and in automation without relying on an external target.",
+    result:
+      "A TypeScript and k6 harness with thresholds, generated data, Docker Compose, and a local mock service.",
+    tags: ["k6", "TypeScript", "Docker", "Testing"],
+  },
+];
+---
+
+<section id="selected-work" class="section-shell selected-work">
+  <div class="section-heading" data-reveal>
+    <p class="section-eyebrow">Selected work</p>
+    <h2>Projects I’m proud of.</h2>
+    <p class="section-intro">
+      Reusable foundations, delivery tooling, and quality systems built to make
+      the safe path the straightforward path.
+    </p>
+  </div>
+
+  <div class="project-carousel">
+    <div class="project-grid" data-project-track>
+      {
+        projects.map((project, index) => (
+          <article
+            class:list={[
+              "project-card",
+              { "project-card--featured": project.featured },
+            ]}
+            data-project-card
+            data-reveal
+          >
+            <div class="project-card__topline">
+              <span class="project-card__number">0{index + 1}</span>
+              <span class="project-card__label">{project.label}</span>
+            </div>
+            <h3>{project.name}</h3>
+            <div class="project-card__story">
+              <div>
+                <span>Problem</span>
+                <p>{project.problem}</p>
+              </div>
+              <div>
+                <span>Build</span>
+                <p>{project.result}</p>
+              </div>
+            </div>
+            <div class="project-card__footer">
+              <ul
+                class="project-tags"
+                aria-label={`${project.name} technologies`}
+              >
+                {project.tags.map((tag) => (
+                  <li>{tag}</li>
+                ))}
+              </ul>
+              <a href={project.href} target="_blank" rel="noopener noreferrer">
+                View repository <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+
+    <div class="project-carousel__pagination" aria-label="Selected projects">
+      {
+        projects.map((project, index) => (
+          <button
+            type="button"
+            class:list={[
+              "project-carousel__dot",
+              { "project-carousel__dot--active": index === 0 },
+            ]}
+            data-project-dot
+            data-project-index={index}
+            aria-label={`Show ${project.name}`}
+            aria-pressed={index === 0 ? "true" : "false"}
+          />
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<script>
+  const carousels = document.querySelectorAll(".project-carousel");
+
+  carousels.forEach((carousel) => {
+    const track = carousel.querySelector<HTMLElement>("[data-project-track]");
+    const cards = Array.from(
+      carousel.querySelectorAll<HTMLElement>("[data-project-card]"),
+    );
+    const dots = Array.from(
+      carousel.querySelectorAll<HTMLButtonElement>("[data-project-dot]"),
+    );
+
+    if (!track || cards.length === 0) return;
+
+    const setActive = (activeIndex: number) => {
+      dots.forEach((dot, index) => {
+        const active = index === activeIndex;
+        dot.classList.toggle("project-carousel__dot--active", active);
+        dot.setAttribute("aria-pressed", String(active));
+      });
+    };
+
+    const updateActive = () => {
+      const trackCentre = track.scrollLeft + track.clientWidth / 2;
+      let closestIndex = 0;
+      let closestDistance = Number.POSITIVE_INFINITY;
+
+      cards.forEach((card, index) => {
+        const cardCentre = card.offsetLeft + card.clientWidth / 2;
+        const distance = Math.abs(trackCentre - cardCentre);
+
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      });
+
+      setActive(closestIndex);
+    };
+
+    dots.forEach((dot, index) => {
+      dot.addEventListener("click", () => {
+        track.scrollTo({ left: cards[index].offsetLeft, behavior: "smooth" });
+      });
+    });
+
+    track.addEventListener("scroll", updateActive, { passive: true });
+    window.addEventListener("resize", updateActive);
+    updateActive();
+  });
+</script>
+
+<style>
+  .selected-work .section-heading h2 {
+    max-width: none;
+  }
+
+  .project-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+    gap: 1rem;
+  }
+
+  .project-carousel__pagination {
+    display: none;
+  }
+
+  .project-card {
+    min-width: 0;
+    padding: 1.4rem;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1.25rem;
+    background: rgba(9, 24, 18, 0.66);
+    display: flex;
+    flex-direction: column;
+    transition:
+      transform 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .project-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-border-strong);
+  }
+
+  .project-card--featured {
+    grid-row: span 2;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    background:
+      radial-gradient(
+        circle at 85% 10%,
+        rgba(244, 184, 96, 0.14),
+        transparent 34%
+      ),
+      linear-gradient(145deg, rgba(26, 58, 46, 0.94), rgba(9, 24, 18, 0.92));
+  }
+
+  .project-card__topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .project-card__number,
+  .project-card__label,
+  .project-card__story span {
+    color: var(--color-accent-warm);
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .project-card__number {
+    color: var(--color-text-soft);
+  }
+
+  .project-card h3 {
+    margin: 0 0 1.4rem;
+    font-size: clamp(1.45rem, 2.5vw, 2.25rem);
+    line-height: 1.05;
+  }
+
+  .project-card--featured h3 {
+    max-width: 12ch;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  .project-card__story {
+    display: grid;
+    gap: 1rem;
+    flex: 1;
+  }
+
+  .project-card--featured .project-card__story {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  .project-card__story > div {
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(185, 242, 200, 0.16);
+  }
+
+  .project-card__story p {
+    margin: 0.45rem 0 0;
+    color: var(--color-text-soft);
+  }
+
+  .project-card__footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .project-card__footer > a {
+    flex: 0 0 auto;
+    color: var(--color-heading);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .project-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .project-tags li {
+    padding: 0.28rem 0.58rem;
+    border: 1px solid rgba(185, 242, 200, 0.15);
+    border-radius: 999px;
+    color: var(--color-text-soft);
+    font-size: 0.78rem;
+  }
+
+  @media (max-width: 850px) {
+    .project-carousel {
+      position: relative;
+    }
+
+    .project-carousel::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 2.75rem;
+      height: calc(100% - 2rem);
+      pointer-events: none;
+      background: linear-gradient(
+        270deg,
+        rgba(11, 25, 20, 0.88),
+        rgba(11, 25, 20, 0)
+      );
+    }
+
+    .project-grid {
+      display: flex;
+      gap: 0.9rem;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      padding-bottom: 0.35rem;
+      scroll-padding-left: 0;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .project-grid::-webkit-scrollbar {
+      display: none;
+    }
+
+    .project-card {
+      flex: 0 0 calc(100% - 0.75rem);
+      box-sizing: border-box;
+      scroll-snap-align: start;
+    }
+
+    .project-card--featured {
+      grid-row: auto;
+      padding: 1.4rem;
+    }
+
+    .project-card__footer {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .project-carousel__pagination {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.45rem;
+      margin-top: 0.85rem;
+    }
+
+    .project-carousel__dot {
+      appearance: none;
+      width: 0.5rem;
+      height: 0.5rem;
+      padding: 0;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(185, 242, 200, 0.28);
+      cursor: pointer;
+      transition:
+        width 0.2s ease,
+        background 0.2s ease;
+    }
+
+    .project-carousel__dot--active {
+      width: 1.35rem;
+      background: var(--color-heading);
+    }
+
+    .project-carousel__dot:focus-visible {
+      outline: 2px solid var(--color-hover);
+      outline-offset: 3px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .project-card--featured .project-card__story {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

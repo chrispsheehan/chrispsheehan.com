@@ -9,14 +9,14 @@ import Certifications from "../components/Certifications";
 
   .cert-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     justify-content: center;
-    gap: 2rem;
+    gap: 1rem;
   }
 
   .cert-grid > a {
     display: block;
-    max-width: 220px;
+    max-width: 180px;
     width: auto;
     text-align: center;
     margin: 0 auto;
@@ -79,8 +79,8 @@ import Certifications from "../components/Certifications";
   }
 
   .cert-embed-wrapper {
-    width: 200px;
-    min-height: 260px;
+    width: 160px;
+    height: 208px;
     margin: 0 auto;
     border-radius: 0.75rem;
     background: var(--color-cert-embed-bg);
@@ -94,6 +94,8 @@ import Certifications from "../components/Certifications";
   .cert-embed-wrapper > div {
     width: 200px;
     min-height: 260px;
+    transform: scale(0.8);
+    transform-origin: top left;
   }
 
   .cert-embed-wrapper iframe {
@@ -188,13 +190,13 @@ import Certifications from "../components/Certifications";
     }
 
     .cert-embed-wrapper {
-      width: 188px;
-      min-height: 224px;
+      width: 160px;
+      min-height: 208px;
     }
 
     .cert-embed-wrapper > div {
       transform: scale(0.8);
-      transform-origin: top center;
+      transform-origin: top left;
     }
 
     .cert-carousel__pagination {
@@ -204,11 +206,9 @@ import Certifications from "../components/Certifications";
 </style>
 
 <section id="certifications">
-  <p class="section-eyebrow">Certifications</p>
-  <h2>Supporting credentials in AWS, Terraform, and delivery tooling.</h2>
-  <p class="section-intro">
-    Useful supporting proof, but secondary to the platform and delivery work
-    above.
-  </p>
+  <div class="section-heading">
+    <p class="section-eyebrow">Credentials</p>
+    <h2>Supporting expertise across cloud and delivery tooling.</h2>
+  </div>
   <Certifications client:load />
 </section>

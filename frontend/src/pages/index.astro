@@ -4,6 +4,7 @@ import Footer from "../layouts/Footer.astro";
 import ThisSite from "../layouts/ThisSite.astro";
 import AboutMe from "../layouts/AboutMe.astro";
 import Certifications from "../layouts/Certifications.astro";
+import SelectedWork from "../layouts/SelectedWork.astro";
 
 const baseDomain = import.meta.env.DEV
   ? "local.chrispsheehan.com"
@@ -18,7 +19,22 @@ const githubProfile = "https://github.com/chrispsheehan";
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{baseDomain}</title>
+    <title>Chris Sheehan | Senior Platform Engineer</title>
+    <meta
+      name="description"
+      content="Chris Sheehan is a senior platform engineer building dependable AWS platforms, Terraform foundations, and CI/CD delivery paths."
+    />
+    <link rel="canonical" href="https://chrispsheehan.com/" />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="Chris Sheehan | Senior Platform Engineer"
+    />
+    <meta
+      property="og:description"
+      content="AWS platforms, Terraform foundations, and CI/CD delivery paths built to help teams ship safely."
+    />
+    <meta property="og:url" content="https://chrispsheehan.com/" />
     <link rel="stylesheet" href="/styles.css" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   </head>
@@ -28,75 +44,97 @@ const githubProfile = "https://github.com/chrispsheehan";
     <main class="home-shell">
       <section id="hero" class="hero-section">
         <div class="hero-copy" data-reveal>
-          <p class="section-eyebrow">Senior Platform Engineer</p>
-          <h1>Platforms and CI/CD built to help teams ship faster.</h1>
+          <p class="section-eyebrow">
+            Chris Sheehan · Senior Platform Engineer
+          </p>
+          <h1>I build the paved roads that help teams ship safely.</h1>
+          <p class="hero-intro">
+            AWS platforms, Terraform foundations, and CI/CD delivery paths
+            designed for speed without giving up confidence.
+          </p>
           <div class="cta-row">
-            <a
-              class="button-link button-link--icon"
-              href="https://www.linkedin.com/in/chrispsheehan"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="LinkedIn"
-            >
-              <img src="/assets/social/linkedin.png" alt="" aria-hidden="true" />
+            <a class="button-link button-link--primary" href="#selected-work">
+              View selected work
             </a>
             <a
-              class="button-link button-link--icon"
+              class="button-link button-link--ghost"
               href={githubProfile}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="GitHub"
             >
-              <img src="/assets/social/github.png" alt="" aria-hidden="true" />
+              GitHub ↗
+            </a>
+          </div>
+          <div class="profile-links" aria-label="Professional profiles">
+            <a
+              class="profile-link"
+              href="https://www.linkedin.com/in/chrispsheehan"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src="/assets/social/linkedin.png"
+                alt=""
+                aria-hidden="true"
+              />
+              LinkedIn
             </a>
             <a
-              class="button-link button-link--icon"
+              class="profile-link"
               href="https://registry.terraform.io/namespaces/chrispsheehan"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Terraform Registry"
             >
-              <img src="/assets/social/terraform.png" alt="" aria-hidden="true" />
-            </a>
-            <a
-              class="button-link button-link--icon"
-              href="https://www.credly.com/users/chris-sheehan.b081233e/badges/credly"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Credly"
-            >
-              <img src="/assets/social/credly.png" alt="" aria-hidden="true" />
+              <img
+                src="/assets/social/terraform.png"
+                alt=""
+                aria-hidden="true"
+              />
+              Terraform Registry
             </a>
           </div>
         </div>
 
         <aside class="hero-panel" data-reveal>
           <div class="hero-panel-card hero-panel-card--accent">
-            <p class="section-eyebrow">Working style</p>
-            <h2>Delivery paths that stay reliable.</h2>
-            <div class="hero-metrics">
-              <div>
-                <span class="hero-metric-label">Scope</span>
-                <strong>Infrastructure, pipelines, and internal tooling</strong>
+            <p class="section-eyebrow">A dependable delivery path</p>
+            <h2>From change to useful signal.</h2>
+            <div
+              class="delivery-flow"
+              aria-label="Commit, plan, promote, observe"
+            >
+              <div class="delivery-step">
+                <span>01</span>
+                <strong>Commit</strong>
+                <small>Small, reviewable change</small>
               </div>
-              <div>
-                <span class="hero-metric-label">Approach</span>
-                <strong>Practical, modular automation</strong>
+              <div class="delivery-step">
+                <span>02</span>
+                <strong>Plan</strong>
+                <small>Visible impact before apply</small>
               </div>
-              <div>
-                <span class="hero-metric-label">Outcome</span>
-                <strong>Scalable, maintainable solutions</strong>
+              <div class="delivery-step">
+                <span>03</span>
+                <strong>Promote</strong>
+                <small>Controlled path to production</small>
+              </div>
+              <div class="delivery-step">
+                <span>04</span>
+                <strong>Observe</strong>
+                <small>Evidence that the system works</small>
               </div>
             </div>
           </div>
         </aside>
       </section>
 
+      <SelectedWork />
+
       <AboutMe />
 
-      <Certifications />
-
       <ThisSite githubRepo={githubRepo} />
+
+      <Certifications />
     </main>
 
     <Footer baseDomain={baseDomain} />

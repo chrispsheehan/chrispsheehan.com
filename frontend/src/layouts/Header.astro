@@ -10,9 +10,10 @@ const githubProfile = "https://github.com/chrispsheehan";
     </div>
 
     <div class="nav-links" id="nav-links">
+      <a href="#selected-work" class="button">Work</a>
       <a href="#about-me" class="button">About</a>
-      <a href="#certifications" class="button">Certifications</a>
       <a href="#this-site" class="button">This Site</a>
+      <a href="#certifications" class="button">Credentials</a>
     </div>
 
     <!-- Mobile menu -->
@@ -29,14 +30,17 @@ const githubProfile = "https://github.com/chrispsheehan";
 
         <div class="mobile-menu-links">
           <p class="mobile-menu-section">Sections</p>
+          <a href="#selected-work" class="overlay-button" onclick="hideMenu()"
+            >Work</a
+          >
           <a href="#about-me" class="overlay-button" onclick="hideMenu()"
             >About</a
           >
-          <a href="#certifications" class="overlay-button" onclick="hideMenu()"
-            >Certifications</a
-          >
           <a href="#this-site" class="overlay-button" onclick="hideMenu()"
             >This Site</a
+          >
+          <a href="#certifications" class="overlay-button" onclick="hideMenu()"
+            >Credentials</a
           >
         </div>
 
@@ -50,7 +54,11 @@ const githubProfile = "https://github.com/chrispsheehan";
               rel="noopener noreferrer"
               onclick="hideMenu()"
             >
-              <img src="/assets/social/linkedin.png" alt="" aria-hidden="true" />
+              <img
+                src="/assets/social/linkedin.png"
+                alt=""
+                aria-hidden="true"
+              />
               <span>LinkedIn</span>
             </a>
             <a
@@ -70,7 +78,11 @@ const githubProfile = "https://github.com/chrispsheehan";
               rel="noopener noreferrer"
               onclick="hideMenu()"
             >
-              <img src="/assets/social/terraform.png" alt="" aria-hidden="true" />
+              <img
+                src="/assets/social/terraform.png"
+                alt=""
+                aria-hidden="true"
+              />
               <span>Terraform</span>
             </a>
             <a

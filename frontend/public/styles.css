@@ -26,8 +26,12 @@
 
   /* Spacing & Typography */
   --section-gap: 30px;
-  --font-body: "Inter", sans-serif;
-  --font-heading: "Montserrat", sans-serif;
+  --font-body:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-heading:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
 
 /* Base */
@@ -50,8 +54,16 @@ body {
   display: flex;
   flex-direction: column;
   background:
-    radial-gradient(circle at top left, rgba(35, 191, 160, 0.12), transparent 26%),
-    radial-gradient(circle at top right, rgba(244, 184, 96, 0.08), transparent 22%),
+    radial-gradient(
+      circle at top left,
+      rgba(35, 191, 160, 0.12),
+      transparent 26%
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(244, 184, 96, 0.08),
+      transparent 22%
+    ),
     linear-gradient(180deg, #10231c 0%, #0d1d18 45%, #0a1612 100%);
   position: relative;
 }
@@ -130,8 +142,11 @@ p {
   border: 1px solid var(--color-border-soft);
   border-radius: 1.75rem;
   padding: 2rem;
-  background:
-    linear-gradient(180deg, rgba(19, 42, 34, 0.84) 0%, rgba(11, 25, 20, 0.94) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(19, 42, 34, 0.84) 0%,
+    rgba(11, 25, 20, 0.94) 100%
+  );
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.16);
   overflow: hidden;
 }
@@ -144,7 +159,11 @@ p {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at top right, rgba(35, 191, 160, 0.12), transparent 30%),
+    radial-gradient(
+      circle at top right,
+      rgba(35, 191, 160, 0.12),
+      transparent 30%
+    ),
     linear-gradient(135deg, rgba(255, 255, 255, 0.02), transparent 45%);
   pointer-events: none;
 }
@@ -212,9 +231,9 @@ p {
 
 .cta-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, max-content));
   gap: 0.9rem;
-  margin-bottom: 0;
+  margin-bottom: 0.25rem;
   width: 100%;
 }
 
@@ -358,8 +377,16 @@ p {
   padding: 1.5rem;
   border-radius: 1.5rem;
   background:
-    radial-gradient(circle at top right, rgba(244, 184, 96, 0.16), transparent 34%),
-    linear-gradient(180deg, rgba(22, 49, 39, 0.92) 0%, rgba(12, 27, 22, 0.96) 100%);
+    radial-gradient(
+      circle at top right,
+      rgba(244, 184, 96, 0.16),
+      transparent 34%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(22, 49, 39, 0.92) 0%,
+      rgba(12, 27, 22, 0.96) 100%
+    );
   border: 1px solid var(--color-border-soft);
   display: flex;
   flex-direction: column;
@@ -367,29 +394,67 @@ p {
 }
 
 .hero-panel-card h2 {
-  margin: 0 0 1.25rem;
-  font-size: 1.8rem;
+  margin: 0 0 1.75rem;
+  font-size: 2rem;
   line-height: 1.05;
 }
 
-.hero-metrics {
+.delivery-flow {
   display: grid;
-  gap: 1rem;
+  position: relative;
 }
 
-.hero-metrics div {
-  display: grid;
-  gap: 0.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(185, 242, 200, 0.16);
+.delivery-flow::before {
+  content: "";
+  position: absolute;
+  top: 0.7rem;
+  bottom: 0.7rem;
+  left: 0.32rem;
+  width: 1px;
+  background: linear-gradient(var(--color-accent-warm), var(--color-accent));
 }
 
-.hero-metric-label {
+.delivery-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.2rem 1fr;
+  gap: 0 0.75rem;
+  padding: 0 0 1.15rem;
+}
+
+.delivery-step:last-child {
+  padding-bottom: 0;
+}
+
+.delivery-step > span {
+  position: relative;
+  z-index: 1;
+  grid-row: span 2;
+  align-self: start;
+  width: 0.72rem;
+  height: 0.72rem;
+  border: 2px solid var(--color-accent-warm);
+  border-radius: 50%;
+  background: var(--color-background-dark);
+  color: transparent;
+  font-size: 0;
+}
+
+.delivery-step strong {
+  color: var(--color-heading);
+  line-height: 1.2;
+}
+
+.delivery-step small {
+  margin-top: 0.18rem;
+  color: var(--color-text-soft);
+  font-size: 0.83rem;
+  line-height: 1.35;
+}
+
+.hero-panel-card .section-eyebrow {
   color: var(--color-accent-warm);
   font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 [data-reveal] {
@@ -521,5 +586,4 @@ a:focus-visible {
     padding: 0.58rem 0.78rem;
     font-size: 0.92rem;
   }
-
 }
