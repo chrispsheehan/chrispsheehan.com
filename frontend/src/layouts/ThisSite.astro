@@ -1,5 +1,5 @@
 ---
-import RuntimeSummary from "../components/RuntimeSummary";
+import TrafficPulse from "../components/TrafficPulse";
 
 const { githubRepo } = Astro.props;
 ---
@@ -21,15 +21,21 @@ const { githubRepo } = Astro.props;
       <ul class="architecture-list">
         <li>
           <strong>Astro frontend</strong>
-          <span>Static by default, with React only where runtime UI adds value.</span>
+          <span
+            >Static by default, with React only where runtime UI adds value.</span
+          >
         </li>
         <li>
           <strong>AWS edge delivery</strong>
-          <span>S3, CloudFront, ACM, and Route53 for a low-complexity public edge.</span>
+          <span
+            >S3, CloudFront, ACM, and Route53 for a low-complexity public edge.</span
+          >
         </li>
         <li>
           <strong>Terraform-managed infrastructure</strong>
-          <span>Application, infrastructure, and deploy automation kept together.</span>
+          <span
+            >Application, infrastructure, and deploy automation kept together.</span
+          >
         </li>
       </ul>
     </div>
@@ -80,10 +86,12 @@ const { githubRepo } = Astro.props;
             <span>Browse Repository</span>
           </div>
         </a>
-        <RuntimeSummary client:load />
       </div>
     </div>
+  </div>
 
+  <div data-reveal>
+    <TrafficPulse client:load />
   </div>
 </section>
 
@@ -131,7 +139,11 @@ const { githubRepo } = Astro.props;
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(circle at top right, rgba(35, 191, 160, 0.12), transparent 35%),
+      radial-gradient(
+        circle at top right,
+        rgba(35, 191, 160, 0.12),
+        transparent 35%
+      ),
       linear-gradient(135deg, rgba(255, 255, 255, 0.02), transparent 45%);
     pointer-events: none;
   }
@@ -212,7 +224,11 @@ const { githubRepo } = Astro.props;
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(circle at top right, rgba(35, 191, 160, 0.18), transparent 38%),
+      radial-gradient(
+        circle at top right,
+        rgba(35, 191, 160, 0.18),
+        transparent 38%
+      ),
       linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent 40%);
     pointer-events: none;
   }
@@ -309,59 +325,256 @@ const { githubRepo } = Astro.props;
     color: var(--color-heading);
   }
 
-  .runtime-summary {
-    width: 100%;
+  .traffic-pulse {
+    position: relative;
+    z-index: 1;
     display: grid;
-    gap: 0.75rem;
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+    padding: 1.5rem;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1.25rem;
+    background:
+      radial-gradient(
+        circle at 88% 12%,
+        rgba(244, 184, 96, 0.13),
+        transparent 28%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(16, 35, 28, 0.8) 0%,
+        rgba(11, 25, 20, 0.94) 100%
+      );
+    box-shadow: var(--shadow-card-hover);
+    overflow: hidden;
   }
 
-  .runtime-summary__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.85rem;
-    width: 100%;
+  .traffic-pulse--status {
+    min-height: 10rem;
+    align-content: center;
   }
 
-  .runtime-summary__item {
-    display: grid;
-    gap: 0.22rem;
-    padding: 0.9rem 1rem;
-    border-radius: 1rem;
-    border: 1px solid rgba(185, 242, 200, 0.14);
-    background: rgba(255, 255, 255, 0.03);
-    color: inherit;
-    text-decoration: none;
-    transition:
-      background 0.2s ease,
-      border-color 0.2s ease,
-      transform 0.2s ease;
-  }
-
-  .runtime-summary__item:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: var(--color-border-strong);
-    transform: translateY(-1px);
-  }
-
-  .runtime-summary__label {
+  .traffic-pulse--status p:last-child {
+    margin: 0;
     color: var(--color-text-soft);
+  }
+
+  .traffic-pulse__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .traffic-pulse__header h3 {
+    margin: 0.2rem 0 0;
+    color: var(--color-heading);
+    font-size: 1.65rem;
+  }
+
+  .traffic-pulse__intro {
+    margin: 0.35rem 0 0;
+    color: var(--color-text-soft);
+  }
+
+  .traffic-pulse__ranges {
+    display: inline-flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid rgba(185, 242, 200, 0.14);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.16);
+  }
+
+  .traffic-pulse__ranges button {
+    min-width: 2.85rem;
+    padding: 0.45rem 0.7rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text-soft);
+    font: inherit;
     font-size: 0.82rem;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    cursor: pointer;
   }
 
-  .runtime-summary__value {
+  .traffic-pulse__ranges button:hover,
+  .traffic-pulse__ranges button.is-active {
+    background: rgba(127, 217, 179, 0.14);
     color: var(--color-heading);
-    font-size: 1.35rem;
-    line-height: 1.05;
+  }
+
+  .traffic-pulse__ranges button:focus-visible {
+    outline: 2px solid var(--color-hover);
+    outline-offset: 2px;
+  }
+
+  .traffic-pulse__body {
+    display: grid;
+    grid-template-columns: minmax(12rem, 0.42fr) minmax(18rem, 1fr);
+    grid-template-areas:
+      "headline chart"
+      "metrics chart";
+    gap: 1.25rem 2rem;
+    align-items: end;
+  }
+
+  .traffic-pulse__headline {
+    grid-area: headline;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.8rem;
+    min-width: 0;
+  }
+
+  .traffic-pulse__number {
+    color: var(--color-heading);
+    font-family: var(--font-heading);
+    font-size: clamp(3.6rem, 8vw, 6.4rem);
+    font-weight: 700;
+    line-height: 0.82;
+    letter-spacing: -0.06em;
     font-variant-numeric: tabular-nums;
   }
 
-  .runtime-summary__meta,
-  .runtime-summary__status {
+  .traffic-pulse__headline-copy {
+    display: grid;
+    gap: 0.12rem;
     color: var(--color-text-soft);
-    font-size: 0.92rem;
+    font-size: 0.9rem;
+    line-height: 1.25;
+  }
+
+  .traffic-pulse__headline-copy strong {
+    color: var(--color-accent-warm);
+    font-weight: 700;
+  }
+
+  .traffic-pulse__chart-wrap {
+    grid-area: chart;
+    min-width: 0;
+  }
+
+  .traffic-pulse__chart {
+    display: grid;
+    grid-template-columns: repeat(30, minmax(4px, 1fr));
+    align-items: end;
+    gap: clamp(2px, 0.45vw, 6px);
+    height: 12rem;
+    padding: 0.75rem 0.35rem 0.35rem;
+    border-bottom: 1px solid rgba(185, 242, 200, 0.2);
+    background-image: linear-gradient(
+      to bottom,
+      rgba(185, 242, 200, 0.08) 1px,
+      transparent 1px
+    );
+    background-size: 100% 25%;
+  }
+
+  .traffic-pulse__chart:has(> button:nth-child(14):last-child) {
+    grid-template-columns: repeat(14, minmax(4px, 1fr));
+  }
+
+  .traffic-pulse__chart:has(> button:nth-child(7):last-child) {
+    grid-template-columns: repeat(7, minmax(4px, 1fr));
+  }
+
+  .traffic-pulse__chart button {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    height: 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0.35rem 0.35rem 0 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .traffic-pulse__bar {
+    width: 100%;
+    height: var(--bar-height);
+    min-height: 2px;
+    border-radius: 0.35rem 0.35rem 0.12rem 0.12rem;
+    background: linear-gradient(
+      180deg,
+      var(--color-accent-warm),
+      var(--color-accent)
+    );
+    opacity: 0.58;
+    transform-origin: bottom;
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s ease,
+      filter 0.18s ease;
+  }
+
+  .traffic-pulse__chart button:hover .traffic-pulse__bar,
+  .traffic-pulse__chart button:focus-visible .traffic-pulse__bar,
+  .traffic-pulse__chart button.is-selected .traffic-pulse__bar {
+    opacity: 1;
+    filter: drop-shadow(0 0 0.35rem rgba(244, 184, 96, 0.28));
+    transform: scaleX(1.14);
+  }
+
+  .traffic-pulse__chart button:focus-visible {
+    outline: 2px solid var(--color-hover);
+    outline-offset: 2px;
+  }
+
+  .traffic-pulse__axis {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 0.35rem;
+    color: var(--color-text-soft);
+    font-size: 0.78rem;
+  }
+
+  .traffic-pulse__metrics {
+    grid-area: metrics;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .traffic-pulse__metrics div {
+    display: grid;
+    gap: 0.2rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid rgba(185, 242, 200, 0.14);
+  }
+
+  .traffic-pulse__metrics span {
+    color: var(--color-text-soft);
+    font-size: 0.74rem;
+    line-height: 1.2;
+  }
+
+  .traffic-pulse__metrics strong {
+    color: var(--color-heading);
+    font-size: 0.94rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .traffic-pulse__details {
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(185, 242, 200, 0.14);
+    color: var(--color-text-soft);
+    font-size: 0.9rem;
+  }
+
+  .traffic-pulse__details summary {
+    width: max-content;
+    color: var(--color-link);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .traffic-pulse__details p {
+    max-width: 72ch;
+    margin: 0.75rem 0 0.4rem;
   }
 
   .github-repo-button {
@@ -532,6 +745,36 @@ const { githubRepo } = Astro.props;
       max-width: 22px;
       max-height: 22px;
       flex-basis: 22px;
+    }
+
+    .traffic-pulse__body {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "headline"
+        "chart"
+        "metrics";
+    }
+  }
+
+  @media (max-width: 620px) {
+    .traffic-pulse {
+      padding: 1.15rem;
+    }
+
+    .traffic-pulse__header {
+      display: grid;
+    }
+
+    .traffic-pulse__ranges {
+      justify-self: start;
+    }
+
+    .traffic-pulse__chart {
+      height: 9rem;
+    }
+
+    .traffic-pulse__metrics {
+      grid-template-columns: 1fr;
     }
   }
 </style>

@@ -20,6 +20,7 @@ except ImportError:
     from state import ProcessingState, read_processing_state, write_processing_state
 
 logger = logging.getLogger(__name__)
+PUBLIC_DAILY_SERIES_DAYS = 30
 
 
 def process_logs(
@@ -266,6 +267,7 @@ def build_summary_from_aggregate_state(
     sorted_dates = sorted(daily_counts)
     return {
         "daily-visits": daily_counts[sorted_dates[-1]] if sorted_dates else 0,
+        "daily-visitor-counts": build_daily_visitor_counts(daily_counts),
         "total-visits": sum(daily_counts.values()),
         "range": len(sorted_dates),
         "last-date": sorted_dates[-1] if sorted_dates else None,
@@ -300,6 +302,7 @@ def build_summary(
 
     return {
         "daily-visits": daily_counts[sorted_dates[-1]] if sorted_dates else 0,
+        "daily-visitor-counts": build_daily_visitor_counts(daily_counts),
         "total-visits": total_visits,
         "range": len(sorted_dates),
         "last-date": sorted_dates[-1] if sorted_dates else None,
@@ -313,3 +316,21 @@ def build_summary(
         "output-keys": output_keys,
         "run-output-keys": run_output_keys,
     }
+
+
+def build_daily_visitor_counts(daily_counts: dict[str, int]) -> list[dict[str, Any]]:
+    if not daily_counts:
+        return []
+
+    last_day = datetime.strptime(max(daily_counts), "%Y-%m-%d").date()
+    first_day = last_day - timedelta(days=PUBLIC_DAILY_SERIES_DAYS - 1)
+    return [
+        {
+            "date": (first_day + timedelta(days=offset)).isoformat(),
+            "visitors": daily_counts.get(
+                (first_day + timedelta(days=offset)).isoformat(),
+                0,
+            ),
+        }
+        for offset in range(PUBLIC_DAILY_SERIES_DAYS)
+    ]
