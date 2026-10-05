@@ -19,5 +19,19 @@
     "description": "A repeatable TypeScript and k6 harness for exercising API performance locally and in automation.",
     "href": "https://github.com/chrispsheehan/performance-test-framework",
     "tags": ["k6", "TypeScript", "Docker"]
+  },
+  {
+    "name": "Get Release Version",
+    "type": "GitHub Action",
+    "description": "A GitHub Action that calculates the next semantic version for automated release workflows.",
+    "href": "https://github.com/chrispsheehan/get-release-version",
+    "tags": ["GitHub Actions", "Python", "Semantic Versioning"]
+  },
+  {
+    "name": "Backstage Sandbox",
+    "type": "Platform engineering lab",
+    "description": "A disposable, local-first lab built with k3d, Argo CD, Crossplane, and Backstage, with an optional AWS deployment.",
+    "href": "https://github.com/chrispsheehan/backstage-sandbox",
+    "tags": ["Backstage", "Argo CD", "Crossplane"]
   }
 ]
