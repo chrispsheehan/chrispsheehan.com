@@ -12,22 +12,15 @@ const repositories = JSON.parse(
 <section id="about-me" class="section-shell">
   <div class="section-heading" data-reveal>
     <p class="section-eyebrow">About</p>
-    <h2>AI-enabled platform engineering focused on delivery.</h2>
+    <h2>Platform engineering for faster, safer delivery.</h2>
   </div>
 
   <div class="about-grid">
     <div class="about-copy" data-reveal>
-      <h3>
-        I build the systems behind software delivery: cloud foundations,
-        deployment workflows, and the guardrails teams rely on every day.
-      </h3>
-      <p>
-        My work centres on AWS, Terraform, CI/CD, and developer experience for
-        teams that need speed without losing release confidence.
-      </p>
-      <p>
-        A background in quality engineering shapes how I build: readable
-        automation, safer defaults, and delivery paths that are easy to trust.
+      <p class="about-summary">
+        I build AWS foundations, CI/CD workflows, and developer tooling that
+        make the path to production dependable. My quality-engineering
+        background keeps automation readable and defaults safe.
       </p>
     </div>
 
@@ -37,28 +30,15 @@ const repositories = JSON.parse(
         <ul class="focus-list">
           <li>
             <strong>Platform Architecture</strong>
-            <span
-              >AWS and Terraform patterns built for reuse and clear ownership.</span
-            >
           </li>
           <li>
             <strong>Release Engineering</strong>
-            <span
-              >CI/CD paths that stay dependable as teams and services grow.</span
-            >
           </li>
           <li>
             <strong>Developer Enablement</strong>
-            <span
-              >Self-service workflows and guardrails that reduce support drag.</span
-            >
           </li>
           <li>
             <strong>Operational Clarity</strong>
-            <span
-              >Runtime visibility that helps engineers act quickly when things
-              move.</span
-            >
           </li>
         </ul>
       </div>
@@ -214,8 +194,7 @@ const repositories = JSON.parse(
 </script>
 
 <style>
-  #about-me .section-heading h2,
-  #about-me .about-copy h3 {
+  #about-me .section-heading h2 {
     max-width: none;
   }
 
@@ -230,6 +209,14 @@ const repositories = JSON.parse(
     display: flex;
     flex-direction: column;
     justify-content: center;
+  }
+
+  .about-summary {
+    max-width: 58ch;
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: clamp(1.05rem, 1.7vw, 1.2rem);
+    line-height: 1.75;
   }
 
   .focus-card {
@@ -249,21 +236,24 @@ const repositories = JSON.parse(
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
   }
 
   .focus-list li {
-    display: grid;
-    gap: 0.25rem;
+    min-width: 0;
+    padding: 0.75rem;
+    border: 1px solid rgba(185, 242, 200, 0.12);
+    border-radius: 0.75rem;
+    background: rgba(185, 242, 200, 0.025);
+    display: flex;
+    align-items: center;
   }
 
   .focus-list strong {
     color: var(--color-heading);
-    font-size: 1rem;
-  }
-
-  .focus-list span {
-    color: var(--color-text-soft);
+    font-size: 0.9rem;
+    line-height: 1.35;
   }
 
   .repo-showcase {
