@@ -1,0 +1,23 @@
+[
+  {
+    "name": "AWS Terragrunt Starter",
+    "type": "Platform foundation",
+    "description": "A production-shaped AWS starting point with reusable environments and dependable delivery workflows.",
+    "href": "https://github.com/chrispsheehan/aws-terragrunt-starter",
+    "tags": ["AWS", "Terragrunt", "GitHub Actions"]
+  },
+  {
+    "name": "GitHub OIDC Role",
+    "type": "Terraform module",
+    "description": "Short-lived, least-privilege AWS access for GitHub Actions without stored cloud credentials.",
+    "href": "https://github.com/chrispsheehan/terraform-aws-github-oidc-role",
+    "tags": ["Terraform", "AWS IAM", "Security"]
+  },
+  {
+    "name": "Performance Test Framework",
+    "type": "Quality engineering",
+    "description": "A repeatable TypeScript and k6 harness for exercising API performance locally and in automation.",
+    "href": "https://github.com/chrispsheehan/performance-test-framework",
+    "tags": ["k6", "TypeScript", "Docker"]
+  }
+]
