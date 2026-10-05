@@ -8,7 +8,7 @@ workflows, or workflow-owned `just` behavior.
 | Workflow | Purpose |
 | --- | --- |
 | `pull_request.yml` | Runs change-filtered PR validation for title/version preview, wrapper sync, workflow linting, repo-local action tests, Terraform/Terragrunt formatting, TFLint, frontend builds, and lambda builds. |
-| `release.yml` | Tags versioned releases from `main`, publishes frontend and lambda artifacts to the CI code bucket, and creates GitHub releases. |
+| `release.yml` | Tags versioned releases from `main`, publishes frontend and lambda artifacts to the CI code bucket, and creates GitHub releases. Pushes derive the release type from commits; manual runs can select `auto`, `patch`, `minor`, or `major`. |
 | `infra_bootstrap.yml` | Bootstraps the selected environment by applying `aws/code_bucket` first, then the full environment. |
 | `infra_plan.yml` | Plans the selected environment with `terragrunt run-all` and saves reusable plan artifacts. |
 | `infra_apply.yml` | Applies a prior saved-plan run for the selected environment using `plan_artifact_run_id`. |
@@ -27,6 +27,12 @@ published.
 
 On the first release, `release.yml` has no prior tag to diff against, so release
 notes are generated from the full history up to the new tag.
+
+`release.yml` runs automatically after pushes to `main`. It can also be
+dispatched manually from `main` with a `release_type` of `auto`, `patch`,
+`minor`, or `major`. `auto` preserves commit-based version detection; the other
+choices explicitly override the calculated bump. Manual release runs from any
+other branch fail before tags or artifacts are created.
 
 Publishing a GitHub release does not deploy production. After any required
 infrastructure rollout is complete, manually dispatch `prod_code_deploy.yml`
