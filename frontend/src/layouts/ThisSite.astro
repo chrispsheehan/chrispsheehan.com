@@ -20,12 +20,6 @@ const { githubRepo } = Astro.props;
       <h3>Simple stack, explicit delivery path.</h3>
       <ul class="architecture-list">
         <li>
-          <strong>Astro frontend</strong>
-          <span
-            >Static by default, with React only where runtime UI adds value.</span
-          >
-        </li>
-        <li>
           <strong>AWS edge delivery</strong>
           <span
             >S3, CloudFront, ACM, and Route53 for a low-complexity public edge.</span
@@ -556,25 +550,6 @@ const { githubRepo } = Astro.props;
     color: var(--color-heading);
     font-size: 0.94rem;
     font-variant-numeric: tabular-nums;
-  }
-
-  .traffic-pulse__details {
-    padding-top: 0.85rem;
-    border-top: 1px solid rgba(185, 242, 200, 0.14);
-    color: var(--color-text-soft);
-    font-size: 0.9rem;
-  }
-
-  .traffic-pulse__details summary {
-    width: max-content;
-    color: var(--color-link);
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .traffic-pulse__details p {
-    max-width: 72ch;
-    margin: 0.75rem 0 0.4rem;
   }
 
   .github-repo-button {

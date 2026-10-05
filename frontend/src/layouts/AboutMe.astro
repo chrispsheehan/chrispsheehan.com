@@ -1,22 +1,26 @@
+---
+import { readFile } from "node:fs/promises";
+
+const repositories = JSON.parse(
+  await readFile(
+    new URL("../../public/static/repositories.json", import.meta.url),
+    "utf8",
+  ),
+);
+---
+
 <section id="about-me" class="section-shell">
   <div class="section-heading" data-reveal>
     <p class="section-eyebrow">About</p>
-    <h2>AI-enabled platform engineering focused on delivery.</h2>
+    <h2>Platform engineering for faster, safer delivery.</h2>
   </div>
 
   <div class="about-grid">
     <div class="about-copy" data-reveal>
-      <h3>
-        I build the systems behind software delivery: cloud foundations,
-        deployment workflows, and the guardrails teams rely on every day.
-      </h3>
-      <p>
-        My work centres on AWS, Terraform, CI/CD, and developer experience for
-        teams that need speed without losing release confidence.
-      </p>
-      <p>
-        A background in quality engineering shapes how I build: readable
-        automation, safer defaults, and delivery paths that are easy to trust.
+      <p class="about-summary">
+        I build AWS foundations, CI/CD workflows, and developer tooling that
+        make the path to production dependable. My quality-engineering
+        background keeps automation readable and defaults safe.
       </p>
     </div>
 
@@ -26,29 +30,171 @@
         <ul class="focus-list">
           <li>
             <strong>Platform Architecture</strong>
-            <span>AWS and Terraform patterns built for reuse and clear ownership.</span>
           </li>
           <li>
             <strong>Release Engineering</strong>
-            <span>CI/CD paths that stay dependable as teams and services grow.</span>
           </li>
           <li>
             <strong>Developer Enablement</strong>
-            <span>Self-service workflows and guardrails that reduce support drag.</span>
           </li>
           <li>
             <strong>Operational Clarity</strong>
-            <span>Runtime visibility that helps engineers act quickly when things move.</span>
           </li>
         </ul>
       </div>
     </div>
   </div>
+
+  <div class="repo-showcase" data-reveal>
+    <div class="repo-showcase__heading">
+      <div>
+        <p class="section-eyebrow">Selected repositories</p>
+        <h3>Things I’ve enjoyed building.</h3>
+      </div>
+    </div>
+
+    <div class="repo-carousel" data-repo-carousel>
+      <div class="repo-grid" data-repo-track>
+        {
+          repositories.map((repository, index) => (
+            <a
+              class="repo-card"
+              href={repository.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`View ${repository.name} on GitHub`}
+              data-repo-card
+            >
+              <div class="repo-card__topline">
+                <span class="repo-card__number">0{index + 1}</span>
+                <span class="repo-card__type">{repository.type}</span>
+              </div>
+              <h4>{repository.name}</h4>
+              <p>{repository.description}</p>
+              <div class="repo-card__footer">
+                <ul aria-label={`${repository.name} technologies`}>
+                  {repository.tags.map((tag) => (
+                    <li>{tag}</li>
+                  ))}
+                </ul>
+                <span class="repo-card__arrow" aria-hidden="true">
+                  ↗
+                </span>
+              </div>
+            </a>
+          ))
+        }
+      </div>
+      <div
+        class="repo-carousel__pagination"
+        aria-label="Repository pages"
+        data-repo-pagination
+      >
+      </div>
+    </div>
+  </div>
 </section>
 
+<script>
+  document
+    .querySelectorAll<HTMLElement>("[data-repo-carousel]")
+    .forEach((carousel) => {
+      const track = carousel.querySelector<HTMLElement>("[data-repo-track]");
+      const cards = Array.from(
+        carousel.querySelectorAll<HTMLElement>("[data-repo-card]"),
+      );
+      const pagination = carousel.querySelector<HTMLElement>(
+        "[data-repo-pagination]",
+      );
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      );
+
+      if (!track || !pagination || cards.length === 0) return;
+
+      let pageTargets: number[] = [];
+
+      const updateActivePage = () => {
+        let activeIndex = 0;
+        let nearestDistance = Number.POSITIVE_INFINITY;
+
+        pageTargets.forEach((target, index) => {
+          const distance = Math.abs(track.scrollLeft - target);
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            activeIndex = index;
+          }
+        });
+
+        pagination
+          .querySelectorAll<HTMLButtonElement>("button")
+          .forEach((dot, index) => {
+            const active = index === activeIndex;
+            dot.classList.toggle("repo-carousel__dot--active", active);
+            dot.setAttribute("aria-pressed", String(active));
+          });
+      };
+
+      const rebuildPagination = () => {
+        const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+        const overflowing = maxScroll > 1;
+
+        carousel.classList.toggle("repo-carousel--overflowing", overflowing);
+        pagination.replaceChildren();
+        pageTargets = [];
+
+        if (!overflowing) return;
+
+        const styles = getComputedStyle(track);
+        const gap = Number.parseFloat(styles.columnGap) || 0;
+        const cardWidth = cards[0].getBoundingClientRect().width;
+        const cardsPerPage = Math.max(
+          1,
+          Math.floor((track.clientWidth + gap) / (cardWidth + gap)),
+        );
+        const pageCount = Math.ceil(cards.length / cardsPerPage);
+        const firstCardOffset = cards[0].offsetLeft;
+
+        for (let page = 0; page < pageCount; page += 1) {
+          const cardIndex = Math.min(page * cardsPerPage, cards.length - 1);
+          const target = Math.min(
+            cards[cardIndex].offsetLeft - firstCardOffset,
+            maxScroll,
+          );
+
+          if (pageTargets.includes(target)) continue;
+          pageTargets.push(target);
+
+          const dot = document.createElement("button");
+          dot.type = "button";
+          dot.className = "repo-carousel__dot";
+          dot.setAttribute("aria-label", `Show repository page ${page + 1}`);
+          dot.addEventListener("click", () => {
+            track.scrollTo({
+              left: target,
+              behavior: prefersReducedMotion.matches ? "auto" : "smooth",
+            });
+          });
+          pagination.append(dot);
+        }
+
+        updateActivePage();
+      };
+
+      track.addEventListener("scroll", updateActivePage, { passive: true });
+
+      if ("ResizeObserver" in window) {
+        new ResizeObserver(rebuildPagination).observe(track);
+      } else {
+        window.addEventListener("resize", rebuildPagination);
+      }
+
+      rebuildPagination();
+    });
+</script>
+
 <style>
-  #about-me .section-heading h2,
-  #about-me .about-copy h3 {
+  #about-me .section-heading h2 {
     max-width: none;
   }
 
@@ -63,6 +209,14 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+  }
+
+  .about-summary {
+    max-width: 58ch;
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: clamp(1.05rem, 1.7vw, 1.2rem);
+    line-height: 1.75;
   }
 
   .focus-card {
@@ -82,26 +236,306 @@
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
   }
 
   .focus-list li {
-    display: grid;
-    gap: 0.25rem;
+    min-width: 0;
+    padding: 0.75rem;
+    border: 1px solid rgba(185, 242, 200, 0.12);
+    border-radius: 0.75rem;
+    background: rgba(185, 242, 200, 0.025);
+    display: flex;
+    align-items: center;
   }
 
   .focus-list strong {
     color: var(--color-heading);
-    font-size: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.35;
   }
 
-  .focus-list span {
+  .repo-showcase {
+    margin-top: clamp(2rem, 5vw, 3.5rem);
+    padding-top: clamp(1.75rem, 4vw, 2.5rem);
+    border-top: 1px solid var(--color-border-soft);
+  }
+
+  .repo-showcase__heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-bottom: 1.4rem;
+  }
+
+  .repo-showcase__heading h3 {
+    margin: 0.35rem 0 0;
+    font-size: clamp(1.45rem, 3vw, 2rem);
+  }
+
+  .repo-carousel {
+    position: relative;
+  }
+
+  .repo-carousel--overflowing::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    width: 3rem;
+    height: calc(100% - 2rem);
+    pointer-events: none;
+    background: linear-gradient(
+      270deg,
+      rgba(8, 22, 17, 0.9) 0%,
+      rgba(8, 22, 17, 0) 100%
+    );
+  }
+
+  .repo-grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% - 2rem) / 3);
+    gap: 1rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 0.35rem;
+    scroll-padding-left: 0;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .repo-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .repo-card {
+    position: relative;
+    isolation: isolate;
+    min-width: 0;
+    min-height: 20rem;
+    padding: 1.4rem;
+    overflow: hidden;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1.25rem;
+    background:
+      radial-gradient(
+        circle at 90% 5%,
+        rgba(244, 184, 96, 0.1),
+        transparent 34%
+      ),
+      linear-gradient(155deg, rgba(19, 47, 37, 0.9), rgba(8, 22, 17, 0.94));
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    scroll-snap-align: start;
+    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.08);
+    transition:
+      transform 220ms ease,
+      border-color 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  .repo-card::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: radial-gradient(
+      circle at 75% 15%,
+      rgba(119, 232, 159, 0.16),
+      transparent 42%
+    );
+    opacity: 0;
+    transform: scale(0.84);
+    transition:
+      opacity 260ms ease,
+      transform 380ms ease;
+  }
+
+  .repo-card::after {
+    content: "";
+    position: absolute;
+    inset: auto 1.4rem 0;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      var(--color-accent-warm),
+      var(--color-heading)
+    );
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 300ms ease;
+  }
+
+  .repo-card:hover,
+  .repo-card:focus-visible {
+    transform: translateY(-6px);
+    border-color: var(--color-border-strong);
+    box-shadow: 0 1.5rem 3.5rem rgba(0, 0, 0, 0.2);
+  }
+
+  .repo-card:hover::before,
+  .repo-card:focus-visible::before {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .repo-card:hover::after,
+  .repo-card:focus-visible::after {
+    transform: scaleX(1);
+  }
+
+  .repo-card:focus-visible {
+    outline: 2px solid var(--color-heading);
+    outline-offset: 4px;
+  }
+
+  .repo-card__topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .repo-card__number,
+  .repo-card__type {
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .repo-card__number {
     color: var(--color-text-soft);
+  }
+
+  .repo-card__type {
+    color: var(--color-accent-warm);
+    text-align: right;
+  }
+
+  .repo-card h4 {
+    max-width: 13ch;
+    margin: 0 0 1rem;
+    color: var(--color-heading);
+    font-size: clamp(1.35rem, 2.4vw, 1.8rem);
+    line-height: 1.08;
+  }
+
+  .repo-card > p {
+    margin: 0;
+    color: var(--color-text-soft);
+  }
+
+  .repo-card__footer {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: auto;
+    padding-top: 2rem;
+  }
+
+  .repo-card__footer ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .repo-card__footer li {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid rgba(185, 242, 200, 0.14);
+    border-radius: 999px;
+    color: var(--color-text-soft);
+    font-size: 0.74rem;
+  }
+
+  .repo-card__arrow {
+    flex: 0 0 auto;
+    color: var(--color-heading);
+    font-size: 1.4rem;
+    transition: transform 220ms ease;
+  }
+
+  .repo-card:hover .repo-card__arrow,
+  .repo-card:focus-visible .repo-card__arrow {
+    transform: translate(3px, -3px);
+  }
+
+  .repo-carousel__pagination {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.85rem;
+  }
+
+  .repo-carousel--overflowing .repo-carousel__pagination {
+    display: flex;
+  }
+
+  :global(.repo-carousel__dot) {
+    appearance: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(185, 242, 200, 0.28);
+    cursor: pointer;
+    transition:
+      width 200ms ease,
+      background 200ms ease;
+  }
+
+  :global(.repo-carousel__dot--active) {
+    width: 1.35rem;
+    background: var(--color-heading);
   }
 
   @media (max-width: 900px) {
     .about-grid {
       grid-template-columns: 1fr;
+    }
+
+    .repo-showcase__heading {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .repo-grid {
+      grid-auto-columns: 100%;
+    }
+
+    .repo-card {
+      min-height: 17rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .repo-card,
+    .repo-card::before,
+    .repo-card::after,
+    .repo-card__arrow,
+    :global(.repo-carousel__dot) {
+      transition: none;
+    }
+
+    .repo-card:hover,
+    .repo-card:focus-visible {
+      transform: none;
     }
   }
 </style>

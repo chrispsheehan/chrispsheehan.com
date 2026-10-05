@@ -220,22 +220,6 @@ export default function TrafficPulse() {
           </div>
         </div>
       </div>
-
-      <details className="traffic-pulse__details">
-        <summary>How this works</summary>
-        <p>
-          CloudFront access logs are processed in AWS. Automated traffic is
-          filtered out and only aggregate daily counts are published here—never
-          individual addresses or request records.
-        </p>
-        <a
-          href="/data/log-processor/data.json"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          View the public data
-        </a>
-      </details>
     </section>
   );
 }
