@@ -543,8 +543,14 @@ const repositories = JSON.parse(
   }
 
   .about-grid {
-    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr);
+    grid-template-columns: minmax(0, 1fr) 360px;
     gap: clamp(2rem, 5vw, 5rem);
+  }
+
+  .focus-panel {
+    width: 100%;
+    max-width: 360px;
+    justify-self: end;
   }
 
   .about-summary {
@@ -621,6 +627,11 @@ const repositories = JSON.parse(
     .about-grid {
       grid-template-columns: 1fr;
       gap: 1.5rem;
+    }
+
+    .focus-panel {
+      max-width: none;
+      justify-self: stretch;
     }
   }
 </style>
