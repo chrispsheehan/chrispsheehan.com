@@ -4,379 +4,436 @@ const githubProfile = "https://github.com/chrispsheehan";
 ---
 
 <header>
-  <nav>
-    <div class="nav-left">
-      <span class="logo">{baseDomain}</span>
-    </div>
+  <nav aria-label="Primary navigation">
+    <a class="brand" href="#hero" aria-label={`${baseDomain}, back to top`}>
+      <span class="brand-mark" aria-hidden="true">
+        <img src="/favicon.ico" alt="" />
+      </span>
+      <span class="brand-copy"
+        ><strong>Chris Sheehan</strong><small>Platform Engineer</small></span
+      >
+    </a>
 
     <div class="nav-links" id="nav-links">
-      <a href="#about-me" class="button">About</a>
-      <a href="#certifications" class="button">Certifications</a>
-      <a href="#this-site" class="button">This Site</a>
+      <a href="#about-me" class="button"><span>01</span>About</a>
+      <a href="#certifications" class="button"><span>02</span>Credentials</a>
+      <a href="#this-site" class="button"><span>03</span>This site</a>
     </div>
 
-    <!-- Mobile menu -->
-    <div class="mobile-overlay" id="mobile-overlay" aria-hidden="true">
-      <div class="mobile-menu-panel">
-        <div class="mobile-menu-header">
-          <span class="mobile-menu-title">Menu</span>
-          <button
-            class="mobile-close"
-            type="button"
-            aria-label="Close menu"
-            onclick="hideMenu()"></button>
-        </div>
-
-        <div class="mobile-menu-links">
-          <p class="mobile-menu-section">Sections</p>
-          <a href="#about-me" class="overlay-button" onclick="hideMenu()"
-            >About</a
-          >
-          <a href="#certifications" class="overlay-button" onclick="hideMenu()"
-            >Certifications</a
-          >
-          <a href="#this-site" class="overlay-button" onclick="hideMenu()"
-            >This Site</a
-          >
-        </div>
-
-        <div class="mobile-menu-links mobile-menu-links--profiles">
-          <p class="mobile-menu-section">Profiles</p>
-          <div class="mobile-profile-grid">
-            <a
-              href="https://www.linkedin.com/in/chrispsheehan"
-              class="mobile-profile-link"
-              target="_blank"
-              rel="noopener noreferrer"
-              onclick="hideMenu()"
-            >
-              <img src="/assets/social/linkedin.png" alt="" aria-hidden="true" />
-              <span>LinkedIn</span>
-            </a>
-            <a
-              href={githubProfile}
-              class="mobile-profile-link"
-              target="_blank"
-              rel="noopener noreferrer"
-              onclick="hideMenu()"
-            >
-              <img src="/assets/social/github.png" alt="" aria-hidden="true" />
-              <span>GitHub</span>
-            </a>
-            <a
-              href="https://registry.terraform.io/namespaces/chrispsheehan"
-              class="mobile-profile-link"
-              target="_blank"
-              rel="noopener noreferrer"
-              onclick="hideMenu()"
-            >
-              <img src="/assets/social/terraform.png" alt="" aria-hidden="true" />
-              <span>Terraform</span>
-            </a>
-            <a
-              href="https://www.credly.com/users/chris-sheehan.b081233e/badges/credly"
-              class="mobile-profile-link"
-              target="_blank"
-              rel="noopener noreferrer"
-              onclick="hideMenu()"
-            >
-              <img src="/assets/social/credly.png" alt="" aria-hidden="true" />
-              <span>Credly</span>
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Burger icon -->
     <button
       class="burger"
       id="burger"
       type="button"
-      aria-label="Toggle menu"
+      aria-label="Open menu"
       aria-controls="mobile-overlay"
       aria-expanded="false"
       onclick="toggleMenu()"></button>
   </nav>
 
+  <div class="mobile-overlay" id="mobile-overlay" aria-hidden="true">
+    <div
+      class="mobile-menu-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Site menu"
+    >
+      <div class="mobile-menu-header">
+        <div>
+          <span class="mobile-menu-kicker">Navigation</span><span
+            class="mobile-menu-title">Explore the site</span
+          >
+        </div>
+        <button
+          class="mobile-close"
+          type="button"
+          aria-label="Close menu"
+          onclick="hideMenu()"></button>
+      </div>
+      <div class="mobile-menu-links">
+        <p class="mobile-menu-section">Sections</p>
+        <a href="#about-me" class="overlay-button" onclick="hideMenu()"
+          ><span>01</span>About</a
+        >
+        <a href="#certifications" class="overlay-button" onclick="hideMenu()"
+          ><span>02</span>Credentials</a
+        >
+        <a href="#this-site" class="overlay-button" onclick="hideMenu()"
+          ><span>03</span>This site</a
+        >
+      </div>
+      <div class="mobile-menu-links mobile-menu-links--profiles">
+        <p class="mobile-menu-section">Find me online</p>
+        <div class="mobile-profile-grid">
+          <a
+            href="https://www.linkedin.com/in/chrispsheehan"
+            class="mobile-profile-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            onclick="hideMenu()"
+            ><img
+              src="/assets/social/linkedin.png"
+              alt=""
+              aria-hidden="true"
+            /><span>LinkedIn</span><b aria-hidden="true">↗</b></a
+          >
+          <a
+            href={githubProfile}
+            class="mobile-profile-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            onclick="hideMenu()"
+            ><img
+              src="/assets/social/github.png"
+              alt=""
+              aria-hidden="true"
+            /><span>GitHub</span><b aria-hidden="true">↗</b></a
+          >
+          <a
+            href="https://registry.terraform.io/namespaces/chrispsheehan"
+            class="mobile-profile-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            onclick="hideMenu()"
+            ><img
+              src="/assets/social/terraform.png"
+              alt=""
+              aria-hidden="true"
+            /><span>Terraform</span><b aria-hidden="true">↗</b></a
+          >
+          <a
+            href="https://www.credly.com/users/chris-sheehan.b081233e/badges/credly"
+            class="mobile-profile-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            onclick="hideMenu()"
+            ><img
+              src="/assets/social/credly.png"
+              alt=""
+              aria-hidden="true"
+            /><span>Credly</span><b aria-hidden="true">↗</b></a
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import "/scripts/mobileMenu.js";
+
+    const navigationLinks = Array.from(
+      document.querySelectorAll(".nav-links a[href^='#']"),
+    );
+    const sections = navigationLinks
+      .map((link) => {
+        const target = link.getAttribute("href");
+        return target ? document.querySelector(target) : null;
+      })
+      .filter(Boolean);
+
+    if ("IntersectionObserver" in window) {
+      const sectionObserver = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort(
+              (left, right) => right.intersectionRatio - left.intersectionRatio,
+            )[0];
+
+          if (!visible) return;
+          navigationLinks.forEach((link) => {
+            const active =
+              link.getAttribute("href") === `#${visible.target.id}`;
+            link.classList.toggle("is-active", active);
+            if (active) link.setAttribute("aria-current", "location");
+            else link.removeAttribute("aria-current");
+          });
+        },
+        { rootMargin: "-20% 0px -55%", threshold: [0, 0.25, 0.6] },
+      );
+
+      sections.forEach((section) => sectionObserver.observe(section));
+    }
   </script>
 
   <style>
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 1rem clamp(1rem, 3vw, 2rem) 0;
+      pointer-events: none;
+    }
     nav {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      width: 100%;
+      width: min(1180px, 100%);
+      margin: 0 auto;
       box-sizing: border-box;
-      padding: 8px 24px;
-      background: var(--color-background-dark);
-      position: relative;
-      z-index: 100;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid var(--color-border-soft);
+      border-radius: 1rem;
+      background: rgba(7, 17, 15, 0.78);
+      box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.24);
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      pointer-events: auto;
     }
-
-    .nav-left .logo {
-      color: var(--color-heading);
-      font-weight: bold;
-      font-size: 1rem;
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      color: var(--color-text);
+      text-decoration: none;
     }
-
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 2.6rem;
+      height: 2.6rem;
+      overflow: hidden;
+      border-radius: 50%;
+      background: var(--color-surface-2);
+      box-shadow: 0 0 0 1px rgba(119, 232, 159, 0.35);
+    }
+    .brand-mark img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .brand-copy {
+      display: grid;
+      line-height: 1.15;
+    }
+    .brand-copy strong {
+      font-size: 0.86rem;
+      letter-spacing: -0.01em;
+    }
+    .brand-copy small {
+      margin-top: 0.15rem;
+      color: var(--color-text-muted);
+      font-size: 0.62rem;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
     .nav-links {
       display: flex;
-      gap: 8px;
+      gap: 0.2rem;
       align-items: center;
     }
-
     .button {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 16px;
-      color: var(--color-text);
-      background: var(--color-surface);
+      gap: 0.5rem;
+      min-height: 38px;
+      padding: 0.55rem 0.9rem;
+      border: 1px solid transparent;
+      border-radius: 0.7rem;
+      background: transparent;
+      color: var(--color-text-soft);
       text-decoration: none;
-      border-radius: 6px;
-      font-weight: bold;
-      font-size: 0.95rem;
-      border: 1px solid var(--color-border-strong);
-      cursor: pointer;
-      min-height: 32px;
-      transition:
-        background 0.2s ease,
-        color 0.2s ease,
-        transform 0.2s ease;
+      font-size: 0.82rem;
+      font-weight: 650;
+      transition: 180ms ease;
     }
-
-    .button:hover {
-      background: var(--color-surface-2);
-      color: var(--color-heading);
-      transform: translateY(-1px);
+    .button span {
+      color: var(--color-accent);
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
     }
-
+    .button:hover,
+    .button.is-active {
+      border-color: var(--color-border-soft);
+      background: rgba(255, 255, 255, 0.055);
+      color: var(--color-text);
+    }
     .burger {
       display: none;
-      background: none;
-      border: none;
+      width: 2.6rem;
+      height: 2.6rem;
+      border: 1px solid var(--color-border-soft);
+      border-radius: 0.72rem;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--color-text);
       cursor: pointer;
-      position: absolute;
-      right: 32px;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 1100;
-      font-size: 35px;
-      color: var(--color-heading);
+      font-size: 1.25rem;
     }
-
     .burger::before {
-      content: "☰";
+      content: "≡";
     }
-
     .burger.show {
       opacity: 0;
       pointer-events: none;
     }
-
     .mobile-overlay {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      inset: 0;
       z-index: 1000;
-      background: rgba(11, 25, 20, 0.8);
-      backdrop-filter: blur(4px);
-      padding: 16px;
+      padding: 0.75rem;
+      overflow-y: auto;
       box-sizing: border-box;
+      background: rgba(2, 8, 7, 0.76);
+      backdrop-filter: blur(12px);
       justify-content: flex-end;
       align-items: stretch;
+      pointer-events: auto;
     }
-
-    body.no-scroll,
-    html.no-scroll {
+    :global(body.no-scroll),
+    :global(html.no-scroll) {
       overflow: hidden !important;
       height: 100%;
       touch-action: none;
       overscroll-behavior: none;
     }
-
     .mobile-overlay.show {
       display: flex;
     }
-
     .mobile-menu-panel {
-      width: min(520px, 100%);
-      margin: 0 auto;
-      max-height: calc(100dvh - 32px);
-      overflow: auto;
-      border-radius: 1rem;
-      background: var(--color-background-dark);
+      width: min(480px, 100%);
+      margin-left: auto;
+      min-height: calc(100dvh - 1.5rem);
       border: 1px solid var(--color-border-strong);
-      padding: 16px;
+      border-radius: 1.35rem;
+      background: #0b1815;
+      padding: 1.25rem;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 1.25rem;
+      box-shadow: 0 2rem 6rem rgba(0, 0, 0, 0.5);
     }
-
     .mobile-menu-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-
+    .mobile-menu-kicker {
+      display: block;
+      margin-bottom: 0.2rem;
+      color: var(--color-accent);
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
     .mobile-menu-title {
+      display: block;
       color: var(--color-heading);
-      font-weight: 700;
-      font-size: 1rem;
-      letter-spacing: 0.03em;
+      font-weight: 750;
+      font-size: 1.1rem;
     }
-
     .mobile-close {
+      display: grid;
+      place-items: center;
+      width: 2.6rem;
+      height: 2.6rem;
       border: 1px solid var(--color-border-strong);
-      background: var(--color-surface);
+      border-radius: 0.7rem;
+      background: rgba(255, 255, 255, 0.04);
       color: var(--color-heading);
-      border-radius: 8px;
-      width: 40px;
-      height: 40px;
       cursor: pointer;
-      font-size: 22px;
-      line-height: 1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      font-size: 1.15rem;
     }
-
     .mobile-close::before {
       content: "✕";
     }
-
     .mobile-menu-links {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 0.55rem;
     }
-
     .mobile-menu-section {
-      margin: 0;
-      color: var(--color-heading);
-      font-size: 0.82rem;
+      margin: 0 0 0.2rem;
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
     }
-
     .overlay-button {
-      padding: 12px 16px;
-      font-size: 1.1rem;
-      background: var(--color-surface);
-      color: var(--color-text);
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: bold;
-      border: 1px solid var(--color-border-strong);
-    }
-
-    .overlay-button:hover {
-      background: var(--color-surface-2);
-      color: var(--color-heading);
-    }
-
-    .mobile-profile-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .mobile-profile-link {
       display: flex;
       align-items: center;
-      gap: 10px;
-      min-height: 56px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid var(--color-border-strong);
-      background: var(--color-surface);
+      gap: 0.8rem;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--color-border-soft);
+      border-radius: 0.8rem;
+      background: rgba(255, 255, 255, 0.035);
       color: var(--color-text);
       text-decoration: none;
       font-weight: 700;
-      transition:
-        background 0.2s ease,
-        color 0.2s ease,
-        transform 0.2s ease;
+      transition: 180ms ease;
     }
-
+    .overlay-button span {
+      color: var(--color-accent);
+      font-family: var(--font-mono);
+      font-size: 0.64rem;
+    }
+    .overlay-button:hover {
+      background: var(--color-surface-2);
+      color: var(--color-heading);
+      transform: translateX(3px);
+    }
+    .mobile-profile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.55rem;
+    }
+    .mobile-profile-link {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-height: 3.5rem;
+      padding: 0.7rem 0.8rem;
+      box-sizing: border-box;
+      border: 1px solid var(--color-border-soft);
+      border-radius: 0.8rem;
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--color-text);
+      text-decoration: none;
+      font-weight: 650;
+      transition: 180ms ease;
+    }
     .mobile-profile-link:hover {
       background: var(--color-surface-2);
       color: var(--color-heading);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
     }
-
     .mobile-profile-link img {
-      width: 22px;
-      height: 22px;
-      min-width: 22px;
-      min-height: 22px;
-      max-width: 22px;
-      max-height: 22px;
-      inline-size: 22px;
-      block-size: 22px;
-      flex: 0 0 22px;
+      width: 1.25rem;
+      height: 1.25rem;
       object-fit: contain;
-      display: block;
     }
-
-    @media (max-width: 1250px) and (min-width: 1001px) {
-      .nav-links {
-        gap: 8px;
-      }
-
-      .button {
-        padding: 6px 10px;
-        font-size: 0.88rem;
-        min-height: 30px;
-      }
+    .mobile-profile-link b {
+      margin-left: auto;
+      color: var(--color-text-muted);
+      font-weight: 400;
     }
-
-    @media (max-width: 1000px) {
-      .burger {
-        display: block;
-      }
-
-      .nav-links {
-        display: none;
-      }
-
-      nav {
-        padding: 10px 16px;
-      }
-
-      .mobile-menu-panel {
-        padding: 14px;
-      }
-
-      .mobile-profile-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (min-width: 1000px) {
-      .button:focus-visible,
-      .overlay-button:focus-visible,
-      .burger:focus-visible,
-      .mobile-close:focus-visible {
-        outline: 2px solid var(--color-hover);
-        outline-offset: 2px;
-      }
-    }
-
     .button:focus-visible,
     .overlay-button:focus-visible,
     .burger:focus-visible,
-    .mobile-close:focus-visible {
+    .mobile-close:focus-visible,
+    .brand:focus-visible,
+    .mobile-profile-link:focus-visible {
       outline: 2px solid var(--color-hover);
-      outline-offset: 2px;
+      outline-offset: 3px;
+    }
+    @media (max-width: 1000px) {
+      header {
+        padding: 0.75rem 0.75rem 0;
+      }
+      nav {
+        padding: 0.55rem;
+      }
+      .burger {
+        display: grid;
+        place-items: center;
+      }
+      .nav-links {
+        display: none;
+      }
     }
   </style>
 </header>

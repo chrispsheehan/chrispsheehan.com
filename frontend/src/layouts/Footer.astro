@@ -9,10 +9,9 @@ const siteVersion = (import.meta.env.PUBLIC_SITE_VERSION || "1.0.0").slice(
 
 <style>
   footer {
-    padding: 8px 16px;
-    background: var(--color-background-dark);
-    color: var(--color-heading);
-    font-size: 14px;
+    padding: 1rem clamp(1rem, 3vw, 2rem) 2rem;
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
   }
 
   .footer-container {
@@ -22,11 +21,43 @@ const siteVersion = (import.meta.env.PUBLIC_SITE_VERSION || "1.0.0").slice(
     gap: 8px;
     flex-wrap: wrap;
     line-height: 1.3;
+    width: min(1180px, 100%);
+    margin: 0 auto;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-border-soft);
   }
 
   .footer-version {
-    font-size: 14px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
     margin: 0;
+  }
+
+  .footer-container p {
+    margin: 0;
+  }
+  .footer-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--color-text-soft);
+    text-decoration: none;
+  }
+  .footer-brand span {
+    display: grid;
+    place-items: center;
+    width: 1.8rem;
+    height: 1.8rem;
+    overflow: hidden;
+    border-radius: 50%;
+    background: var(--color-surface-2);
+    box-shadow: 0 0 0 1px rgba(119, 232, 159, 0.3);
+  }
+  .footer-brand img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   @media (max-width: 700px) {
@@ -40,7 +71,12 @@ const siteVersion = (import.meta.env.PUBLIC_SITE_VERSION || "1.0.0").slice(
 
 <footer>
   <div class="footer-container">
-    <p>&copy; {year} {baseDomain}</p>
-    <p class="footer-version">{siteVersion}</p>
+    <a href="#hero" class="footer-brand"
+      ><span aria-hidden="true"><img src="/favicon.ico" alt="" /></span>{
+        baseDomain
+      }</a
+    >
+    <p>&copy; {year} · Designed for clarity. Built for the edge.</p>
+    <p class="footer-version">v{siteVersion}</p>
   </div>
 </footer>

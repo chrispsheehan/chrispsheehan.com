@@ -7,29 +7,28 @@ const { githubRepo } = Astro.props;
 <section id="this-site">
   <div class="section-heading" data-reveal>
     <p class="section-eyebrow">This site</p>
-    <h2>A compact example of how I like systems to run.</h2>
+    <h2>Built like a real system.</h2>
     <p class="section-intro">
-      This site is intentionally small. It exists to show delivery discipline,
-      infrastructure ownership, and a preference for simple systems.
+      Small by design. Automated from commit to production.
     </p>
   </div>
 
   <div class="site-story-grid" data-reveal>
     <div class="architecture-card">
-      <p class="dashboard-card__eyebrow">Build shape</p>
-      <h3>Simple stack, explicit delivery path.</h3>
+      <p class="dashboard-card__eyebrow">Architecture</p>
+      <h3>Simple by design.</h3>
       <ul class="architecture-list">
         <li>
           <strong>AWS edge delivery</strong>
-          <span
-            >S3, CloudFront, ACM, and Route53 for a low-complexity public edge.</span
-          >
+          <span>S3, CloudFront, ACM, and Route53.</span>
         </li>
         <li>
           <strong>Terraform-managed infrastructure</strong>
-          <span
-            >Application, infrastructure, and deploy automation kept together.</span
-          >
+          <span>Application and infrastructure evolve together.</span>
+        </li>
+        <li>
+          <strong>Observable by default</strong>
+          <span>Privacy-conscious signals from edge logs.</span>
         </li>
       </ul>
     </div>
@@ -37,10 +36,7 @@ const { githubRepo } = Astro.props;
     <div class="dashboard-card github-card">
       <div class="github-card-content">
         <p class="dashboard-card__eyebrow">Repository</p>
-        <h3>Source, workflows,<br />and release evidence.</h3>
-        <p class="dashboard-card__body">
-          Frontend, infrastructure, and deploy automation live together.
-        </p>
+        <h3>Code to production,<br />in one place.</h3>
         <div class="repo-badge-row">
           <a
             href={`https://github.com/${githubRepo}/releases`}
@@ -68,6 +64,24 @@ const { githubRepo } = Astro.props;
               alt="Code deploy workflow status"
             />
           </a>
+        </div>
+        <div class="repo-system-list" aria-label="Repository contents">
+          <p>Inside the repository</p>
+          <div>
+            <span>01</span>
+            <strong>Frontend</strong>
+            <small>Astro + React</small>
+          </div>
+          <div>
+            <span>02</span>
+            <strong>Infrastructure</strong>
+            <small>Terraform + Terragrunt</small>
+          </div>
+          <div>
+            <span>03</span>
+            <strong>Delivery</strong>
+            <small>GitHub Actions + CodeDeploy</small>
+          </div>
         </div>
         <a
           href={`https://github.com/${githubRepo}`}
@@ -303,7 +317,54 @@ const { githubRepo } = Astro.props;
     width: 100%;
   }
 
+  .repo-system-list {
+    width: 100%;
+    margin-top: 0.35rem;
+    border-top: 1px solid var(--color-border-soft);
+    border-bottom: 1px solid var(--color-border-soft);
+  }
+
+  .repo-system-list > p {
+    margin: 0;
+    padding: 0.75rem 0 0.45rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .repo-system-list > div {
+    display: grid;
+    grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.65rem;
+    min-height: 2.8rem;
+    border-top: 1px solid rgba(196, 236, 217, 0.08);
+  }
+
+  .repo-system-list > div > span {
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+  }
+
+  .repo-system-list > div > strong {
+    color: var(--color-text);
+    font-size: 0.8rem;
+    font-weight: 650;
+  }
+
+  .repo-system-list > div > small {
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    text-align: right;
+  }
+
   .github-card-content {
+    width: 100%;
     border: none;
     display: flex;
     flex-direction: column;
@@ -751,5 +812,85 @@ const { githubRepo } = Astro.props;
     .traffic-pulse__metrics {
       grid-template-columns: 1fr;
     }
+
+    .repo-system-list > div {
+      grid-template-columns: 1.5rem minmax(0, 1fr);
+    }
+
+    .repo-system-list > div > small {
+      grid-column: 2;
+      margin-top: -0.55rem;
+      padding-bottom: 0.5rem;
+      text-align: left;
+    }
+  }
+
+  .site-story-grid {
+    gap: 1rem;
+  }
+  .architecture-card,
+  .dashboard-card,
+  .traffic-pulse {
+    border-radius: 1.15rem;
+    background: linear-gradient(
+      155deg,
+      rgba(17, 37, 31, 0.72),
+      rgba(5, 14, 11, 0.88)
+    );
+    box-shadow: none;
+  }
+  .architecture-card {
+    justify-content: flex-start;
+  }
+  .architecture-card h3 {
+    font-size: clamp(1.55rem, 3vw, 2.25rem);
+    line-height: 1.08;
+  }
+  .architecture-list {
+    margin-top: auto;
+    padding-top: 1rem;
+  }
+  .architecture-list li {
+    padding: 0.85rem 0 0.85rem 1.25rem;
+    border-top: 1px solid var(--color-border-soft);
+  }
+  .architecture-list li::before {
+    top: 1.45rem;
+    width: 0.35rem;
+    height: 0.35rem;
+    background: var(--color-accent);
+    box-shadow: 0 0 0 0.25rem rgba(119, 232, 159, 0.08);
+  }
+  .github-card-content {
+    height: 100%;
+  }
+  .github-card h3 {
+    font-size: clamp(1.55rem, 3vw, 2.25rem);
+    line-height: 1.08;
+  }
+  .github-card-link--button {
+    margin-top: auto;
+  }
+  .github-repo-button {
+    border-color: var(--color-border-strong);
+    background: var(--color-accent);
+    color: #06120e;
+  }
+  .github-card-link:hover .github-repo-button {
+    background: #8ff0b2;
+    color: #06120e;
+  }
+  .traffic-pulse {
+    margin-top: 1rem;
+  }
+  .traffic-pulse__number {
+    color: var(--color-accent);
+  }
+  .traffic-pulse__bar {
+    background: linear-gradient(180deg, var(--color-accent), #279b6a);
+  }
+  .traffic-pulse__ranges button.is-active {
+    background: var(--color-accent);
+    color: #06120e;
   }
 </style>

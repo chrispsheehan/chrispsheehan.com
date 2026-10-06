@@ -18,75 +18,119 @@ const githubProfile = "https://github.com/chrispsheehan";
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{baseDomain}</title>
+    <meta
+      name="description"
+      content="Chris Sheehan is a senior platform engineer building dependable AWS platforms, delivery pipelines, and developer tooling."
+    />
+    <meta name="theme-color" content="#07110f" />
+    <title>Chris Sheehan · Senior Platform Engineer</title>
     <link rel="stylesheet" href="/styles.css" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div class="ambient ambient--one" aria-hidden="true"></div>
+    <div class="ambient ambient--two" aria-hidden="true"></div>
     <Header baseDomain={baseDomain} githubRepo={githubRepo} />
 
-    <main class="home-shell">
+    <main id="main-content" class="home-shell">
       <section id="hero" class="hero-section">
         <div class="hero-copy" data-reveal>
-          <p class="section-eyebrow">Senior Platform Engineer</p>
-          <h1>Platforms and CI/CD built to help teams ship faster.</h1>
+          <div class="availability-pill">
+            <span aria-hidden="true"></span>
+            Senior Platform Engineer · Leeds
+          </div>
+          <h1>Calm systems.<br /><em>Faster delivery.</em></h1>
+          <p class="hero-intro">
+            I build cloud platforms and delivery tooling that make shipping
+            software safe, clear, and repeatable.
+          </p>
           <div class="cta-row">
             <a
-              class="button-link button-link--icon"
+              class="button-link button-link--primary"
               href="https://www.linkedin.com/in/chrispsheehan"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="LinkedIn"
             >
-              <img src="/assets/social/linkedin.png" alt="" aria-hidden="true" />
+              <img
+                src="/assets/social/linkedin.png"
+                alt=""
+                aria-hidden="true"
+              />
+              <span>Connect on LinkedIn</span>
+              <span class="button-link__arrow" aria-hidden="true">↗</span>
             </a>
             <a
-              class="button-link button-link--icon"
+              class="button-link button-link--secondary"
               href={githubProfile}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="GitHub"
             >
               <img src="/assets/social/github.png" alt="" aria-hidden="true" />
+              <span>Explore GitHub</span>
+              <span class="button-link__arrow" aria-hidden="true">↗</span>
             </a>
+          </div>
+          <div class="hero-proof" aria-label="Areas of expertise">
+            <span>AWS</span><i aria-hidden="true"></i><span>Terraform</span><i
+              aria-hidden="true"></i><span>CI/CD</span><i aria-hidden="true"
+            ></i><span>Developer Experience</span>
+          </div>
+          <div
+            class="hero-profile-links"
+            aria-label="More professional profiles"
+          >
             <a
-              class="button-link button-link--icon"
               href="https://registry.terraform.io/namespaces/chrispsheehan"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Terraform Registry"
             >
-              <img src="/assets/social/terraform.png" alt="" aria-hidden="true" />
+              <img
+                src="/assets/social/terraform.png"
+                alt=""
+                aria-hidden="true"
+              />
+              Terraform Registry <span aria-hidden="true">↗</span>
             </a>
             <a
-              class="button-link button-link--icon"
               href="https://www.credly.com/users/chris-sheehan.b081233e/badges/credly"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Credly"
             >
               <img src="/assets/social/credly.png" alt="" aria-hidden="true" />
+              Credly <span aria-hidden="true">↗</span>
             </a>
           </div>
         </div>
 
         <aside class="hero-panel" data-reveal>
           <div class="hero-panel-card hero-panel-card--accent">
-            <p class="section-eyebrow">Working style</p>
-            <h2>Delivery paths that stay reliable.</h2>
-            <div class="hero-metrics">
-              <div>
-                <span class="hero-metric-label">Scope</span>
-                <strong>Infrastructure, pipelines, and internal tooling</strong>
+            <div class="system-card__header">
+              <span>production-delivery.yml</span>
+              <div class="system-card__lights" aria-hidden="true">
+                <i></i><i></i><i></i>
               </div>
-              <div>
-                <span class="hero-metric-label">Approach</span>
-                <strong>Practical, modular automation</strong>
+            </div>
+            <div class="system-map" aria-label="A reliable delivery path">
+              <div class="system-node system-node--source">
+                <span>01</span>
+                <div><small>GitHub</small><strong>Commit</strong></div>
               </div>
-              <div>
-                <span class="hero-metric-label">Outcome</span>
-                <strong>Scalable, maintainable solutions</strong>
+              <div class="system-connector" aria-hidden="true"><i></i></div>
+              <div class="system-node">
+                <span>02</span>
+                <div><small>Actions</small><strong>Verify</strong></div>
               </div>
+              <div class="system-connector" aria-hidden="true"><i></i></div>
+              <div class="system-node system-node--live">
+                <span>03</span>
+                <div><small>CloudFront</small><strong>Deliver</strong></div>
+                <b>Healthy</b>
+              </div>
+            </div>
+            <div class="system-card__footer">
+              <span><i aria-hidden="true"></i> All systems operational</span>
+              <span>eu-west-2</span>
             </div>
           </div>
         </aside>
