@@ -233,7 +233,7 @@ section {
 
 .hero-section {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.65fr);
   gap: clamp(2rem, 5vw, 5rem);
   align-items: center;
   min-height: min(680px, calc(100vh - 8rem));
@@ -410,6 +410,9 @@ section {
 }
 
 .hero-panel {
+  width: 100%;
+  max-width: 360px;
+  justify-self: end;
   perspective: 1000px;
 }
 .hero-panel-card {
@@ -462,14 +465,14 @@ section {
   background: var(--color-accent);
 }
 .system-map {
-  padding: clamp(1.25rem, 3vw, 2rem);
+  padding: clamp(1.15rem, 2.4vw, 1.6rem);
 }
 .system-node {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 1rem;
-  padding: 1rem;
+  padding: 0.85rem;
   border: 1px solid var(--color-border-soft);
   border-radius: 0.9rem;
   background: linear-gradient(
@@ -518,7 +521,7 @@ section {
 }
 .system-connector {
   position: relative;
-  height: 2.5rem;
+  height: 2rem;
   margin-left: 2rem;
   border-left: 1px dashed rgba(119, 232, 159, 0.3);
 }
@@ -584,7 +587,7 @@ section {
     opacity: 1;
   }
   to {
-    transform: translateY(1.9rem);
+    transform: translateY(1.4rem);
     opacity: 0;
   }
 }

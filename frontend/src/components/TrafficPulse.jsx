@@ -127,9 +127,6 @@ export default function TrafficPulse() {
         <div>
           <p className="dashboard-card__eyebrow">Live system signal</p>
           <h3 id="traffic-pulse-title">Traffic pulse</h3>
-          <p className="traffic-pulse__intro">
-            A privacy-conscious view built from this site’s CloudFront logs.
-          </p>
         </div>
         {hasHistory && (
           <div className="traffic-pulse__ranges" aria-label="Chart range">
