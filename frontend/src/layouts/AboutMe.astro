@@ -12,15 +12,16 @@ const repositories = JSON.parse(
 <section id="about-me" class="section-shell">
   <div class="section-heading" data-reveal>
     <p class="section-eyebrow">About</p>
-    <h2>Platform engineering for faster, safer delivery.</h2>
+    <h2>Good platforms disappear into the way teams work.</h2>
   </div>
 
   <div class="about-grid">
     <div class="about-copy" data-reveal>
       <p class="about-summary">
-        I build AWS foundations, CI/CD workflows, and developer tooling that
-        make the path to production dependable. My quality-engineering
-        background keeps automation readable and defaults safe.
+        I build the paved roads behind great software teams: AWS foundations,
+        CI/CD workflows, and developer tooling that make the path to production
+        dependable. A quality-engineering background keeps every decision
+        grounded in readable automation and safe defaults.
       </p>
     </div>
 
@@ -29,15 +30,19 @@ const repositories = JSON.parse(
         <p class="section-eyebrow">Current focus</p>
         <ul class="focus-list">
           <li>
+            <span>01</span>
             <strong>Platform Architecture</strong>
           </li>
           <li>
+            <span>02</span>
             <strong>Release Engineering</strong>
           </li>
           <li>
+            <span>03</span>
             <strong>Developer Enablement</strong>
           </li>
           <li>
+            <span>04</span>
             <strong>Operational Clarity</strong>
           </li>
         </ul>
@@ -536,6 +541,88 @@ const repositories = JSON.parse(
     .repo-card:hover,
     .repo-card:focus-visible {
       transform: none;
+    }
+  }
+
+  .about-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr);
+    gap: clamp(2rem, 5vw, 5rem);
+  }
+
+  .about-summary {
+    color: var(--color-text-soft);
+    font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+    line-height: 1.65;
+    letter-spacing: -0.018em;
+  }
+
+  .focus-card {
+    padding: 1.35rem;
+    border-radius: 1.15rem;
+    background: rgba(4, 13, 10, 0.48);
+    box-shadow: none;
+  }
+
+  .focus-list {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .focus-list li {
+    gap: 0.9rem;
+    min-height: 3.4rem;
+    padding: 0.75rem 0;
+    border: 0;
+    border-bottom: 1px solid var(--color-border-soft);
+    border-radius: 0;
+    background: transparent;
+  }
+  .focus-list li:last-child {
+    border-bottom: 0;
+  }
+  .focus-list span {
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+  }
+  .focus-list strong {
+    color: var(--color-text);
+    font-size: 0.9rem;
+    font-weight: 650;
+  }
+
+  .repo-showcase {
+    border-top-color: var(--color-border-soft);
+  }
+  .repo-card {
+    min-height: 21rem;
+    border-radius: 1.1rem;
+    background: linear-gradient(
+      150deg,
+      rgba(18, 39, 32, 0.82),
+      rgba(5, 14, 11, 0.92)
+    );
+    box-shadow: none;
+  }
+  .repo-card:hover,
+  .repo-card:focus-visible {
+    border-color: rgba(119, 232, 159, 0.35);
+    box-shadow: 0 1.5rem 3.5rem rgba(0, 0, 0, 0.24);
+  }
+  .repo-card__number,
+  .repo-card__type {
+    font-family: var(--font-mono);
+  }
+  .repo-card__number {
+    color: var(--color-accent);
+  }
+  .repo-card__footer li {
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  @media (max-width: 900px) {
+    .about-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
     }
   }
 </style>

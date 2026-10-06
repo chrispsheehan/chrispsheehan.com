@@ -201,14 +201,74 @@ import Certifications from "../components/Certifications";
       display: flex;
     }
   }
+
+  .cert-grid {
+    gap: 1rem;
+  }
+  .cert-grid > a {
+    position: relative;
+    overflow: hidden;
+    max-width: 240px;
+    padding: 0.7rem;
+    border-radius: 1.15rem;
+    box-shadow: 0 1.25rem 3rem rgba(0, 0, 0, 0.14);
+  }
+  .cert-grid > a::after {
+    content: "View credential ↗";
+    position: absolute;
+    right: 0.85rem;
+    bottom: 0.7rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 999px;
+    background: #0b1815;
+    color: #dff8e9;
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.02em;
+    opacity: 0;
+    transform: translateY(0.35rem);
+    transition: 180ms ease;
+  }
+  .cert-grid > a:hover::after,
+  .cert-grid > a:focus-visible::after {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .cert-grid > a.cert-card--embed {
+    padding: 0.5rem;
+    background: var(--color-cert-card);
+    border: 1px solid var(--color-cert-card-border);
+  }
+  .cert-grid > a.cert-card--embed:hover {
+    background: white;
+    box-shadow: var(--shadow-cert-hover);
+  }
+  .cert-embed-wrapper {
+    border-radius: 0.8rem;
+  }
+
+  @media (max-width: 1000px) {
+    .cert-grid > a {
+      max-width: 100%;
+      background: var(--color-cert-card);
+      border: 1px solid var(--color-cert-card-border);
+    }
+    .cert-carousel::after {
+      background: linear-gradient(
+        270deg,
+        rgba(7, 17, 15, 0.92),
+        rgba(7, 17, 15, 0)
+      );
+    }
+  }
 </style>
 
 <section id="certifications">
   <p class="section-eyebrow">Certifications</p>
-  <h2>Supporting credentials in AWS, Terraform, and delivery tooling.</h2>
+  <h2>Credentials that support the craft.</h2>
   <p class="section-intro">
-    Useful supporting proof, but secondary to the platform and delivery work
-    above.
+    Current professional certifications across cloud, infrastructure as code,
+    and delivery automation.
   </p>
   <Certifications client:load />
 </section>

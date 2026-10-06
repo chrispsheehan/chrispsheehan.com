@@ -7,17 +7,17 @@ const { githubRepo } = Astro.props;
 <section id="this-site">
   <div class="section-heading" data-reveal>
     <p class="section-eyebrow">This site</p>
-    <h2>A compact example of how I like systems to run.</h2>
+    <h2>The portfolio is part of the portfolio.</h2>
     <p class="section-intro">
-      This site is intentionally small. It exists to show delivery discipline,
-      infrastructure ownership, and a preference for simple systems.
+      A deliberately compact system that demonstrates delivery discipline,
+      infrastructure ownership, and a preference for useful simplicity.
     </p>
   </div>
 
   <div class="site-story-grid" data-reveal>
     <div class="architecture-card">
-      <p class="dashboard-card__eyebrow">Build shape</p>
-      <h3>Simple stack, explicit delivery path.</h3>
+      <p class="dashboard-card__eyebrow">Architecture</p>
+      <h3>Small surface area.<br />Clear delivery path.</h3>
       <ul class="architecture-list">
         <li>
           <strong>AWS edge delivery</strong>
@@ -29,6 +29,12 @@ const { githubRepo } = Astro.props;
           <strong>Terraform-managed infrastructure</strong>
           <span
             >Application, infrastructure, and deploy automation kept together.</span
+          >
+        </li>
+        <li>
+          <strong>Observable by default</strong>
+          <span
+            >Privacy-conscious traffic signals generated from edge logs.</span
           >
         </li>
       </ul>
@@ -751,5 +757,74 @@ const { githubRepo } = Astro.props;
     .traffic-pulse__metrics {
       grid-template-columns: 1fr;
     }
+  }
+
+  .site-story-grid {
+    gap: 1rem;
+  }
+  .architecture-card,
+  .dashboard-card,
+  .traffic-pulse {
+    border-radius: 1.15rem;
+    background: linear-gradient(
+      155deg,
+      rgba(17, 37, 31, 0.72),
+      rgba(5, 14, 11, 0.88)
+    );
+    box-shadow: none;
+  }
+  .architecture-card {
+    justify-content: flex-start;
+  }
+  .architecture-card h3 {
+    font-size: clamp(1.55rem, 3vw, 2.25rem);
+    line-height: 1.08;
+  }
+  .architecture-list {
+    margin-top: auto;
+    padding-top: 1rem;
+  }
+  .architecture-list li {
+    padding: 0.85rem 0 0.85rem 1.25rem;
+    border-top: 1px solid var(--color-border-soft);
+  }
+  .architecture-list li::before {
+    top: 1.45rem;
+    width: 0.35rem;
+    height: 0.35rem;
+    background: var(--color-accent);
+    box-shadow: 0 0 0 0.25rem rgba(119, 232, 159, 0.08);
+  }
+  .github-card-content {
+    height: 100%;
+  }
+  .github-card h3 {
+    font-size: clamp(1.55rem, 3vw, 2.25rem);
+    line-height: 1.08;
+  }
+  .github-card-link--button {
+    margin-top: auto;
+  }
+  .github-repo-button {
+    border-color: var(--color-border-strong);
+    background: var(--color-accent);
+    color: #06120e;
+  }
+  .github-card-link:hover .github-repo-button {
+    background: #8ff0b2;
+    color: #06120e;
+  }
+  .traffic-pulse {
+    margin-top: 1rem;
+  }
+  .traffic-pulse__number {
+    color: var(--color-accent);
+  }
+  .traffic-pulse__bar {
+    background: linear-gradient(180deg, var(--color-accent), #279b6a);
+  }
+  .traffic-pulse__ranges button.is-active {
+    background: var(--color-accent);
+    color: #06120e;
   }
 </style>

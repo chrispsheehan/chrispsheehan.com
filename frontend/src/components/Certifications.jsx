@@ -106,7 +106,8 @@ export default function Certifications() {
     <div className="cert-carousel">
       <div className="cert-grid" ref={carouselRef}>
         {certs.map((cert, index) => {
-          const shareBadgeHost = cert.shareBadgeHost || "https://www.credly.com";
+          const shareBadgeHost =
+            cert.shareBadgeHost || "https://www.credly.com";
           const href =
             cert.href ||
             (cert.shareBadgeId
@@ -143,7 +144,10 @@ export default function Certifications() {
           );
         })}
       </div>
-      <div className="cert-carousel__pagination" aria-label="Certification pages">
+      <div
+        className="cert-carousel__pagination"
+        aria-label="Certification pages"
+      >
         {certs.map((cert, index) => (
           <button
             key={cert.shareBadgeId || cert.href || cert.alt || index}
