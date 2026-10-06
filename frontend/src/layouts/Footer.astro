@@ -48,11 +48,16 @@ const siteVersion = (import.meta.env.PUBLIC_SITE_VERSION || "1.0.0").slice(
     place-items: center;
     width: 1.8rem;
     height: 1.8rem;
-    border-radius: 0.5rem;
-    background: var(--color-accent);
-    color: #06120e;
-    font-size: 0.56rem;
-    font-weight: 850;
+    overflow: hidden;
+    border-radius: 50%;
+    background: var(--color-surface-2);
+    box-shadow: 0 0 0 1px rgba(119, 232, 159, 0.3);
+  }
+  .footer-brand img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   @media (max-width: 700px) {
@@ -66,7 +71,11 @@ const siteVersion = (import.meta.env.PUBLIC_SITE_VERSION || "1.0.0").slice(
 
 <footer>
   <div class="footer-container">
-    <a href="#hero" class="footer-brand"><span>CS</span>{baseDomain}</a>
+    <a href="#hero" class="footer-brand"
+      ><span aria-hidden="true"><img src="/favicon.ico" alt="" /></span>{
+        baseDomain
+      }</a
+    >
     <p>&copy; {year} · Designed for clarity. Built for the edge.</p>
     <p class="footer-version">v{siteVersion}</p>
   </div>
