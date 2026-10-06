@@ -75,6 +75,24 @@ const { githubRepo } = Astro.props;
             />
           </a>
         </div>
+        <div class="repo-system-list" aria-label="Repository contents">
+          <p>Inside the repository</p>
+          <div>
+            <span>01</span>
+            <strong>Frontend</strong>
+            <small>Astro + React</small>
+          </div>
+          <div>
+            <span>02</span>
+            <strong>Infrastructure</strong>
+            <small>Terraform + Terragrunt</small>
+          </div>
+          <div>
+            <span>03</span>
+            <strong>Delivery</strong>
+            <small>GitHub Actions + CodeDeploy</small>
+          </div>
+        </div>
         <a
           href={`https://github.com/${githubRepo}`}
           target="_blank"
@@ -307,6 +325,52 @@ const { githubRepo } = Astro.props;
 
   .github-card-link--button {
     width: 100%;
+  }
+
+  .repo-system-list {
+    width: 100%;
+    margin-top: 0.35rem;
+    border-top: 1px solid var(--color-border-soft);
+    border-bottom: 1px solid var(--color-border-soft);
+  }
+
+  .repo-system-list > p {
+    margin: 0;
+    padding: 0.75rem 0 0.45rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .repo-system-list > div {
+    display: grid;
+    grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.65rem;
+    min-height: 2.8rem;
+    border-top: 1px solid rgba(196, 236, 217, 0.08);
+  }
+
+  .repo-system-list > div > span {
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+  }
+
+  .repo-system-list > div > strong {
+    color: var(--color-text);
+    font-size: 0.8rem;
+    font-weight: 650;
+  }
+
+  .repo-system-list > div > small {
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    text-align: right;
   }
 
   .github-card-content {
@@ -756,6 +820,17 @@ const { githubRepo } = Astro.props;
 
     .traffic-pulse__metrics {
       grid-template-columns: 1fr;
+    }
+
+    .repo-system-list > div {
+      grid-template-columns: 1.5rem minmax(0, 1fr);
+    }
+
+    .repo-system-list > div > small {
+      grid-column: 2;
+      margin-top: -0.55rem;
+      padding-bottom: 0.5rem;
+      text-align: left;
     }
   }
 
