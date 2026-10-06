@@ -28,11 +28,12 @@ published.
 On the first release, `release.yml` has no prior tag to diff against, so release
 notes are generated from the full history up to the new tag.
 
-`release.yml` runs automatically after pushes to `main`. It can also be
-dispatched manually from `main` with a `release_type` of `auto`, `patch`,
-`minor`, or `major`. `auto` preserves commit-based version detection; the other
-choices explicitly override the calculated bump. Manual release runs from any
-other branch fail before tags or artifacts are created.
+`release.yml` runs automatically after pushes to `main`. It passes the full
+pushed commit message to `get-release-version`; for pull request merges this
+includes the validated PR title, matching the version preview shown by
+`pull_request.yml`. The action owns release classification and direct pushes
+can use conventional commit subjects. The workflow has no manual release
+inputs or separate versioning policy.
 
 Publishing a GitHub release does not deploy production. After any required
 infrastructure rollout is complete, manually dispatch `prod_code_deploy.yml`

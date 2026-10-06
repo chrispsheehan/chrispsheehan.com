@@ -1,18 +1,6 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      release_type:
-        description: "Release type; auto derives the bump from commits"
-        required: true
-        default: auto
-        type: choice
-        options:
-          - auto
-          - patch
-          - minor
-          - major
   push:
     branches:
       - main
@@ -26,26 +14,10 @@ env:
 
 permissions:
   contents: write
-  issues: write
 
 jobs:
-  validate-trigger:
-    name: Validate Trigger
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Require main for manual releases
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          RELEASE_REF: ${{ github.ref }}
-        run: |
-          if [[ "$EVENT_NAME" == "workflow_dispatch" && "$RELEASE_REF" != "refs/heads/main" ]]; then
-            echo "Manual releases must run from the main branch."
-            exit 1
-          fi
-
   get-current-tag:
     name: Current Tag
-    needs: validate-trigger
     runs-on: ubuntu-24.04
     outputs:
       current_tag: ${{ steps.get_tag.outputs.CURRENT_TAG }}
@@ -62,7 +34,6 @@ jobs:
 
   get-next-tag:
     name: Next Tag
-    needs: validate-trigger
     runs-on: ubuntu-24.04
     outputs:
       tag: ${{ steps.get_next_version.outputs.version }}
@@ -74,37 +45,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Resolve requested release type
-        id: requested_release
-        env:
-          RELEASE_TYPE: ${{ inputs.release_type || 'auto' }}
-        run: |
-          case "$RELEASE_TYPE" in
-            auto)
-              SUBJECTS=""
-              ;;
-            patch)
-              SUBJECTS="fix: manual patch release"
-              ;;
-            minor)
-              SUBJECTS="feat: manual minor release"
-              ;;
-            major)
-              SUBJECTS="feat!: manual major release"
-              ;;
-            *)
-              echo "Unsupported release type: $RELEASE_TYPE"
-              exit 1
-              ;;
-          esac
-
-          echo "subjects=$SUBJECTS" >> "$GITHUB_OUTPUT"
-
       - name: Get next version
         id: get_next_version
         uses: chrispsheehan/get-release-version@v1
         with:
-          subjects: ${{ steps.requested_release.outputs.subjects }}
+          subjects: ${{ github.event.head_commit.message }}
 
       - name: Show the next version
         run: |
