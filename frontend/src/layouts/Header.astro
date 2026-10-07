@@ -277,7 +277,7 @@ const githubProfile = "https://github.com/chrispsheehan";
       background: rgba(2, 8, 7, 0.76);
       backdrop-filter: blur(12px);
       justify-content: flex-end;
-      align-items: stretch;
+      align-items: flex-start;
       pointer-events: auto;
     }
     :global(body.no-scroll),
@@ -292,7 +292,7 @@ const githubProfile = "https://github.com/chrispsheehan";
     }
     .mobile-menu-panel {
       width: min(480px, 100%);
-      margin-left: auto;
+      margin-inline: auto;
       min-height: calc(100dvh - 1.5rem);
       border: 1px solid var(--color-border-strong);
       border-radius: 1.35rem;
@@ -385,6 +385,7 @@ const githubProfile = "https://github.com/chrispsheehan";
       display: flex;
       align-items: center;
       gap: 0.65rem;
+      min-width: 0;
       min-height: 3.5rem;
       padding: 0.7rem 0.8rem;
       box-sizing: border-box;
@@ -404,9 +405,17 @@ const githubProfile = "https://github.com/chrispsheehan";
     .mobile-profile-link img {
       width: 1.25rem;
       height: 1.25rem;
+      flex: 0 0 1.25rem;
       object-fit: contain;
     }
+    .mobile-profile-link span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .mobile-profile-link b {
+      flex: 0 0 auto;
       margin-left: auto;
       color: var(--color-text-muted);
       font-weight: 400;
@@ -433,6 +442,11 @@ const githubProfile = "https://github.com/chrispsheehan";
       }
       .nav-links {
         display: none;
+      }
+    }
+    @media (max-width: 360px) {
+      .mobile-profile-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
