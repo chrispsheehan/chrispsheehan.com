@@ -100,6 +100,7 @@ import Certifications from "../components/Certifications";
     border: 0;
     display: block;
     margin: 0 auto;
+    pointer-events: none;
   }
 
   .cert-img-wrapper img {
@@ -170,6 +171,22 @@ import Certifications from "../components/Certifications";
 
     .cert-grid::-webkit-scrollbar {
       display: none;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .cert-grid {
+        cursor: grab;
+      }
+
+      .cert-grid--dragging {
+        cursor: grabbing;
+        scroll-snap-type: none;
+        user-select: none;
+      }
+
+      .cert-grid--dragging > a {
+        pointer-events: none;
+      }
     }
 
     .cert-grid > a {

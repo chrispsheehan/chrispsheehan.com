@@ -43,6 +43,11 @@ export default function Certifications() {
     const carousel = carouselRef.current;
     if (!carousel) return;
 
+    let dragPointerId = null;
+    let dragStartX = 0;
+    let dragStartScrollLeft = 0;
+    let suppressClick = false;
+
     const updateActiveIndex = () => {
       const items = Array.from(carousel.children);
       if (items.length === 0) return;
@@ -57,12 +62,62 @@ export default function Certifications() {
       setActiveIndex(currentIndex >= 0 ? currentIndex : 0);
     };
 
+    const preventNativeDrag = (event) => event.preventDefault();
+    const startDrag = (event) => {
+      if (event.pointerType !== "mouse" || event.button !== 0) return;
+
+      dragPointerId = event.pointerId;
+      dragStartX = event.clientX;
+      dragStartScrollLeft = carousel.scrollLeft;
+      suppressClick = false;
+      carousel.setPointerCapture(event.pointerId);
+    };
+    const moveDrag = (event) => {
+      if (dragPointerId !== event.pointerId) return;
+
+      const distance = event.clientX - dragStartX;
+      if (Math.abs(distance) > 5) {
+        suppressClick = true;
+        carousel.classList.add("cert-grid--dragging");
+      }
+
+      if (!suppressClick) return;
+      event.preventDefault();
+      carousel.scrollLeft = dragStartScrollLeft - distance;
+    };
+    const finishDrag = (event) => {
+      if (dragPointerId !== event.pointerId) return;
+      if (carousel.hasPointerCapture(event.pointerId)) {
+        carousel.releasePointerCapture(event.pointerId);
+      }
+      dragPointerId = null;
+      carousel.classList.remove("cert-grid--dragging");
+    };
+    const preventDraggedClick = (event) => {
+      if (!suppressClick) return;
+      event.preventDefault();
+      event.stopPropagation();
+      suppressClick = false;
+    };
+
     updateActiveIndex();
     carousel.addEventListener("scroll", updateActiveIndex, { passive: true });
+    carousel.addEventListener("dragstart", preventNativeDrag);
+    carousel.addEventListener("pointerdown", startDrag);
+    carousel.addEventListener("pointermove", moveDrag);
+    carousel.addEventListener("pointerup", finishDrag);
+    carousel.addEventListener("pointercancel", finishDrag);
+    carousel.addEventListener("click", preventDraggedClick, true);
     window.addEventListener("resize", updateActiveIndex);
 
     return () => {
       carousel.removeEventListener("scroll", updateActiveIndex);
+      carousel.removeEventListener("dragstart", preventNativeDrag);
+      carousel.removeEventListener("pointerdown", startDrag);
+      carousel.removeEventListener("pointermove", moveDrag);
+      carousel.removeEventListener("pointerup", finishDrag);
+      carousel.removeEventListener("pointercancel", finishDrag);
+      carousel.removeEventListener("click", preventDraggedClick, true);
       window.removeEventListener("resize", updateActiveIndex);
     };
   }, [certs]);
