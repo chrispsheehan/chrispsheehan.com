@@ -116,6 +116,10 @@ const repositories = JSON.parse(
       if (!track || !pagination || cards.length === 0) return;
 
       let pageTargets: number[] = [];
+      let dragPointerId: number | null = null;
+      let dragStartX = 0;
+      let dragStartScrollLeft = 0;
+      let suppressClick = false;
 
       const updateActivePage = () => {
         let activeIndex = 0;
@@ -185,6 +189,51 @@ const repositories = JSON.parse(
       };
 
       track.addEventListener("scroll", updateActivePage, { passive: true });
+      track.addEventListener("dragstart", (event) => event.preventDefault());
+      track.addEventListener("pointerdown", (event) => {
+        if (event.pointerType !== "mouse" || event.button !== 0) return;
+
+        dragPointerId = event.pointerId;
+        dragStartX = event.clientX;
+        dragStartScrollLeft = track.scrollLeft;
+        suppressClick = false;
+        track.setPointerCapture(event.pointerId);
+      });
+      track.addEventListener("pointermove", (event) => {
+        if (dragPointerId !== event.pointerId) return;
+
+        const distance = event.clientX - dragStartX;
+        if (Math.abs(distance) > 5) {
+          suppressClick = true;
+          track.classList.add("repo-grid--dragging");
+        }
+
+        if (!suppressClick) return;
+        event.preventDefault();
+        track.scrollLeft = dragStartScrollLeft - distance;
+      });
+
+      const finishDrag = (event: PointerEvent) => {
+        if (dragPointerId !== event.pointerId) return;
+        if (track.hasPointerCapture(event.pointerId)) {
+          track.releasePointerCapture(event.pointerId);
+        }
+        dragPointerId = null;
+        track.classList.remove("repo-grid--dragging");
+      };
+
+      track.addEventListener("pointerup", finishDrag);
+      track.addEventListener("pointercancel", finishDrag);
+      track.addEventListener(
+        "click",
+        (event) => {
+          if (!suppressClick) return;
+          event.preventDefault();
+          event.stopPropagation();
+          suppressClick = false;
+        },
+        true,
+      );
 
       if ("ResizeObserver" in window) {
         new ResizeObserver(rebuildPagination).observe(track);
@@ -314,6 +363,22 @@ const repositories = JSON.parse(
 
   .repo-grid::-webkit-scrollbar {
     display: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .repo-carousel--overflowing .repo-grid {
+      cursor: grab;
+    }
+
+    .repo-grid--dragging {
+      cursor: grabbing;
+      scroll-snap-type: none;
+      user-select: none;
+    }
+
+    .repo-grid--dragging .repo-card {
+      pointer-events: none;
+    }
   }
 
   .repo-card {
