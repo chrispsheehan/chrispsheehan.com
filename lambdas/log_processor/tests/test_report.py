@@ -7,7 +7,12 @@ import json
 from botocore.exceptions import ClientError
 import pytest
 
-from lambdas.log_processor.aggregate_state import AggregateState
+from lambdas.log_processor.aggregate_state import (
+    AGGREGATE_STATE_KEY,
+    AggregateState,
+    daily_visitor_countries_key,
+    daily_visitors_key,
+)
 from lambdas.log_processor.config import LogProcessorConfig
 from lambdas.log_processor.lambda_handler import handle_event
 from lambdas.log_processor.ledger import lock_key, object_id
@@ -32,6 +37,20 @@ def _row(date, viewer_ip, request_id, user_agent="Mozilla/5.0"):
     return (
         f"{date}\t12:00:00\tLHR\t123\t{viewer_ip}\tGET\texample.com\t"
         f"/path\t200\t-\t{user_agent}\t-\t-\tHit\t{request_id}\n"
+    )
+
+
+def _v2_body(date, viewer_ip, request_id, country):
+    fields = (
+        "date time x-edge-location sc-bytes c-ip cs-method cs(Host) "
+        "cs-uri-stem sc-status cs(Referer) cs(User-Agent) cs-uri-query "
+        "cs(Cookie) x-edge-result-type x-edge-request-id c-country"
+    )
+    row = _row(date, viewer_ip, request_id).rstrip("\n")
+    return _gzip_body(
+        "#Version: 1.0\n",
+        f"#Fields: {fields}\n",
+        f"{row}\t{country}\n",
     )
 
 
@@ -219,6 +238,34 @@ def test_logs_report_respects_max_claimed_files():
     assert len([put for put in s3.puts if put.get("IfNoneMatch") == "*"]) == 1
 
 
+def test_logs_report_upgrades_legacy_aggregate_state_with_country_data():
+    obj = _object("cloudfront/v2/one.gz", "etag-1", 1)
+    existing_ip = "203.0.113.10"
+    s3 = FakeS3(
+        [obj],
+        {obj["Key"]: _v2_body("2026-01-01", existing_ip, "req-1", "GB")},
+        report_bodies={
+            AGGREGATE_STATE_KEY: json.dumps(
+                {"version": 1, "daily_visits": {"2026-01-01": 1}}
+            ),
+            daily_visitors_key("2026-01-01"): json.dumps(
+                {"date": "2026-01-01", "viewer_ips": [existing_ip]}
+            ),
+        },
+    )
+
+    summary = logs_report("database-bucket", config=_config(), s3_client=s3)
+
+    aggregate_state = json.loads(s3.report_bodies[AGGREGATE_STATE_KEY])
+    visitor_countries = json.loads(
+        s3.report_bodies[daily_visitor_countries_key("2026-01-01")]
+    )
+    assert summary["total-visits"] == 1
+    assert aggregate_state["version"] == 2
+    assert aggregate_state["daily_country_visits"] == {"2026-01-01": {"GB": 1}}
+    assert visitor_countries["visitor_countries"] == {existing_ip: "GB"}
+
+
 def test_logs_report_builds_visit_summary_from_existing_database_files():
     objects = [_object("cloudfront/skipped.gz", "etag-1", 1)]
     s3 = FakeS3(
@@ -313,7 +360,12 @@ def test_summary_excludes_current_utc_day_from_public_metrics():
                 "2026-01-01": 2,
                 "2026-01-02": 4,
                 "2026-01-03": 3,
-            }
+            },
+            daily_country_visits={
+                "2026-01-01": {"GB": 2},
+                "2026-01-02": {"GB": 1, "US": 3},
+                "2026-01-03": {"FR": 3},
+            },
         ),
         log_files_found=0,
         log_files_limit=None,
@@ -335,6 +387,14 @@ def test_summary_excludes_current_utc_day_from_public_metrics():
     assert summary["total-visits"] == 6
     assert summary["range"] == 2
     assert summary["last-date"] == "2026-01-02"
+    assert summary["daily-country-visitor-counts"][-1] == {
+        "date": "2026-01-02",
+        "countries": {"GB": 1, "US": 3},
+    }
+    assert all(
+        "FR" not in item["countries"]
+        for item in summary["daily-country-visitor-counts"]
+    )
 
 
 def test_local_s3_output_client_writes_objects_under_key_path(tmp_path):

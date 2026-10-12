@@ -7,6 +7,7 @@ locals {
   reports_bucket_name    = "${local.name}-reports"
   logs_bucket_name       = "${local.domain_name}.logs"
   logs_prefix            = "cloudfront-logs/"
+  logs_v2_prefix         = "${local.logs_prefix}v2"
   root_file              = "index.html"
   cloudfront_origin_id   = "s3-${replace(local.bucket_name, ".", "-")}"
   reports_origin_id      = "s3-${local.reports_bucket_name}"

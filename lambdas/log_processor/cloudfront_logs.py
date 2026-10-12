@@ -15,6 +15,24 @@ BOT_PATTERN = re.compile(
     re.I,
 )
 
+LEGACY_LOG_FIELDS = [
+    "date",
+    "time",
+    "x-edge-location",
+    "sc-bytes",
+    "c-ip",
+    "cs-method",
+    "cs(Host)",
+    "cs-uri-stem",
+    "sc-status",
+    "cs(Referer)",
+    "cs(User-Agent)",
+    "cs-uri-query",
+    "cs(Cookie)",
+    "x-edge-result-type",
+    "x-edge-request-id",
+]
+
 
 @dataclass(frozen=True)
 class LogObject:
@@ -62,35 +80,64 @@ def list_log_objects(
     return sorted(objects, key=lambda item: item.key)
 
 
-def parse_log_line(line: str, source_key: str) -> dict[str, Any] | None:
+def parse_log_line(
+    line: str,
+    source_key: str,
+    fields: list[str] | None = None,
+) -> dict[str, Any] | None:
     if line.startswith("#"):
         return None
 
     parts = line.rstrip("\n").split("\t")
-    if len(parts) < 15:
+    fields = fields or LEGACY_LOG_FIELDS
+    if len(parts) < len(fields):
         return None
 
-    user_agent = unquote(parts[10])
+    values = dict(zip(fields, parts, strict=False))
+    user_agent = unquote(values.get("cs(User-Agent)", ""))
     if BOT_PATTERN.search(user_agent):
         return None
 
-    return {
-        "date": parts[0],
-        "time": parts[1],
-        "edge_location": parts[2],
-        "bytes_sent": int(parts[3]) if parts[3].isdigit() else None,
-        "viewer_ip": parts[4],
-        "method": parts[5],
-        "host": parts[6],
-        "uri": unquote(parts[7]),
-        "status": int(parts[8]) if parts[8].isdigit() else None,
-        "referer": unquote(parts[9]) if parts[9] != "-" else None,
+    required_fields = [
+        "date",
+        "time",
+        "x-edge-location",
+        "c-ip",
+        "cs-method",
+        "cs(Host)",
+        "cs-uri-stem",
+        "sc-status",
+        "x-edge-result-type",
+        "x-edge-request-id",
+    ]
+    if any(field not in values for field in required_fields):
+        return None
+
+    bytes_sent = values.get("sc-bytes", "")
+    status = values["sc-status"]
+    referer = values.get("cs(Referer)", "-")
+    query = values.get("cs-uri-query", "-")
+    country = values.get("c-country", "").upper()
+    record = {
+        "date": values["date"],
+        "time": values["time"],
+        "edge_location": values["x-edge-location"],
+        "bytes_sent": int(bytes_sent) if bytes_sent.isdigit() else None,
+        "viewer_ip": values["c-ip"],
+        "method": values["cs-method"],
+        "host": values["cs(Host)"],
+        "uri": unquote(values["cs-uri-stem"]),
+        "status": int(status) if status.isdigit() else None,
+        "referer": unquote(referer) if referer != "-" else None,
         "user_agent": user_agent,
-        "query": unquote(parts[11]) if parts[11] != "-" else None,
-        "edge_result_type": parts[13],
-        "request_id": parts[14],
+        "query": unquote(query) if query != "-" else None,
+        "edge_result_type": values["x-edge-result-type"],
+        "request_id": values["x-edge-request-id"],
         "source_key": source_key,
     }
+    if len(country) == 2 and country.isalpha():
+        record["country"] = country
+    return record
 
 
 def parse_log_object(
@@ -105,8 +152,12 @@ def parse_log_object(
     try:
         with gzip.GzipFile(fileobj=body) as gzip_body:
             reader = TextIOWrapper(gzip_body, encoding="utf-8", errors="replace")
+            fields = None
             for line in reader:
-                record = parse_log_line(line, key)
+                if line.startswith("#Fields:"):
+                    fields = line.removeprefix("#Fields:").strip().split()
+                    continue
+                record = parse_log_line(line, key, fields)
                 if record is None:
                     continue
                 records_by_date[record["date"]].append(record)

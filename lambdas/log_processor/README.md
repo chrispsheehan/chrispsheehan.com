@@ -12,7 +12,7 @@ Processes CloudFront standard logs from S3 into a queryable S3 datastore.
 - persists a private source-log cursor in the database bucket to avoid relisting
   older CloudFront log objects on every run
 - consumes new-object notifications from SQS in bounded batches
-- maintains one idempotent visitor-set aggregate per request date
+- maintains idempotent visitor and country aggregates per request date
 - writes a small summary to `data/log-processor/data.json`
 
 ## Build And Deployment
@@ -89,6 +89,8 @@ intentionally real.
   `data/log-processor/requests/_aggregates/state.json`
 - daily unique visitor sets:
   `data/log-processor/requests/_aggregates/daily-visitors/date=<yyyy-mm-dd>.json`
+- private daily visitor-to-country mappings:
+  `data/log-processor/requests/_aggregates/daily-visitor-countries/date=<yyyy-mm-dd>.json`
 - run summary:
   `data/log-processor/data.json`
 
@@ -102,12 +104,30 @@ records. When the aggregate index is absent, the processor performs a one-time
 bootstrap from existing JSONL request records. The public
 `data/log-processor/data.json` file contains the visit summary, a continuous
 30-day `daily-visitor-counts` series ending on the latest complete UTC day,
-with zero-filled dates, and processing counts. The current UTC day remains in
-the private aggregate state but is excluded from public visit totals and
-trends until the following day. The summary never contains viewer IPs or
+the matching `daily-country-visitor-counts` series, and processing counts.
+Country values are ISO 3166-1 alpha-2 estimates supplied by CloudFront standard
+logging v2. The current UTC day remains in the private aggregate state but is
+excluded from public visit totals, countries, and trends until the following
+day. The summary never contains viewer IPs, visitor-to-country mappings, or
 request records. Lambda direct
 invocation responses include the summary S3 path plus current-invocation file
 counters for found, claimed, processed, skipped, and failed source logs.
+
+## Country Logging Rollout
+
+The parser accepts both legacy positional W3C logs and header-defined v2 W3C
+logs. Deploy Lambda and frontend code before enabling v2 logging so country
+data is captured from the first v2 object. The UI omits the locations section
+until attributed visits exist, so this code-first deployment does not change
+the current page.
+
+The frontend infrastructure then enables v2 under `cloudfront-logs/v2/` while
+leaving legacy delivery enabled. V2 preserves the legacy first 15 columns and
+appends `c-country`, allowing the previous Lambda version to process v2 safely
+if infrastructure is applied first by mistake. Both deliveries can overlap:
+daily visitor sets use IP union, so duplicate requests do not inflate totals.
+Keep legacy logging enabled until v2 delivery and processing have been verified
+in development and production.
 
 ## Operational Notes
 

@@ -29,7 +29,7 @@ vendored copy.
 
 - private S3 origin bucket
 - private S3 reports bucket for public generated `/data/*` artifacts
-- CloudFront standard log bucket
+- CloudFront legacy and country-aware v2 standard logs in a shared log bucket
 - CloudFront distribution
 - cached CloudFront `/data/*` behavior backed by the frontend-managed reports bucket
 - ACM certificate in `us-east-1`

@@ -35,8 +35,9 @@ def database_read_workers() -> int:
 def build_visitor_tracker_from_database(
     s3_client: Any,
     bucket_name: str,
-) -> tuple[dict[str, set[str]], list[str]]:
+) -> tuple[dict[str, set[str]], dict[str, dict[str, str]], list[str]]:
     visitor_tracker: dict[str, set[str]] = defaultdict(set)
+    visitor_country_tracker: dict[str, dict[str, str]] = defaultdict(dict)
     output_keys = list_request_record_keys(s3_client, bucket_name)
 
     with ThreadPoolExecutor(max_workers=database_read_workers()) as executor:
@@ -52,8 +53,11 @@ def build_visitor_tracker_from_database(
                     logger.warning("Skipping request record missing date or viewer_ip key=%s", key)
                     continue
                 visitor_tracker[date].add(viewer_ip)
+                country = str(record.get("country", "")).upper()
+                if len(country) == 2 and country.isalpha():
+                    visitor_country_tracker[date][viewer_ip] = country
 
-    return visitor_tracker, output_keys
+    return visitor_tracker, visitor_country_tracker, output_keys
 
 
 def list_request_record_keys(s3_client: Any, bucket_name: str) -> list[str]:
