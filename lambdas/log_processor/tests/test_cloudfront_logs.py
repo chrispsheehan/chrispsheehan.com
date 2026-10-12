@@ -107,3 +107,33 @@ def test_parse_log_line_ignores_comments_malformed_rows_and_bots():
     assert parse_log_line("#Version: 1.0", "source.gz") is None
     assert parse_log_line("too\tshort", "source.gz") is None
     assert parse_log_line(bot_line, "source.gz") is None
+
+
+def test_parse_log_line_reads_country_from_header_defined_fields():
+    fields = [
+        "date",
+        "time",
+        "c-country",
+        "x-edge-location",
+        "sc-bytes",
+        "c-ip",
+        "cs-method",
+        "cs(Host)",
+        "cs-uri-stem",
+        "sc-status",
+        "cs(Referer)",
+        "cs(User-Agent)",
+        "cs-uri-query",
+        "x-edge-result-type",
+        "x-edge-request-id",
+    ]
+    line = (
+        "2026-01-02\t12:00:00\tgb\tLHR\t123\t203.0.113.10\tGET\t"
+        "example.com\t/\t200\t-\tMozilla%2F5.0\t-\tHit\treq-1\n"
+    )
+
+    record = parse_log_line(line, "cloudfront/v2/a.gz", fields)
+
+    assert record is not None
+    assert record["country"] == "GB"
+    assert record["viewer_ip"] == "203.0.113.10"

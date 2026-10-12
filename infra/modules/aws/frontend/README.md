@@ -10,7 +10,7 @@ CloudFront frontend module for a static site.
 - bucket policy granting the GitHub deploy role write access
 - CloudFront `/data/*` origin and cache behavior for the reports bucket
 - bucket policy granting CloudFront read access to reports `data/*` objects
-- CloudFront standard log bucket and lifecycle expiry
+- CloudFront legacy and v2 standard logging with shared lifecycle expiry
 - ACM certificate and DNS validation records
 - CloudFront distribution
 - Route53 `A` and `AAAA` alias records
@@ -42,10 +42,17 @@ The `/data/*` cache behavior serves objects from the module-managed reports buck
 `/data/log-processor/data.json` through the same CloudFront distribution as the
 static frontend.
 
-CloudFront standard logs are written to the module-managed logs bucket under
-`cloudfront-logs/`. Each deployed log processor reads its own environment's
-bucket. Historical production-log testing runs locally instead of granting dev
-access to the production logs bucket.
+CloudFront legacy standard logs are written to the module-managed logs bucket
+under `cloudfront-logs/`. Standard logging v2 runs alongside legacy logging and
+writes W3C logs under `cloudfront-logs/v2/`; its selected fields preserve the
+legacy column order and append `c-country`. Both formats are covered by the
+same bucket lifecycle and log processor notification prefix. Keeping legacy
+logging enabled makes the initial rollout reversible and prevents a logging
+gap while v2 delivery is verified in development and production.
+
+Each deployed log processor reads its own environment's bucket. Historical
+production-log testing runs locally instead of granting dev access to the
+production logs bucket.
 
 ## Key Outputs
 

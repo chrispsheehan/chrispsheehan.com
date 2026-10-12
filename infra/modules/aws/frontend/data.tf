@@ -68,3 +68,45 @@ data "aws_iam_policy_document" "reports_bucket_policy" {
     }
   }
 }
+
+data "aws_iam_policy_document" "frontend_logs_bucket_policy" {
+  statement {
+    sid       = "AWSLogDeliveryWrite"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.frontend_logs.arn}/${local.logs_v2_prefix}/*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["delivery.logs.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-acl"
+      values   = ["bucket-owner-full-control"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+
+  statement {
+    sid       = "AWSLogDeliveryAclCheck"
+    actions   = ["s3:GetBucketAcl"]
+    resources = [aws_s3_bucket.frontend_logs.arn]
+
+    principals {
+      type        = "Service"
+      identifiers = ["delivery.logs.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+}

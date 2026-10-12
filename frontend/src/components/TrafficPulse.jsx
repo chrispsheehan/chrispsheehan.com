@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 const RANGE_OPTIONS = [7, 14, 30];
+const countryNames =
+  typeof Intl.DisplayNames === "function"
+    ? new Intl.DisplayNames(["en-GB"], { type: "region" })
+    : null;
 
 function parseDate(value) {
   return new Date(`${value}T12:00:00Z`);
@@ -35,6 +39,65 @@ function normaliseSeries(data) {
   }
 
   return [];
+}
+
+function normaliseCountrySeries(data) {
+  const series = data?.["daily-country-visitor-counts"];
+  if (!Array.isArray(series)) return [];
+
+  return series
+    .filter((item) => item?.date && item.countries)
+    .map((item) => ({
+      date: item.date,
+      countries: Object.fromEntries(
+        Object.entries(item.countries)
+          .map(([country, visitors]) => [
+            country.toUpperCase(),
+            Number(visitors),
+          ])
+          .filter(
+            ([country, visitors]) =>
+              /^[A-Z]{2}$/.test(country) &&
+              Number.isFinite(visitors) &&
+              visitors > 0,
+          ),
+      ),
+    }))
+    .sort((left, right) => left.date.localeCompare(right.date));
+}
+
+function locationBreakdownFor(series, visibleDates) {
+  const totals = new Map();
+  series
+    .filter((item) => visibleDates.has(item.date))
+    .forEach((item) => {
+      Object.entries(item.countries).forEach(([country, visitors]) => {
+        totals.set(country, (totals.get(country) ?? 0) + visitors);
+      });
+    });
+
+  const ranked = [...totals.entries()]
+    .map(([country, visitors]) => ({
+      country,
+      name: countryNames?.of(country) ?? country,
+      visitors,
+    }))
+    .sort(
+      (left, right) =>
+        right.visitors - left.visitors || left.name.localeCompare(right.name),
+    );
+
+  if (ranked.length <= 5) return ranked;
+  return [
+    ...ranked.slice(0, 5),
+    {
+      country: "other",
+      name: "Other",
+      visitors: ranked
+        .slice(5)
+        .reduce((total, item) => total + item.visitors, 0),
+    },
+  ];
 }
 
 function comparisonFor(series) {
@@ -89,6 +152,22 @@ export default function TrafficPulse() {
   const visibleSeries = useMemo(
     () => allSeries.slice(-range),
     [allSeries, range],
+  );
+  const countrySeries = useMemo(
+    () => normaliseCountrySeries(traffic),
+    [traffic],
+  );
+  const locationBreakdown = useMemo(
+    () =>
+      locationBreakdownFor(
+        countrySeries,
+        new Set(visibleSeries.map((item) => item.date)),
+      ),
+    [countrySeries, visibleSeries],
+  );
+  const attributedVisits = locationBreakdown.reduce(
+    (total, item) => total + item.visitors,
+    0,
   );
   const selected =
     visibleSeries.find((item) => item.date === selectedDate) ??
@@ -217,6 +296,46 @@ export default function TrafficPulse() {
           </div>
         </div>
       </div>
+
+      {attributedVisits > 0 && (
+        <div
+          className="traffic-pulse__locations"
+          aria-labelledby="traffic-locations-title"
+        >
+          <div className="traffic-pulse__locations-heading">
+            <div>
+              <p className="dashboard-card__eyebrow">Geographic signal</p>
+              <h4 id="traffic-locations-title">Visitor locations</h4>
+            </div>
+            <p>
+              {attributedVisits.toLocaleString("en-GB")} attributed visit
+              {attributedVisits === 1 ? "" : "s"} in this range
+            </p>
+          </div>
+          <ol className="traffic-pulse__location-list">
+            {locationBreakdown.map((item) => {
+              const percentage = Math.round(
+                (item.visitors / attributedVisits) * 100,
+              );
+              return (
+                <li key={item.country}>
+                  <span>{item.name}</span>
+                  <span
+                    className="traffic-pulse__location-track"
+                    aria-hidden="true"
+                  >
+                    <span style={{ "--location-width": `${percentage}%` }} />
+                  </span>
+                  <strong>
+                    {item.visitors.toLocaleString("en-GB")}
+                    <small>{percentage}%</small>
+                  </strong>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
     </section>
   );
 }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import json
 import logging
@@ -21,12 +22,14 @@ except ImportError:
 AGGREGATE_PREFIX = f"{OUTPUT_PREFIX}/requests/_aggregates"
 AGGREGATE_STATE_KEY = f"{AGGREGATE_PREFIX}/state.json"
 DAILY_VISITORS_PREFIX = f"{AGGREGATE_PREFIX}/daily-visitors/"
+DAILY_VISITOR_COUNTRIES_PREFIX = f"{AGGREGATE_PREFIX}/daily-visitor-countries/"
 logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
 class AggregateState:
     daily_visits: dict[str, int]
+    daily_country_visits: dict[str, dict[str, int]] = field(default_factory=dict)
 
 
 def update_aggregate_state(
@@ -42,6 +45,7 @@ def update_aggregate_state(
         return state
 
     daily_visits = dict(state.daily_visits)
+    daily_country_visits = dict(state.daily_country_visits)
     for date, records in sorted(new_records_by_date.items()):
         visitors = read_daily_visitors(
             s3_client,
@@ -57,7 +61,32 @@ def update_aggregate_state(
         write_daily_visitors(s3_client, bucket_name, date, visitors)
         daily_visits[date] = len(visitors)
 
-    updated = AggregateState(daily_visits=daily_visits)
+        visitor_countries = read_daily_visitor_countries(
+            s3_client,
+            bucket_name,
+            date,
+            required=date in daily_country_visits,
+        )
+        for record in records:
+            viewer_ip = record.get("viewer_ip")
+            country = str(record.get("country", "")).upper()
+            if viewer_ip and len(country) == 2 and country.isalpha():
+                visitor_countries[viewer_ip] = country
+        if visitor_countries:
+            write_daily_visitor_countries(
+                s3_client,
+                bucket_name,
+                date,
+                visitor_countries,
+            )
+            daily_country_visits[date] = dict(
+                sorted(Counter(visitor_countries.values()).items())
+            )
+
+    updated = AggregateState(
+        daily_visits=daily_visits,
+        daily_country_visits=daily_country_visits,
+    )
     write_aggregate_state(s3_client, bucket_name, updated)
     logger.info(
         "Updated aggregate state touched_dates=%s tracked_dates=%s total_visits=%s",
@@ -77,18 +106,44 @@ def read_aggregate_state(s3_client: Any, bucket_name: str) -> AggregateState | N
     if not isinstance(daily_visits, dict):
         raise ValueError(f"Invalid aggregate state at s3://{bucket_name}/{AGGREGATE_STATE_KEY}")
 
+    daily_country_visits = payload.get("daily_country_visits", {})
+    if not isinstance(daily_country_visits, dict):
+        raise ValueError(f"Invalid aggregate state at s3://{bucket_name}/{AGGREGATE_STATE_KEY}")
+
     return AggregateState(
-        daily_visits={str(date): int(count) for date, count in daily_visits.items()}
+        daily_visits={str(date): int(count) for date, count in daily_visits.items()},
+        daily_country_visits={
+            str(date): {
+                str(country): int(count)
+                for country, count in country_counts.items()
+            }
+            for date, country_counts in daily_country_visits.items()
+            if isinstance(country_counts, dict)
+        },
     )
 
 
 def bootstrap_aggregate_state(s3_client: Any, bucket_name: str) -> AggregateState:
-    visitor_tracker, _ = build_visitor_tracker_from_database(s3_client, bucket_name)
+    visitor_tracker, visitor_country_tracker, _ = build_visitor_tracker_from_database(
+        s3_client,
+        bucket_name,
+    )
     for date, visitors in sorted(visitor_tracker.items()):
         write_daily_visitors(s3_client, bucket_name, date, visitors)
+    for date, visitor_countries in sorted(visitor_country_tracker.items()):
+        write_daily_visitor_countries(
+            s3_client,
+            bucket_name,
+            date,
+            visitor_countries,
+        )
 
     state = AggregateState(
-        daily_visits={date: len(visitors) for date, visitors in visitor_tracker.items()}
+        daily_visits={date: len(visitors) for date, visitors in visitor_tracker.items()},
+        daily_country_visits={
+            date: dict(sorted(Counter(visitor_countries.values()).items()))
+            for date, visitor_countries in visitor_country_tracker.items()
+        },
     )
     write_aggregate_state(s3_client, bucket_name, state)
     logger.info(
@@ -101,6 +156,10 @@ def bootstrap_aggregate_state(s3_client: Any, bucket_name: str) -> AggregateStat
 
 def daily_visitors_key(date: str) -> str:
     return f"{DAILY_VISITORS_PREFIX}date={date}.json"
+
+
+def daily_visitor_countries_key(date: str) -> str:
+    return f"{DAILY_VISITOR_COUNTRIES_PREFIX}date={date}.json"
 
 
 def read_daily_visitors(
@@ -137,6 +196,46 @@ def write_daily_visitors(
     )
 
 
+def read_daily_visitor_countries(
+    s3_client: Any,
+    bucket_name: str,
+    date: str,
+    *,
+    required: bool,
+) -> dict[str, str]:
+    key = daily_visitor_countries_key(date)
+    payload = read_json_object(s3_client, bucket_name, key)
+    if payload is None:
+        if required:
+            raise ValueError(f"Missing daily visitor country state at s3://{bucket_name}/{key}")
+        return {}
+
+    visitor_countries = payload.get("visitor_countries")
+    if not isinstance(visitor_countries, dict):
+        raise ValueError(f"Invalid daily visitor country state at s3://{bucket_name}/{key}")
+    return {
+        str(viewer_ip): str(country)
+        for viewer_ip, country in visitor_countries.items()
+    }
+
+
+def write_daily_visitor_countries(
+    s3_client: Any,
+    bucket_name: str,
+    date: str,
+    visitor_countries: dict[str, str],
+) -> None:
+    write_json_object(
+        s3_client,
+        bucket_name,
+        daily_visitor_countries_key(date),
+        {
+            "date": date,
+            "visitor_countries": dict(sorted(visitor_countries.items())),
+        },
+    )
+
+
 def write_aggregate_state(
     s3_client: Any,
     bucket_name: str,
@@ -147,8 +246,9 @@ def write_aggregate_state(
         bucket_name,
         AGGREGATE_STATE_KEY,
         {
-            "version": 1,
+            "version": 2,
             "daily_visits": dict(sorted(state.daily_visits.items())),
+            "daily_country_visits": dict(sorted(state.daily_country_visits.items())),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         },
     )
