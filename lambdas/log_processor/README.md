@@ -101,8 +101,11 @@ index. A batch reads and writes only the daily visitor sets touched by its
 records. When the aggregate index is absent, the processor performs a one-time
 bootstrap from existing JSONL request records. The public
 `data/log-processor/data.json` file contains the visit summary, a continuous
-30-day `daily-visitor-counts` series with zero-filled dates, and processing
-counts. It never contains viewer IPs or request records. Lambda direct
+30-day `daily-visitor-counts` series ending on the latest complete UTC day,
+with zero-filled dates, and processing counts. The current UTC day remains in
+the private aggregate state but is excluded from public visit totals and
+trends until the following day. The summary never contains viewer IPs or
+request records. Lambda direct
 invocation responses include the summary S3 path plus current-invocation file
 counters for found, claimed, processed, skipped, and failed source logs.
 

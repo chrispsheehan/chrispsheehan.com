@@ -1,5 +1,5 @@
 import gzip
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from hashlib import md5
 from io import BytesIO
 import json
@@ -7,12 +7,14 @@ import json
 from botocore.exceptions import ClientError
 import pytest
 
+from lambdas.log_processor.aggregate_state import AggregateState
 from lambdas.log_processor.config import LogProcessorConfig
+from lambdas.log_processor.lambda_handler import handle_event
 from lambdas.log_processor.ledger import lock_key, object_id
 from lambdas.log_processor.logs_processor import LocalS3OutputClient, LocalS3SourceClient, logs_report
 from lambdas.log_processor.output_writer import SUMMARY_KEY
+from lambdas.log_processor.report import build_summary_from_aggregate_state
 from lambdas.log_processor.state import STATE_KEY
-from lambdas.log_processor.lambda_handler import handle_event
 
 
 def _config(max_files=None):
@@ -162,15 +164,16 @@ def test_logs_report_processes_claimed_logs_and_writes_jsonl():
 
     summary = logs_report("database-bucket", config=_config(), s3_client=s3)
 
-    assert summary["daily-visits"] == 1
+    complete_through = (datetime.now(timezone.utc).date() - timedelta(days=1)).isoformat()
+    assert summary["daily-visits"] == 0
     assert len(summary["daily-visitor-counts"]) == 30
-    assert summary["daily-visitor-counts"][-2:] == [
-        {"date": "2026-01-01", "visitors": 1},
-        {"date": "2026-01-02", "visitors": 1},
-    ]
+    assert summary["daily-visitor-counts"][-1] == {
+        "date": complete_through,
+        "visitors": 0,
+    }
     assert summary["total-visits"] == 2
     assert summary["range"] == 2
-    assert summary["last-date"] == "2026-01-02"
+    assert summary["last-date"] == complete_through
     assert summary["log-files-found"] == 2
     assert summary["log-files-claimed"] == 1
     assert summary["log-files-processed"] == 1
@@ -233,10 +236,11 @@ def test_logs_report_builds_visit_summary_from_existing_database_files():
 
     summary = logs_report("database-bucket", config=_config(), s3_client=s3)
 
-    assert summary["daily-visits"] == 1
+    complete_through = (datetime.now(timezone.utc).date() - timedelta(days=1)).isoformat()
+    assert summary["daily-visits"] == 0
     assert summary["total-visits"] == 2
     assert summary["range"] == 2
-    assert summary["last-date"] == "2026-01-02"
+    assert summary["last-date"] == complete_through
     assert summary["log-files-processed"] == 0
     assert summary["output-keys"] == []
     assert summary["run-output-keys"] == []
@@ -296,9 +300,41 @@ def test_handle_event_writes_summary_with_injected_clients():
     assert "run-output-keys" not in public_summary
     assert public_summary["total-visits"] == 1
     assert public_summary["daily-visitor-counts"][-1] == {
-        "date": "2026-01-01",
-        "visitors": 1,
+        "date": (datetime.now(timezone.utc).date() - timedelta(days=1)).isoformat(),
+        "visitors": 0,
     }
+
+
+def test_summary_excludes_current_utc_day_from_public_metrics():
+    generated_at = datetime(2026, 1, 3, 12, tzinfo=timezone.utc)
+    summary = build_summary_from_aggregate_state(
+        AggregateState(
+            daily_visits={
+                "2026-01-01": 2,
+                "2026-01-02": 4,
+                "2026-01-03": 3,
+            }
+        ),
+        log_files_found=0,
+        log_files_limit=None,
+        log_files_claimed=0,
+        log_files_processed=0,
+        log_files_skipped=0,
+        log_files_failed=0,
+        output_keys=[],
+        run_output_keys=[],
+        failed_source_keys=[],
+        generated_at=generated_at,
+    )
+
+    assert summary["daily-visits"] == 4
+    assert summary["daily-visitor-counts"][-1] == {
+        "date": "2026-01-02",
+        "visitors": 4,
+    }
+    assert summary["total-visits"] == 6
+    assert summary["range"] == 2
+    assert summary["last-date"] == "2026-01-02"
 
 
 def test_local_s3_output_client_writes_objects_under_key_path(tmp_path):

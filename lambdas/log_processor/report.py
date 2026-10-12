@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import logging
 from typing import Any, Callable
 
@@ -262,16 +262,13 @@ def build_summary_from_aggregate_state(
     output_keys: list[str],
     run_output_keys: list[str],
     failed_source_keys: list[str],
+    generated_at: datetime | None = None,
 ) -> dict[str, Any]:
     daily_counts = state.daily_visits
-    sorted_dates = sorted(daily_counts)
+    generated_on = (generated_at or datetime.now(timezone.utc)).date()
     return {
-        "daily-visits": daily_counts[sorted_dates[-1]] if sorted_dates else 0,
-        "daily-visitor-counts": build_daily_visitor_counts(daily_counts),
-        "total-visits": sum(daily_counts.values()),
-        "range": len(sorted_dates),
-        "last-date": sorted_dates[-1] if sorted_dates else None,
-        "generated-at": datetime.now(timezone.utc).date().isoformat(),
+        **build_public_visit_summary(daily_counts, generated_on=generated_on),
+        "generated-at": generated_on.isoformat(),
         "log-files-found": log_files_found,
         "log-files-limit": log_files_limit,
         "log-files-claimed": log_files_claimed,
@@ -295,18 +292,14 @@ def build_summary(
     log_files_failed: int,
     output_keys: list[str],
     run_output_keys: list[str],
+    generated_at: datetime | None = None,
 ) -> dict[str, Any]:
     daily_counts = {date: len(visitors) for date, visitors in visitor_tracker.items()}
-    sorted_dates = sorted(daily_counts.keys())
-    total_visits = sum(daily_counts.values())
+    generated_on = (generated_at or datetime.now(timezone.utc)).date()
 
     return {
-        "daily-visits": daily_counts[sorted_dates[-1]] if sorted_dates else 0,
-        "daily-visitor-counts": build_daily_visitor_counts(daily_counts),
-        "total-visits": total_visits,
-        "range": len(sorted_dates),
-        "last-date": sorted_dates[-1] if sorted_dates else None,
-        "generated-at": datetime.now(timezone.utc).date().isoformat(),
+        **build_public_visit_summary(daily_counts, generated_on=generated_on),
+        "generated-at": generated_on.isoformat(),
         "log-files-found": log_files_found,
         "log-files-limit": log_files_limit,
         "log-files-claimed": log_files_claimed,
@@ -318,11 +311,41 @@ def build_summary(
     }
 
 
-def build_daily_visitor_counts(daily_counts: dict[str, int]) -> list[dict[str, Any]]:
+def build_public_visit_summary(
+    daily_counts: dict[str, int],
+    *,
+    generated_on: date,
+) -> dict[str, Any]:
+    complete_through = generated_on - timedelta(days=1)
+    complete_through_iso = complete_through.isoformat()
+    complete_daily_counts = {
+        visit_date: visitors
+        for visit_date, visitors in daily_counts.items()
+        if visit_date <= complete_through_iso
+    }
+    sorted_dates = sorted(complete_daily_counts)
+
+    return {
+        "daily-visits": complete_daily_counts.get(complete_through_iso, 0),
+        "daily-visitor-counts": build_daily_visitor_counts(
+            complete_daily_counts,
+            last_day=complete_through,
+        ),
+        "total-visits": sum(complete_daily_counts.values()),
+        "range": len(sorted_dates),
+        "last-date": complete_through_iso if sorted_dates else None,
+    }
+
+
+def build_daily_visitor_counts(
+    daily_counts: dict[str, int],
+    *,
+    last_day: date | None = None,
+) -> list[dict[str, Any]]:
     if not daily_counts:
         return []
 
-    last_day = datetime.strptime(max(daily_counts), "%Y-%m-%d").date()
+    last_day = last_day or datetime.strptime(max(daily_counts), "%Y-%m-%d").date()
     first_day = last_day - timedelta(days=PUBLIC_DAILY_SERIES_DAYS - 1)
     return [
         {
