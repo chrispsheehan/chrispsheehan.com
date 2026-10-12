@@ -33,5 +33,26 @@
     "description": "A local-first Backstage lab with Argo CD and Crossplane.",
     "href": "https://github.com/chrispsheehan/backstage-sandbox",
     "tags": ["Backstage", "Argo CD", "Crossplane"]
+  },
+  {
+    "name": "Fargate Next.js Webapp",
+    "type": "Containerised web app",
+    "description": "A Next.js application deployed to ECS Fargate with Terraform-driven image delivery.",
+    "href": "https://github.com/chrispsheehan/fargate-nextjs-webapp",
+    "tags": ["Next.js", "ECS Fargate", "Terraform"]
+  },
+  {
+    "name": "ECS Internal Service",
+    "type": "Service architecture",
+    "description": "Configurable ECS services for private APIs and SQS workers with autoscaling and tracing.",
+    "href": "https://github.com/chrispsheehan/ecs-internal-service",
+    "tags": ["ECS Fargate", "Terragrunt", "OpenTelemetry"]
+  },
+  {
+    "name": "Weighted Target Traffic",
+    "type": "Migration architecture",
+    "description": "Weighted AWS routing for incrementally moving API traffic from Lambda to ECS.",
+    "href": "https://github.com/chrispsheehan/weighted-target-traffic",
+    "tags": ["AWS Lambda", "ECS", "Terraform"]
   }
 ]
