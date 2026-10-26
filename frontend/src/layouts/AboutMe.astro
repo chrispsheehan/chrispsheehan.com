@@ -197,13 +197,13 @@ const repositories = JSON.parse(
         dragStartX = event.clientX;
         dragStartScrollLeft = track.scrollLeft;
         suppressClick = false;
-        track.setPointerCapture(event.pointerId);
       });
       track.addEventListener("pointermove", (event) => {
         if (dragPointerId !== event.pointerId) return;
 
         const distance = event.clientX - dragStartX;
         if (Math.abs(distance) > 5) {
+          if (!suppressClick) track.setPointerCapture(event.pointerId);
           suppressClick = true;
           track.classList.add("repo-grid--dragging");
         }
