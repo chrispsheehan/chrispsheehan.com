@@ -267,7 +267,11 @@ def build_summary_from_aggregate_state(
     daily_counts = state.daily_visits
     generated_on = (generated_at or datetime.now(timezone.utc)).date()
     return {
-        **build_public_visit_summary(daily_counts, generated_on=generated_on),
+        **build_public_visit_summary(
+            daily_counts,
+            daily_country_counts=state.daily_country_visits,
+            generated_on=generated_on,
+        ),
         "generated-at": generated_on.isoformat(),
         "log-files-found": log_files_found,
         "log-files-limit": log_files_limit,
@@ -298,7 +302,11 @@ def build_summary(
     generated_on = (generated_at or datetime.now(timezone.utc)).date()
 
     return {
-        **build_public_visit_summary(daily_counts, generated_on=generated_on),
+        **build_public_visit_summary(
+            daily_counts,
+            daily_country_counts={},
+            generated_on=generated_on,
+        ),
         "generated-at": generated_on.isoformat(),
         "log-files-found": log_files_found,
         "log-files-limit": log_files_limit,
@@ -314,6 +322,7 @@ def build_summary(
 def build_public_visit_summary(
     daily_counts: dict[str, int],
     *,
+    daily_country_counts: dict[str, dict[str, int]],
     generated_on: date,
 ) -> dict[str, Any]:
     complete_through = generated_on - timedelta(days=1)
@@ -331,10 +340,34 @@ def build_public_visit_summary(
             complete_daily_counts,
             last_day=complete_through,
         ),
+        "daily-country-visitor-counts": build_daily_country_visitor_counts(
+            daily_country_counts,
+            last_day=complete_through,
+        ),
         "total-visits": sum(complete_daily_counts.values()),
         "range": len(sorted_dates),
         "last-date": complete_through_iso if sorted_dates else None,
     }
+
+
+def build_daily_country_visitor_counts(
+    daily_country_counts: dict[str, dict[str, int]],
+    *,
+    last_day: date,
+) -> list[dict[str, Any]]:
+    first_day = last_day - timedelta(days=PUBLIC_DAILY_SERIES_DAYS - 1)
+    series = []
+    for offset in range(PUBLIC_DAILY_SERIES_DAYS):
+        current_day = first_day + timedelta(days=offset)
+        series.append(
+            {
+                "date": current_day.isoformat(),
+                "countries": dict(
+                    sorted(daily_country_counts.get(current_day.isoformat(), {}).items())
+                ),
+            }
+        )
+    return series
 
 
 def build_daily_visitor_counts(

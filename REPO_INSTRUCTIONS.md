@@ -68,3 +68,9 @@ These instructions apply to the entire repository.
   user that the file is used by automation as well as local commands.
 - Before editing `.github/workflows/shared_*.yml`, warn the user that shared CI
   workflows have broad blast radius.
+
+## Pull Requests
+
+- Use a Conventional Commits prefix in every pull request title, such as
+  `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, or `ci:`.
+- Do not create an unprefixed pull request title.

@@ -214,9 +214,68 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 }
 
+# Keep legacy logging enabled while v2 accumulates country-aware records. The
+# first 15 selected fields match the legacy W3C order so either Lambda parser
+# version can safely process files during a staggered rollout.
+resource "aws_cloudwatch_log_delivery_source" "frontend" {
+  provider = aws.domain_aws_region
+
+  name         = "${local.name}-cloudfront-access-logs"
+  log_type     = "ACCESS_LOGS"
+  resource_arn = aws_cloudfront_distribution.frontend.arn
+}
+
+resource "aws_cloudwatch_log_delivery_destination" "frontend" {
+  provider = aws.domain_aws_region
+
+  name          = "${local.name}-cloudfront-access-logs-s3"
+  output_format = "w3c"
+
+  delivery_destination_configuration {
+    destination_resource_arn = "${aws_s3_bucket.frontend_logs.arn}/${local.logs_v2_prefix}"
+  }
+
+  depends_on = [aws_s3_bucket_policy.frontend_logs]
+}
+
+resource "aws_cloudwatch_log_delivery" "frontend" {
+  provider = aws.domain_aws_region
+
+  delivery_source_name     = aws_cloudwatch_log_delivery_source.frontend.name
+  delivery_destination_arn = aws_cloudwatch_log_delivery_destination.frontend.arn
+  field_delimiter          = "\t"
+  record_fields = [
+    "date",
+    "time",
+    "x-edge-location",
+    "sc-bytes",
+    "c-ip",
+    "cs-method",
+    "cs(Host)",
+    "cs-uri-stem",
+    "sc-status",
+    "cs(Referer)",
+    "cs(User-Agent)",
+    "cs-uri-query",
+    "cs(Cookie)",
+    "x-edge-result-type",
+    "x-edge-request-id",
+    "c-country",
+  ]
+
+  s3_delivery_configuration {
+    suffix_path = "{yyyy}/{MM}/{dd}/{HH}"
+  }
+}
+
 resource "aws_s3_bucket_policy" "frontend" {
   bucket = aws_s3_bucket.frontend.id
   policy = data.aws_iam_policy_document.frontend_bucket_policy.json
+}
+
+resource "aws_s3_bucket_policy" "frontend_logs" {
+  bucket = aws_s3_bucket.frontend_logs.id
+  policy = data.aws_iam_policy_document.frontend_logs_bucket_policy.json
 }
 
 resource "aws_s3_bucket_policy" "reports" {

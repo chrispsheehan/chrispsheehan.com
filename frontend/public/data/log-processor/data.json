@@ -32,6 +32,36 @@
     { "date": "2026-09-30", "visitors": 84 },
     { "date": "2026-10-01", "visitors": 73 }
   ],
+  "daily-country-visitor-counts": [
+    {
+      "date": "2026-09-25",
+      "countries": { "DE": 6, "GB": 31, "IE": 4, "US": 12 }
+    },
+    {
+      "date": "2026-09-26",
+      "countries": { "DE": 5, "GB": 29, "NL": 4, "US": 15 }
+    },
+    {
+      "date": "2026-09-27",
+      "countries": { "AU": 3, "GB": 26, "IE": 5, "US": 12 }
+    },
+    {
+      "date": "2026-09-28",
+      "countries": { "DE": 7, "GB": 37, "NL": 5, "US": 13 }
+    },
+    {
+      "date": "2026-09-29",
+      "countries": { "CA": 5, "DE": 8, "GB": 46, "US": 19 }
+    },
+    {
+      "date": "2026-09-30",
+      "countries": { "AU": 4, "DE": 9, "GB": 50, "US": 21 }
+    },
+    {
+      "date": "2026-10-01",
+      "countries": { "CA": 4, "DE": 8, "GB": 43, "US": 18 }
+    }
+  ],
   "generated-at": "2026-10-02",
   "last-date": "2026-10-01",
   "log-files-claimed": 35,
